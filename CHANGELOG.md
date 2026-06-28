@@ -684,3 +684,12 @@
 - 修 `askSentenceCloze`:錯格保留玩家原本輸入,正解只顯示在下方 `正解: ...`。
 - 順手加輸入 normalize:用 `NFKC + trim + lowercase` 比對,處理大小寫與全形/半形差異,但不放寬真正拼錯。
 - 驗(Node):`js/06-modes-sentence.js` 語法 OK。
+
+### 本輪(Claude Opus): 看圖題視覺去重 + 動詞句進句子系統
+- 使用者實測後期回報兩個問題:① 看圖題出眼睛圖卻 look/see 都在選項;② 學到的動詞(do/look/see…)從來沒有進過句子,後期沒有新的句子應用。
+- 修看圖歧義:同視覺守衛原本比 emoji 字串,👀(look)≠👁️(see) 抓不到。加 `VISUAL_ALIAS`(👁️→👀)+ `visualKey()`,守衛改比視覺概念。look 的 confuse 夥伴 see 一定在選項 → look/see 不再出看圖題;cat/house/book 等不受影響(驗 40/40 照常出圖)。
+- 診斷句子系統:PATTERNS 只有 6 個,動詞只能當 `requires` 固定詞、永遠進不了 slot;排句主流程只吃 4 個名詞/形容詞句型;`I drink/I read` 句型是孤兒(沒掛進排句、也觸發不了克漏字)→ 動詞零句子覆蓋。
+- 加動詞句(用現有字):新增 `pat_i_see_a_noun`(I see a {visible})、`pat_i_buy_a_noun`(I buy a {buyable}),修 `pat_i_read_noun` 補回漏的 a(I read a {x}),把 see/buy/read/drink 四個動詞句掛進 `BUILD_SENTENCE_PATTERN_IDS`。
+- 新增 flag `visible`(cat/book/friend/house)、`buyable`(cat/book/house),避免出 "I buy a friend / I see a project" 這種怪句;更新 CONTENT_RULES。
+- 排對動詞句 → `creditSentence` 連帶幫動詞加熟練度(動詞靠句子自然學會)。
+- 驗(瀏覽器):4 句全進排句流程、受詞池正確(see 無 project、buy 無 friend/project)、creditSentence 給 see/buy/cat 各 +25;`node --check` 三個改檔語法 OK。

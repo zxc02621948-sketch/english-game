@@ -39,7 +39,9 @@
   - `presentable`: 適合被介紹為「這是一個...」的具體名詞。
   - `ownable`: 可被擁有，可放進 `This is my {x}.`
   - `drinkable`: 可喝的名詞，可放進 `I drink {x}.`
-  - `readable`: 可讀的名詞，可放進 `I read {x}.`
+  - `readable`: 可讀的名詞，可放進 `I read a {x}.`
+  - `visible`: 看得到的具體東西（含人），可放進 `I see a {x}.`，例如 `cat/book/friend/house`。抽象的（project/experience）不要給。
+  - `buyable`: 買得到的東西，可放進 `I buy a {x}.`，例如 `cat/book/house`。不給 `friend`（不買朋友）、不給抽象名詞。
   - `emotion`: 情緒形容詞，可放進 `I am {x}.`
   - `descriptive`: 可描述物件狀態的形容詞，可放進 `This is {x}.`，例如 `beautiful/big/small/good/bad`。不要給 `happy` 這種人/心情狀態，避免出 `This is happy.`
 
@@ -90,7 +92,8 @@
 - 每個 slot 都要寫 `pos` 和必要的 `flags`。
 - 句型只能抽符合 `pos + flags` 的字。
 - 符合條件的字不夠時，跳過該句型，不要硬組怪句子。
-- 組句題目前支援 `This is a {x}.`、`This is my {x}.`、`This is {x}.`、`I am {x}.`
+- 組句題目前支援 `This is a {x}.`、`This is my {x}.`、`This is {x}.`、`I am {x}.`、`I see a {x}.`、`I buy a {x}.`、`I read a {x}.`、`I drink {x}.`(動詞句的動詞放 `requires`,受詞放 slot)
+- ⚠ 動詞句的受詞 slot 要選對 flag,不然會出怪句:`I buy a {x}` 用 `buyable`(別讓 friend/抽象字進來)、`I see a {x}` 用 `visible`。新增動詞句前先確認受詞池每個字套進去都自然。
 - `This is a {x}.` 要用 `countable + presentable`，不要只用 `countable`，避免抽到不自然的字。
 - `This is {x}.` 只給 `descriptive` 形容詞，不要把所有 adj 都塞進去。
 

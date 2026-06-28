@@ -68,7 +68,7 @@ function buildSentenceFromPattern(pattern, sourceWords = BANK) {
   const fillZh = s => s.replace(/\{(\w+)\}/g, (_, name) => picks[name] ? wordZhForSlot(picks[name], pattern.slots[name]) : "");
   return { patternId: pattern.id, text: fill(pattern.text), zh: fillZh(pattern.zh), words: picks };
 }
-const BUILD_SENTENCE_PATTERN_IDS = ["pat_this_is_a_noun", "pat_this_is_my_noun", "pat_this_is_adj", "pat_i_am_adj"];
+const BUILD_SENTENCE_PATTERN_IDS = ["pat_this_is_a_noun", "pat_this_is_my_noun", "pat_this_is_adj", "pat_i_am_adj", "pat_i_see_a_noun", "pat_i_buy_a_noun", "pat_i_read_noun", "pat_i_drink_noun"];
 const buildSentencePatterns = () => PATTERNS.filter(p => BUILD_SENTENCE_PATTERN_IDS.includes(p.id));
 function learnedByRecord(c) {
   return c && (c.mastery || 0) >= LEARNED;
