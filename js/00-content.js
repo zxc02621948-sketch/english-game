@@ -48,6 +48,8 @@ const PATTERNS = [
     id: "pat_this_is_a_noun",
     text: "This is a {x}.",
     zh: "這是一個{x}。",
+    q: "Is this a {x}?",
+    qzh: "這是一個{x}嗎?",
     requires: ["word_this", "word_is", "word_a"],
     slots: { x: { pos: "noun", flags: ["countable", "presentable"] } }
   },
@@ -55,6 +57,8 @@ const PATTERNS = [
     id: "pat_this_is_my_noun",
     text: "This is my {x}.",
     zh: "這是我的{x}。",
+    q: "Is this my {x}?",
+    qzh: "這是我的{x}嗎?",
     requires: ["word_this", "word_is", "word_my"],
     slots: { x: { pos: "noun", flags: ["ownable"] } }
   },
@@ -90,6 +94,8 @@ const PATTERNS = [
     id: "pat_this_is_adj",
     text: "This is {x}.",
     zh: "這很{x}。",
+    q: "Is this {x}?",
+    qzh: "這很{x}嗎?",
     requires: ["word_this", "word_is"],
     slots: { x: { pos: "adj", flags: ["descriptive"] } }
   },

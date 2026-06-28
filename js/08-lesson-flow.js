@@ -17,6 +17,7 @@ const FORMATS = [
   { id:'flashtype',    lv:5, skill:'write',  ok: w => w.en.length > 1,               run: askFlashType },        // 默寫(單字母不練寫)
   { id:'sentence_cloze', lv:6, skill:'write', tier:3, ok: w => (meta.stage || 1) >= 3 && canSentenceCloze(w), run: askSentenceCloze }, // 二王後:句子克漏字打字(先練缺字,不整句默寫)
   { id:'sentence_build', lv:3, skill:'read', tier:3, ok: () => !!pickBuildSentence(sentenceSourceWords()), run: w => askBuildSentence(sentenceSourceWords(), () => { onCorrect(w); updateBar(); nextQuestion(); }) },  // 排詞造句(句型軌;湊得出句才出、句型 % 自己一條)
+  { id:'sentence_transform', lv:3, skill:'read', tier:3, ok: () => canTransform(), run: w => askTransform(w) },  // ★ 轉換題:把練過的直述句重排成問句(this is ↔ is this);直述句練過(patMastery>0)才出
 ];
 const READPICK = FORMATS[0];
 // 這一題出第幾階:沒教→教;學會的字回鍋→隨機產出階複習;否則攻「當前最低未過階」,封頂關卡 topRung。
@@ -57,6 +58,7 @@ function ask(w) {
   const target = tierOfMastery(rec(w).mastery || 0);
   const wt = f => {
     if (f.id === 'sentence_build') return !stageHasRealWords(meta.stage || 1) ? 90 : (meta.stage || 1) >= 2 ? 40 : 7;   // 句型階段主打句子;有新實詞的階段只提高到穿插練習。
+    if (f.id === 'sentence_transform') return (meta.stage || 1) >= 2 ? 20 : 8;   // 直述↔問句轉換:直述句練過才會出(canTransform 守),出現頻率中等
     if (f.id === 'sentence_cloze') return (meta.stage || 1) >= 3 ? 18 : 0;
     const d = Math.abs(fmtTier(f) - target); return d === 0 ? 3 : d === 1 ? 1 : 0.3;
   };

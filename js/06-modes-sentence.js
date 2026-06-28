@@ -8,6 +8,102 @@ function teachPattern(sentence, then) {
   $('gotit').onclick = then;
 }
 
+// 共用拖曳排序引擎:給 cards + 正解 token 順序,渲染 slots/bank + 拖曳/點擊 + 確定;判對錯交給 onCheck 出回饋。
+// 排詞造句、轉換題(直述↔問句)都複用這個,拖曳邏輯不重寫。caseInsensitive:轉換題 This↔this 只是大小寫、重點在順序。
+function mountArrange({ promptText, zh, introHTML = '', cards, targetTokens, caseInsensitive = false, onCheck }) {
+  shell(promptText, `
+    ${introHTML}
+    <div class="buildzh">${zh}</div>
+    <div class="sentence-slots" id="slots"></div>
+    <div class="chunks sentence-bank" id="bank"></div>
+    <div class="buildactions" id="bactions" style="grid-template-columns:1fr"><button class="btn act" id="check">確定</button></div>`);
+  let slots = Array(cards.length).fill(null);
+  let bank = shuffle(cards);
+  let draggingId = null;
+
+  const cardById = id => cards.find(c => c.id === id);
+  const slotIndexOf = id => slots.findIndex(c => c && c.id === id);
+  const removeFromBank = id => { const idx = bank.findIndex(c => c.id === id); return idx >= 0 ? bank.splice(idx, 1)[0] : null; };
+  const takeCard = id => {
+    const fromBank = removeFromBank(id);
+    if (fromBank) return { card: fromBank, fromSlot: -1 };
+    const fromSlot = slotIndexOf(id);
+    if (fromSlot < 0) return { card: null, fromSlot: -1 };
+    const card = slots[fromSlot];
+    slots[fromSlot] = null;
+    return { card, fromSlot };
+  };
+  const removeFromSlot = idx => { const card = slots[idx]; if (!card) return; slots[idx] = null; bank.push(card); };
+  const moveToSlot = (id, idx) => {
+    const { card, fromSlot } = takeCard(id);
+    if (!card) return;
+    const replaced = slots[idx];
+    if (replaced && fromSlot >= 0) slots[fromSlot] = replaced;
+    else if (replaced) bank.push(replaced);
+    slots[idx] = card;
+  };
+  const placeFirst = id => { const idx = slots.findIndex(c => !c); if (idx >= 0) moveToSlot(id, idx); };
+  const returnToBank = id => {
+    const { card, fromSlot } = takeCard(id);
+    if (!card) return;
+    if (fromSlot >= 0) bank.push(card);
+    else bank.push(cardById(id) || card);
+  };
+  const allowDrop = e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; };
+  const droppedId = e => e.dataTransfer.getData('text/plain') || draggingId;
+  const dragStart = (e, id) => { draggingId = id; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', id); };
+
+  const makeCard = (card, from, slotIndex = -1) => {
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'opt chunk sentence-card';
+    el.textContent = card.text;
+    el.dataset.id = card.id;
+    el.draggable = true;
+    el.addEventListener('dragstart', e => dragStart(e, card.id));
+    el.addEventListener('dragend', () => { draggingId = null; });
+    el.onclick = () => { if (from === 'bank') placeFirst(card.id); else removeFromSlot(slotIndex); render(); };
+    return el;
+  };
+
+  const render = () => {
+    const slotBox = $('slots'), bankBox = $('bank');
+    slotBox.innerHTML = '';
+    bankBox.innerHTML = '';
+    slots.forEach((card, idx) => {
+      const slot = document.createElement('div');
+      slot.className = card ? 'sentence-slot filled' : 'sentence-slot';
+      slot.addEventListener('dragover', allowDrop);
+      slot.addEventListener('drop', e => { e.preventDefault(); moveToSlot(droppedId(e), idx); draggingId = null; render(); });
+      if (card) slot.appendChild(makeCard(card, 'slot', idx));
+      slotBox.appendChild(slot);
+    });
+    bankBox.ondragover = allowDrop;
+    bankBox.ondrop = e => { e.preventDefault(); returnToBank(droppedId(e)); draggingId = null; render(); };
+    bank.forEach(card => bankBox.appendChild(makeCard(card, 'bank')));
+    $('check').disabled = slots.some(slot => !slot);
+  };
+
+  render();
+
+  const norm = t => caseInsensitive ? (t || '').toLowerCase() : t;
+  const retry = () => {
+    const why = $('why'); why.hidden = true; why.className = 'why';
+    $('bactions').style.display = '';
+    $('prompt').textContent = promptText;
+    slots = Array(cards.length).fill(null);
+    bank = shuffle(cards);
+    render();
+  };
+  $('check').onclick = () => {
+    const placed = slots.map(card => card && card.text);
+    const right = placed.map(norm).join(' ') === targetTokens.map(norm).join(' ');
+    $('bactions').style.display = 'none';
+    document.querySelectorAll('.sentence-card').forEach(el => { el.draggable = false; el.style.pointerEvents = 'none'; });
+    onCheck(right, { retry });
+  };
+}
+
 function askBuildSentence(sourceWords = sentenceSourceWords(), done = showDone) {
   const sentence = pickBuildSentence(sourceWords);
   if (!sentence) {
@@ -15,134 +111,17 @@ function askBuildSentence(sourceWords = sentenceSourceWords(), done = showDone) 
     $('cont').onclick = done;
     return;
   }
-
-  const arrange = () => {
-    const target = sentence.text.replace(/[.?!]/g, '').split(/\s+/).filter(Boolean);
-    const cards = target.map((text, i) => ({ id: `c${i}`, text }));
-    let slots = Array(cards.length).fill(null);
-    let bank = shuffle(cards);
-    let draggingId = null;
-
-    shell('看中文,排出英文', `
-      <div class="buildzh">${sentence.zh}</div>
-      <div class="sentence-slots" id="slots"></div>
-      <div class="chunks sentence-bank" id="bank"></div>
-      <div class="buildactions" id="bactions" style="grid-template-columns:1fr"><button class="btn act" id="check">確定</button></div>`);
-
-    const cardById = id => cards.find(c => c.id === id);
-    const slotIndexOf = id => slots.findIndex(c => c && c.id === id);
-    const removeFromBank = id => {
-      const idx = bank.findIndex(c => c.id === id);
-      return idx >= 0 ? bank.splice(idx, 1)[0] : null;
-    };
-    const takeCard = id => {
-      const fromBank = removeFromBank(id);
-      if (fromBank) return { card: fromBank, fromSlot: -1 };
-      const fromSlot = slotIndexOf(id);
-      if (fromSlot < 0) return { card: null, fromSlot: -1 };
-      const card = slots[fromSlot];
-      slots[fromSlot] = null;
-      return { card, fromSlot };
-    };
-    const removeFromSlot = idx => {
-      const card = slots[idx];
-      if (!card) return;
-      slots[idx] = null;
-      bank.push(card);
-    };
-    const moveToSlot = (id, idx) => {
-      const { card, fromSlot } = takeCard(id);
-      if (!card) return;
-      const replaced = slots[idx];
-      if (replaced && fromSlot >= 0) slots[fromSlot] = replaced;
-      else if (replaced) bank.push(replaced);
-      slots[idx] = card;
-    };
-    const placeFirst = id => {
-      const idx = slots.findIndex(c => !c);
-      if (idx >= 0) moveToSlot(id, idx);
-    };
-    const returnToBank = id => {
-      const { card, fromSlot } = takeCard(id);
-      if (!card) return;
-      if (fromSlot >= 0) bank.push(card);
-      else bank.push(cardById(id) || card);
-    };
-    const allowDrop = e => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-    };
-    const droppedId = e => e.dataTransfer.getData('text/plain') || draggingId;
-    const dragStart = (e, id) => {
-      draggingId = id;
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', id);
-    };
-
-    const makeCard = (card, from, slotIndex = -1) => {
-      const el = document.createElement('button');
-      el.type = 'button';
-      el.className = 'opt chunk sentence-card';
-      el.textContent = card.text;
-      el.dataset.id = card.id;
-      el.draggable = true;
-      el.addEventListener('dragstart', e => dragStart(e, card.id));
-      el.addEventListener('dragend', () => { draggingId = null; });
-      el.onclick = () => {
-        if (from === 'bank') placeFirst(card.id);
-        else removeFromSlot(slotIndex);
-        render();
-      };
-      return el;
-    };
-
-    const render = () => {
-      const slotBox = $('slots');
-      const bankBox = $('bank');
-      slotBox.innerHTML = '';
-      bankBox.innerHTML = '';
-
-      slots.forEach((card, idx) => {
-        const slot = document.createElement('div');
-        slot.className = card ? 'sentence-slot filled' : 'sentence-slot';
-        slot.addEventListener('dragover', allowDrop);
-        slot.addEventListener('drop', e => {
-          e.preventDefault();
-          moveToSlot(droppedId(e), idx);
-          draggingId = null;
-          render();
-        });
-        if (card) slot.appendChild(makeCard(card, 'slot', idx));
-        slotBox.appendChild(slot);
-      });
-
-      bankBox.ondragover = allowDrop;
-      bankBox.ondrop = e => {
-        e.preventDefault();
-        returnToBank(droppedId(e));
-        draggingId = null;
-        render();
-      };
-      bank.forEach(card => bankBox.appendChild(makeCard(card, 'bank')));
-      $('check').disabled = slots.some(slot => !slot);
-    };
-
-    render();
-
-    $('check').onclick = () => {
-      const right = slots.map(card => card && card.text).join(' ') === target.join(' ');
+  const target = sentence.text.replace(/[.?!]/g, '').split(/\s+/).filter(Boolean);
+  const arrange = () => mountArrange({
+    promptText: '看中文,排出英文',
+    zh: sentence.zh,
+    cards: target.map((text, i) => ({ id: `c${i}`, text })),
+    targetTokens: target,
+    onCheck: (right, { retry }) => {
       const why = $('why');
-      $('bactions').style.display = 'none';
-      document.querySelectorAll('.sentence-card').forEach(el => {
-        el.draggable = false;
-        el.style.pointerEvents = 'none';
-      });
       speakSentence(sentence);
-
       if (right) {
-        sfx.correct();
-        bumpPat(sentence.patternId, 25);
-        creditSentence(sentence);
+        sfx.correct(); bumpPat(sentence.patternId, 25); creditSentence(sentence);
         why.className = 'why';
         why.innerHTML = `<div class="result-head">
           <div class="result-mark">✓</div>
@@ -159,8 +138,7 @@ function askBuildSentence(sourceWords = sentenceSourceWords(), done = showDone) 
         $('sayslow').onclick = () => speakSentence(sentence, 0.5);
         $('cont').onclick = done;
       } else {
-        sfx.wrong();
-        bumpPat(sentence.patternId, -20);
+        sfx.wrong(); bumpPat(sentence.patternId, -20);
         why.className = 'why bad';
         why.innerHTML = `<div class="result-head">
           <div class="result-mark">!</div>
@@ -175,18 +153,10 @@ function askBuildSentence(sourceWords = sentenceSourceWords(), done = showDone) 
         why.hidden = false;
         $('sayit').onclick = () => speakSentence(sentence);
         $('sayslow').onclick = () => speakSentence(sentence, 0.5);
-        $('retry').onclick = () => {
-          why.hidden = true;
-          why.className = 'why';
-          $('bactions').style.display = '';
-          $('prompt').textContent = '看中文,排出英文';
-          slots = Array(cards.length).fill(null);
-          bank = shuffle(cards);
-          render();
-        };
+        $('retry').onclick = retry;
       }
-    };
-  };
+    }
+  });
 
   if (patMastery(sentence.patternId) === 0) {
     bumpPat(sentence.patternId, 10);
@@ -194,6 +164,66 @@ function askBuildSentence(sourceWords = sentenceSourceWords(), done = showDone) 
   } else {
     arrange();
   }
+}
+
+// ★ 轉換題(招牌:this is ↔ is this):先給排好的直述句 → 把「同一批字」重排成問句,戳「換順序就變問句」的 aha。
+// 只用 be 動詞 This is 家族(純重排成立;I see a cat 變問句要 do,不能純重排 → 不放進來)。
+const TRANSFORM_PATTERN_IDS = ["pat_this_is_a_noun", "pat_this_is_my_noun", "pat_this_is_adj"];
+function pickTransformSentence(sourceWords = sentenceSourceWords()) {
+  const pats = PATTERNS.filter(p => TRANSFORM_PATTERN_IDS.includes(p.id) && p.q && patMastery(p.id) > 0);   // 直述句練過(patMastery>0)才轉換 → 有「我會這句、現在改問句」的對照
+  return shuffle(pats.map(p => buildSentenceFromPattern(p, sourceWords)).filter(Boolean))[0] || null;
+}
+function canTransform() { return !!pickTransformSentence(); }
+function askTransform(w, done) {
+  const s = pickTransformSentence();
+  const cont = done || (() => { onCorrect(w); updateBar(); nextQuestion(); });
+  if (!s) return askBuildSentence(sentenceSourceWords(), cont);                       // 湊不出問句 → 退回一般排句
+  const stmt = s.text.replace(/[.?!]/g, '').split(/\s+/).filter(Boolean);             // This is a cat
+  const qTok = s.question.replace(/[.?!]/g, '').split(/\s+/).filter(Boolean);         // Is this a cat
+  const sayQ = () => speakSentence({ text: s.question });
+  mountArrange({
+    promptText: '改成問句 —— 同一批字,重新排',
+    zh: s.questionZh,
+    introHTML: `<div class="transform-intro"><div class="transform-stmt">${s.text}</div><div class="transform-stmt-zh">${s.zh}</div><div class="transform-arrow">↓ 改成問句</div></div>`,
+    cards: stmt.map((text, i) => ({ id: `c${i}`, text })),
+    targetTokens: qTok,
+    caseInsensitive: true,
+    onCheck: (right, { retry }) => {
+      const why = $('why');
+      sayQ();
+      if (right) {
+        sfx.correct(); bumpPat(s.patternId, 15); creditSentence(s);
+        why.className = 'why';
+        why.innerHTML = `<div class="result-head">
+          <div class="result-mark">✓</div>
+          <div class="result-main">
+            <div class="result-word">${s.question}</div>
+            <div class="result-copy">同樣的字,把 <b>is</b> 移到最前面,「${s.zh}」就變問句「${s.questionZh}」。</div>
+          </div>
+          <button class="replay" id="sayit">🔊 再聽</button>
+        </div>
+        <button class="btn act" id="cont">繼續 →</button>`;
+        why.hidden = false;
+        $('sayit').onclick = sayQ;
+        $('cont').onclick = cont;
+      } else {
+        sfx.wrong(); bumpPat(s.patternId, -10);
+        why.className = 'why bad';
+        why.innerHTML = `<div class="result-head">
+          <div class="result-mark">!</div>
+          <div class="result-main">
+            <div class="result-word">正解: ${s.question}</div>
+            <div class="result-copy">問句把 <b>is</b> 放到最前面:Is this …?</div>
+          </div>
+          <button class="replay" id="sayit">🔊 聽正解</button>
+        </div>
+        <button class="btn act" id="retry">重排一次</button>`;
+        why.hidden = false;
+        $('sayit').onclick = sayQ;
+        $('retry').onclick = retry;
+      }
+    }
+  });
 }
 
 function sentenceClozeForWord(w) {

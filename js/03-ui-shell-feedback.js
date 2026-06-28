@@ -66,7 +66,11 @@ function buildSentenceFromPattern(pattern, sourceWords = BANK) {
   }
   const fill = s => s.replace(/\{(\w+)\}/g, (_, name) => picks[name] ? picks[name].en : "");
   const fillZh = s => s.replace(/\{(\w+)\}/g, (_, name) => picks[name] ? wordZhForSlot(picks[name], pattern.slots[name]) : "");
-  return { patternId: pattern.id, text: fill(pattern.text), zh: fillZh(pattern.zh), words: picks };
+  return {
+    patternId: pattern.id, text: fill(pattern.text), zh: fillZh(pattern.zh), words: picks,
+    question: pattern.q ? fill(pattern.q) : null,           // 問句形(同一批選字重排;沒 q 的句型 = null)→ 轉換題用
+    questionZh: pattern.qzh ? fillZh(pattern.qzh) : null
+  };
 }
 const BUILD_SENTENCE_PATTERN_IDS = ["pat_this_is_a_noun", "pat_this_is_my_noun", "pat_this_is_adj", "pat_i_am_adj", "pat_i_see_a_noun", "pat_i_buy_a_noun", "pat_i_read_noun", "pat_i_drink_noun"];
 const buildSentencePatterns = () => PATTERNS.filter(p => BUILD_SENTENCE_PATTERN_IDS.includes(p.id));

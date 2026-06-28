@@ -10,6 +10,11 @@
   .teach-zh { margin:12px 0 0; font-size:22px; }
   .teach-why { grid-area:why; align-self:end; width:100%; min-height:clamp(92px,14vh,132px); display:flex; align-items:center; background:#0e2a1f; border:1px solid #1f5c3f; border-radius:14px; padding:22px 24px; font-size:clamp(17px,2vh,20px); line-height:1.6; color:#d9f7e5; }
   .buildzh { text-align:center; font-size:26px; font-weight:700; margin:6px 0 14px; }
+  /* 轉換題:上面顯示已會的直述句,下面重排成問句 */
+  .transform-intro { text-align:center; margin:2px 0 14px; padding:12px 16px; background:#11202c; border:1px solid #243343; border-radius:14px; }
+  .transform-stmt { font-size:clamp(22px,3.2vh,30px); font-weight:800; letter-spacing:.5px; color:#cfe6ff; }
+  .transform-stmt-zh { font-size:15px; color:#9fb4c8; margin-top:4px; }
+  .transform-arrow { font-size:14px; color:#6ee7a8; margin-top:8px; font-weight:700; }
   .buildline { min-height:58px; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:8px; padding:10px; margin-bottom:12px; background:#0f1620; border:1px solid #2c3e52; border-radius:12px; }
   .sentence-cloze-line { text-align:center; font-size:clamp(30px,5vh,42px); font-weight:800; line-height:1.15; color:#e8f1f8; margin:4px 0 22px; }
   .sentence-cloze-line .clozeinp { width:clamp(72px, calc((var(--chars, 6) * 1ch) + 42px), min(78vw, 360px)); min-width:0; max-width:100%; font:inherit; color:#e8f1f8; text-align:center; background:#0f1620; border:2px solid #2c3e52; border-radius:12px; padding:6px 10px; outline:none; }

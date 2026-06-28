@@ -693,3 +693,13 @@
 - 新增 flag `visible`(cat/book/friend/house)、`buyable`(cat/book/house),避免出 "I buy a friend / I see a project" 這種怪句;更新 CONTENT_RULES。
 - 排對動詞句 → `creditSentence` 連帶幫動詞加熟練度(動詞靠句子自然學會)。
 - 驗(瀏覽器):4 句全進排句流程、受詞池正確(see 無 project、buy 無 friend/project)、creditSentence 給 see/buy/cat 各 +25;`node --check` 三個改檔語法 OK。
+
+### 本輪(Claude Opus): 招牌轉換題 this is ↔ is this
+- 使用者點出:招牌口號「重排同一批字自己懂(this is ↔ is this)」其實從沒做出來——整個專案沒有任何疑問句句型、沒有轉換邏輯,排句題永遠只出直述句。
+- 確認句子系統是「模板填空、非寫死」(`PATTERNS` + `buildSentenceFromPattern` 從學過的字填 slot),缺的是內容/題型不是引擎。
+- 抽共用拖曳引擎 `mountArrange`(js/06):cards + 正解 token 順序 → slots/bank + 拖曳/點擊 + 判對錯回 callback;`sentence_build` 改用它(零行為改變,重構後驗過排對→過、繼續→done),拖曳邏輯不再重寫。
+- 句型加 `q`/`qzh` 問句模板欄位;`buildSentenceFromPattern` 用同一批選字順便回傳 `question`/`questionZh`。給 `pat_this_is_a_noun`/`pat_this_is_my_noun`/`pat_this_is_adj` 三句加問句形。
+- 新題型 `askTransform`(`sentence_transform`):上面顯示練過的直述句(This is a cat. / 這是一隻貓),下面把「同一批卡片」重排成問句(Is this a cat?),排對給 aha 說明「把 is 移到最前面就變問句」。`caseInsensitive` 比對(This↔this 只大小寫、重點在順序)。
+- 掛進 FORMATS(lv3/read/tier3),`canTransform` 守(直述句 `patMastery>0` 才出 → 先會直述再轉問句);出題權重 stage≥2 = 20。只用 be 動詞 This is 家族(I see a cat 變問句要 do,不純重排 → 不放)。
+- 更新 CONTENT_RULES(q/qzh 欄位)、HANDOFF(題型 + mountArrange + 句子系統說明)。
+- 驗(瀏覽器):問句形正確(含形容詞去「的」)、patMastery gate 對、模擬點擊排問句序→判對+出 aha、排錯→紅框+重排歸位、排句題 regression 過;`node --check` 四檔 OK;零 console error。

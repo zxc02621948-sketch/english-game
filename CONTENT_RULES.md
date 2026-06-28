@@ -93,6 +93,7 @@
 - 句型只能抽符合 `pos + flags` 的字。
 - 符合條件的字不夠時，跳過該句型，不要硬組怪句子。
 - 組句題目前支援 `This is a {x}.`、`This is my {x}.`、`This is {x}.`、`I am {x}.`、`I see a {x}.`、`I buy a {x}.`、`I read a {x}.`、`I drink {x}.`(動詞句的動詞放 `requires`,受詞放 slot)
+- **問句形(轉換題用)**:be 動詞 `This is …` 家族的句型可加 `q` / `qzh` 兩個欄位,寫問句模板(例 `q:"Is this a {x}?"`、`qzh:"這是一個{x}嗎?"`)。有 `q` 的句型才會進「轉換題」(`askTransform`:把直述句的同一批字重排成問句)。`I + 動詞` 句不要加 `q`(變問句要 do/does,不是純重排)。
 - ⚠ 動詞句的受詞 slot 要選對 flag,不然會出怪句:`I buy a {x}` 用 `buyable`(別讓 friend/抽象字進來)、`I see a {x}` 用 `visible`。新增動詞句前先確認受詞池每個字套進去都自然。
 - `This is a {x}.` 要用 `countable + presentable`，不要只用 `countable`，避免抽到不自然的字。
 - `This is {x}.` 只給 `descriptive` 形容詞，不要把所有 adj 都塞進去。
