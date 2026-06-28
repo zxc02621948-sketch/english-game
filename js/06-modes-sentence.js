@@ -168,7 +168,7 @@ function askBuildSentence(sourceWords = sentenceSourceWords(), done = showDone) 
 
 // ★ 轉換題(招牌:this is ↔ is this):先給排好的直述句 → 把「同一批字」重排成問句,戳「換順序就變問句」的 aha。
 // 只用 be 動詞 This is 家族(純重排成立;I see a cat 變問句要 do,不能純重排 → 不放進來)。
-const TRANSFORM_PATTERN_IDS = ["pat_this_is_a_noun", "pat_this_is_my_noun", "pat_this_is_adj"];
+const TRANSFORM_PATTERN_IDS = ["pat_this_is_a_noun", "pat_this_is_my_noun", "pat_this_is_adj", "pat_i_am_adj"];
 function pickTransformSentence(sourceWords = sentenceSourceWords()) {
   const pats = PATTERNS.filter(p => TRANSFORM_PATTERN_IDS.includes(p.id) && p.q && patMastery(p.id) > 0);   // 直述句練過(patMastery>0)才轉換 → 有「我會這句、現在改問句」的對照
   return shuffle(pats.map(p => buildSentenceFromPattern(p, sourceWords)).filter(Boolean))[0] || null;
@@ -178,8 +178,9 @@ function askTransform(w, done) {
   const s = pickTransformSentence();
   const cont = done || (() => { onCorrect(w); updateBar(); nextQuestion(); });
   if (!s) return askBuildSentence(sentenceSourceWords(), cont);                       // 湊不出問句 → 退回一般排句
-  const stmt = s.text.replace(/[.?!]/g, '').split(/\s+/).filter(Boolean);             // This is a cat
-  const qTok = s.question.replace(/[.?!]/g, '').split(/\s+/).filter(Boolean);         // Is this a cat
+  const stmt = s.text.replace(/[.?!]/g, '').split(/\s+/).filter(Boolean);             // This is a cat / I am happy
+  const qTok = s.question.replace(/[.?!]/g, '').split(/\s+/).filter(Boolean);         // Is this a cat / Am I happy
+  const beVerb = stmt[1] || 'is';                                                     // 被提到句首的 be 動詞(is/am),aha 文案動態用
   const sayQ = () => speakSentence({ text: s.question });
   mountArrange({
     promptText: '改成問句 —— 同一批字,重新排',
@@ -198,7 +199,7 @@ function askTransform(w, done) {
           <div class="result-mark">✓</div>
           <div class="result-main">
             <div class="result-word">${s.question}</div>
-            <div class="result-copy">同樣的字,把 <b>is</b> 移到最前面,「${s.zh}」就變問句「${s.questionZh}」。</div>
+            <div class="result-copy">同樣的字,把 <b>${beVerb}</b> 移到最前面,「${s.zh}」就變問句「${s.questionZh}」。</div>
           </div>
           <button class="replay" id="sayit">🔊 再聽</button>
         </div>
@@ -213,7 +214,7 @@ function askTransform(w, done) {
           <div class="result-mark">!</div>
           <div class="result-main">
             <div class="result-word">正解: ${s.question}</div>
-            <div class="result-copy">問句把 <b>is</b> 放到最前面:Is this …?</div>
+            <div class="result-copy">問句把 be 動詞 <b>${beVerb}</b> 放到最前面。</div>
           </div>
           <button class="replay" id="sayit">🔊 聽正解</button>
         </div>

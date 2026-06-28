@@ -103,6 +103,8 @@ const PATTERNS = [
     id: "pat_i_am_adj",
     text: "I am {x}.",
     zh: "我很{x}。",
+    q: "Am I {x}?",
+    qzh: "我{x}嗎?",
     requires: ["word_i", "word_am"],
     slots: { x: { pos: "adj", flags: ["emotion"] } }
   }

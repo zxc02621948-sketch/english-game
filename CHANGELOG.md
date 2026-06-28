@@ -703,3 +703,10 @@
 - 掛進 FORMATS(lv3/read/tier3),`canTransform` 守(直述句 `patMastery>0` 才出 → 先會直述再轉問句);出題權重 stage≥2 = 20。只用 be 動詞 This is 家族(I see a cat 變問句要 do,不純重排 → 不放)。
 - 更新 CONTENT_RULES(q/qzh 欄位)、HANDOFF(題型 + mountArrange + 句子系統說明)。
 - 驗(瀏覽器):問句形正確(含形容詞去「的」)、patMastery gate 對、模擬點擊排問句序→判對+出 aha、排錯→紅框+重排歸位、排句題 regression 過;`node --check` 四檔 OK;零 console error。
+
+### 本輪(Claude Opus): 轉換題加 I am → Am I
+- 接續轉換題:把 I am 家族也納入(使用者要求)。注意自然問句「Are you happy?」換了字(am→are、I→you)不是純重排、不符機制 → 加的是純重排的 Am I happy?(把 am 提到句首,跟 This is → Is this 同一條規則)。
+- pat_i_am_adj 加 q:"Am I {x}?" / qzh:"我{x}嗎?";掛進 TRANSFORM_PATTERN_IDS。
+- askTransform 的 aha 文案改動態抓 be 動詞(stmt[1]):This is 顯示「把 is 移到最前面」、I am 顯示「把 am 移到最前面」。
+- 更新 CONTENT_RULES(be 動詞句才加 q;不要寫 Are you 這種非純重排)。
+- 驗(瀏覽器):I am happy → Am I happy?(我開心嗎?)、模擬重排 am/I/happy 判對、文案顯示 am;This is 仍顯示 is;node --check OK;零 console error。
