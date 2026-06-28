@@ -1,0 +1,23 @@
+  #screen.lesson-screen { height:100vh; overflow:hidden; }   /* 關卡內固定一頁,不靠往下滾才看得到內容 */
+  #screen.lesson-screen::after { content:""; position:fixed; left:0; right:0; bottom:0; height:var(--action-bar-h); background:#101d22; border-top:1px solid #334751; z-index:30; pointer-events:none; }   /* Duo 式底部操作列背景 */
+  #screen > * { width:100%; max-width:960px; margin-left:auto; margin-right:auto; }   /* 寬版舞台:空間既然夠,就讓題目真的展開 */
+  .lesson { flex:1; min-height:0; display:grid; grid-template-rows:auto minmax(0,1fr); align-content:stretch; gap:clamp(10px,3vh,24px); padding:clamp(10px,3vh,26px) 0 calc(var(--action-bar-h) + var(--action-gap)); }   /* 共用題型骨架:上題目帶、下作答帶 */
+  .lesson-stage { min-height:0; display:flex; align-items:flex-start; justify-content:center; }
+  .lesson-stage .prompt { width:100%; text-align:center; }
+  .lesson-answer { width:100%; max-width:760px; min-height:0; margin:0 auto; display:flex; flex-direction:column; justify-content:center; gap:10px; overflow:visible; }   /* 固定答案帶:不同題型不要自己漂位置 */
+  #screen #body { flex:initial; }
+  #screen.lesson-screen > .why { position:fixed; left:0; right:0; bottom:0; transform:none; width:100%; max-width:none; height:var(--action-bar-h); max-height:none; overflow:hidden; margin:0; z-index:35; border:0; border-top:1px solid #1f5c3f; border-radius:0; padding:24px max(28px, calc((100vw - 960px) / 2)); display:flex; align-items:center; gap:24px; background:#0e2a1f; }   /* 答題回饋直接吃底部操作列:左說明、右繼續,不擠動題目/選項 */
+  #screen.lesson-screen > .why.bad { background:#2e1416; border-top-color:#5c2026; }
+  #screen.lesson-screen > .why[hidden] { display:none; }
+  #screen.lesson-screen > .why .result-head { flex:1; max-width:620px; }
+  #screen.lesson-screen > .why .result-head.compact { flex:1; max-width:none; justify-content:center; }
+  #screen.lesson-screen > .why .act { position:static; right:auto; bottom:auto; left:auto; transform:none; width:min(300px, 32vw); min-width:220px; min-height:64px; margin:0 0 0 auto; flex-shrink:0; }
+  #screen .act { position:fixed; right:max(28px, calc((100vw - 960px) / 2)); bottom:34px; left:auto; transform:none; width:min(300px, calc(48vw - 36px)); min-height:64px; margin:0; z-index:40; background:#8ee000; border-color:#8ee000; border-bottom:5px solid #5fa900; color:#102016; font-weight:800; letter-spacing:0; }   /* ★ 主要動作鈕固定在右下,像 Duo 的 Check/Continue */
+  #screen .act:hover { background:#a2ef24; }
+  #screen .sideact { position:fixed; left:max(28px, calc((100vw - 960px) / 2)); bottom:34px; width:min(220px, calc(42vw - 36px)); min-height:64px; margin:0; z-index:41; background:transparent; border:2px solid #405762; border-bottom:5px solid #31464f; color:#9fb4c8; font-weight:800; }
+  #screen .sideact:hover { background:#18282f; color:#e8eef5; }
+  .toprow .bar { flex:1; }
+  .xexit { background:none; border:none; color:#6f8398; font-size:26px; line-height:1; cursor:pointer; padding:0 2px; flex-shrink:0; }
+  .xexit:hover { color:#cdd9e5; }
+  .count { font-size:12px; color:#6f8398; margin:8px 0 16px; text-align:right; }
+  /* 中途離開確認(主題化覆蓋層,別用白底 native confirm) */

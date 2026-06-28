@@ -1,0 +1,251 @@
+function teachPattern(sentence, then) {
+  const chunks = sentence.text.replace(/[.?!]/g, '').split(/\s+/).filter(Boolean);
+  shell('先看這個句型', `
+    <div class="buildzh">${sentence.zh}</div>
+    <div class="buildline">${chunks.map(c => `<div class="opt chunk">${c}</div>`).join('')}</div>
+    <div class="sub2" style="margin-top:12px">英文照這個順序:<b style="color:#9bd2ff">${sentence.text}</b></div>
+    <button class="btn act" id="gotit" style="margin-top:16px">懂了,我來排 →</button>`);
+  $('gotit').onclick = then;
+}
+
+function askBuildSentence(sourceWords = sentenceSourceWords(), done = showDone) {
+  const sentence = pickBuildSentence(sourceWords);
+  if (!sentence) {
+    shell('組句小練習', `<div class="sub2">這批字還組不出自然句,先繼續練單字。</div><button class="btn act" id="cont">繼續 →</button>`);
+    $('cont').onclick = done;
+    return;
+  }
+
+  const arrange = () => {
+    const target = sentence.text.replace(/[.?!]/g, '').split(/\s+/).filter(Boolean);
+    const cards = target.map((text, i) => ({ id: `c${i}`, text }));
+    let slots = Array(cards.length).fill(null);
+    let bank = shuffle(cards);
+    let draggingId = null;
+
+    shell('看中文,排出英文', `
+      <div class="buildzh">${sentence.zh}</div>
+      <div class="sentence-slots" id="slots"></div>
+      <div class="chunks sentence-bank" id="bank"></div>
+      <div class="buildactions" id="bactions" style="grid-template-columns:1fr"><button class="btn act" id="check">確定</button></div>`);
+
+    const cardById = id => cards.find(c => c.id === id);
+    const slotIndexOf = id => slots.findIndex(c => c && c.id === id);
+    const removeFromBank = id => {
+      const idx = bank.findIndex(c => c.id === id);
+      return idx >= 0 ? bank.splice(idx, 1)[0] : null;
+    };
+    const takeCard = id => {
+      const fromBank = removeFromBank(id);
+      if (fromBank) return { card: fromBank, fromSlot: -1 };
+      const fromSlot = slotIndexOf(id);
+      if (fromSlot < 0) return { card: null, fromSlot: -1 };
+      const card = slots[fromSlot];
+      slots[fromSlot] = null;
+      return { card, fromSlot };
+    };
+    const removeFromSlot = idx => {
+      const card = slots[idx];
+      if (!card) return;
+      slots[idx] = null;
+      bank.push(card);
+    };
+    const moveToSlot = (id, idx) => {
+      const { card, fromSlot } = takeCard(id);
+      if (!card) return;
+      const replaced = slots[idx];
+      if (replaced && fromSlot >= 0) slots[fromSlot] = replaced;
+      else if (replaced) bank.push(replaced);
+      slots[idx] = card;
+    };
+    const placeFirst = id => {
+      const idx = slots.findIndex(c => !c);
+      if (idx >= 0) moveToSlot(id, idx);
+    };
+    const returnToBank = id => {
+      const { card, fromSlot } = takeCard(id);
+      if (!card) return;
+      if (fromSlot >= 0) bank.push(card);
+      else bank.push(cardById(id) || card);
+    };
+    const allowDrop = e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    };
+    const droppedId = e => e.dataTransfer.getData('text/plain') || draggingId;
+    const dragStart = (e, id) => {
+      draggingId = id;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', id);
+    };
+
+    const makeCard = (card, from, slotIndex = -1) => {
+      const el = document.createElement('button');
+      el.type = 'button';
+      el.className = 'opt chunk sentence-card';
+      el.textContent = card.text;
+      el.dataset.id = card.id;
+      el.draggable = true;
+      el.addEventListener('dragstart', e => dragStart(e, card.id));
+      el.addEventListener('dragend', () => { draggingId = null; });
+      el.onclick = () => {
+        if (from === 'bank') placeFirst(card.id);
+        else removeFromSlot(slotIndex);
+        render();
+      };
+      return el;
+    };
+
+    const render = () => {
+      const slotBox = $('slots');
+      const bankBox = $('bank');
+      slotBox.innerHTML = '';
+      bankBox.innerHTML = '';
+
+      slots.forEach((card, idx) => {
+        const slot = document.createElement('div');
+        slot.className = card ? 'sentence-slot filled' : 'sentence-slot';
+        slot.addEventListener('dragover', allowDrop);
+        slot.addEventListener('drop', e => {
+          e.preventDefault();
+          moveToSlot(droppedId(e), idx);
+          draggingId = null;
+          render();
+        });
+        if (card) slot.appendChild(makeCard(card, 'slot', idx));
+        slotBox.appendChild(slot);
+      });
+
+      bankBox.ondragover = allowDrop;
+      bankBox.ondrop = e => {
+        e.preventDefault();
+        returnToBank(droppedId(e));
+        draggingId = null;
+        render();
+      };
+      bank.forEach(card => bankBox.appendChild(makeCard(card, 'bank')));
+      $('check').disabled = slots.some(slot => !slot);
+    };
+
+    render();
+
+    $('check').onclick = () => {
+      const right = slots.map(card => card && card.text).join(' ') === target.join(' ');
+      const why = $('why');
+      $('bactions').style.display = 'none';
+      document.querySelectorAll('.sentence-card').forEach(el => {
+        el.draggable = false;
+        el.style.pointerEvents = 'none';
+      });
+      speakSentence(sentence);
+
+      if (right) {
+        sfx.correct();
+        bumpPat(sentence.patternId, 25);
+        creditSentence(sentence);
+        why.className = 'why';
+        why.innerHTML = `<div class="result-head">
+          <div class="result-mark">✓</div>
+          <div class="result-main">
+            <div class="result-word">${sentence.text}</div>
+            <div class="result-copy">${sentence.zh}</div>
+          </div>
+          <button class="replay" id="sayit">🔊 再聽整句</button>
+          <button class="replay" id="sayslow">🐢 慢速</button>
+        </div>
+        <button class="btn act" id="cont">繼續 →</button>`;
+        why.hidden = false;
+        $('sayit').onclick = () => speakSentence(sentence);
+        $('sayslow').onclick = () => speakSentence(sentence, 0.5);
+        $('cont').onclick = done;
+      } else {
+        sfx.wrong();
+        bumpPat(sentence.patternId, -20);
+        why.className = 'why bad';
+        why.innerHTML = `<div class="result-head">
+          <div class="result-mark">!</div>
+          <div class="result-main">
+            <div class="result-word">正解: ${sentence.text}</div>
+            <div class="result-copy">${sentence.zh}</div>
+          </div>
+          <button class="replay" id="sayit">🔊 聽正解</button>
+          <button class="replay" id="sayslow">🐢 慢速</button>
+        </div>
+        <button class="btn act" id="retry">重排一次</button>`;
+        why.hidden = false;
+        $('sayit').onclick = () => speakSentence(sentence);
+        $('sayslow').onclick = () => speakSentence(sentence, 0.5);
+        $('retry').onclick = () => {
+          why.hidden = true;
+          why.className = 'why';
+          $('bactions').style.display = '';
+          $('prompt').textContent = '看中文,排出英文';
+          slots = Array(cards.length).fill(null);
+          bank = shuffle(cards);
+          render();
+        };
+      }
+    };
+  };
+
+  if (patMastery(sentence.patternId) === 0) {
+    bumpPat(sentence.patternId, 10);
+    teachPattern(sentence, arrange);
+  } else {
+    arrange();
+  }
+}
+
+function sentenceClozeForWord(w) {
+  if (!w || w.pos === 'function') return null;
+  const pats = patternsForWord(w).sort((a, b) => patMastery(b.id) - patMastery(a.id));
+  if (!pats.length) return null;
+  const pat = shuffle(pats)[0];
+  const slotName = Object.keys(pat.slots).find(n => wordMatchesSlot(w, pat.slots[n]));
+  if (!slotName) return null;
+  const filled = s => s.replace(new RegExp(`\\{${slotName}\\}`), w.en).replace(/\{\w+\}/g, '');
+  const filledZh = s => s.replace(new RegExp(`\\{${slotName}\\}`), wordZhForSlot(w, pat.slots[slotName])).replace(/\{\w+\}/g, '');
+  const full = filled(pat.text);
+  const tokens = full.replace(/[.?!,]/g, '').split(/\s+/).filter(Boolean);
+  const targetIdx = tokens.findIndex(t => t.toLowerCase() === w.en.toLowerCase());
+  if (targetIdx < 0) return null;
+  const requires = new Set(asList(pat.requires).map(id => (wordById(id) || {}).en).filter(Boolean).map(en => en.toLowerCase()));
+  const support = tokens.map((t, i) => ({ t, i })).filter(x => x.i !== targetIdx && requires.has(x.t.toLowerCase()));
+  const blankIdxs = [targetIdx, ...(support.length ? [shuffle(support)[0].i] : [])].sort((a, b) => a - b);
+  const shown = tokens.map((t, i) => blankIdxs.includes(i)
+    ? `<input class="clozeinp" data-i="${i}" size="${Math.max(2, t.length)}" style="--chars:${Math.max(3, t.length)}" autocomplete="off" autocapitalize="off" placeholder="＿">`
+    : `<span>${t}</span>`).join(' ') + (/[.?!]$/.test(full) ? full.match(/[.?!]$/)[0] : '');
+  return { patternId: pat.id, answers: blankIdxs.map(i => tokens[i]), zh: filledZh(pat.zh), shown, full };
+}
+
+function canSentenceCloze(w) {
+  return !!sentenceClozeForWord(w);
+}
+
+function askSentenceCloze(w) {
+  const q = sentenceClozeForWord(w);
+  if (!q) return askType(w);
+  shell('看句子,補完整英文', `
+    <div class="buildzh">${q.zh}</div>
+    <div class="sentence-cloze-line">${q.shown}</div>
+    <button class="btn act" id="submit">送出</button>
+    <div class="letters" id="letters"></div>`);
+  const inputs = [...document.querySelectorAll('.clozeinp')];
+  if (inputs[0]) inputs[0].focus();
+  const clean = s => (s || '').normalize('NFKC').trim().toLowerCase();
+  const go = () => {
+    if (!inputs.length || inputs[0].disabled) return;
+    const right = inputs.every((inp, i) => clean(inp.value) === clean(q.answers[i]));
+    inputs.forEach((inp, i) => {
+      const ok = clean(inp.value) === clean(q.answers[i]);
+      inp.disabled = true;
+      inp.classList.add(ok ? 'right' : 'wrong');
+    });
+    if (!right) $('letters').textContent = `正解: ${q.full}`;
+    $('submit').disabled = true;
+    bumpPat(q.patternId, right ? 20 : -15);
+    finish(right, w);
+  };
+  $('submit').onclick = go;
+  inputs.forEach(inp => inp.onkeydown = e => { if (e.key === 'Enter') go(); });
+}

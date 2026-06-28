@@ -1,0 +1,45 @@
+  @media (max-width: 720px) {
+    .card { padding:18px 18px 0; }
+    #screen.lesson-screen { --action-bar-h:186px; --action-gap:28px; }
+    .lesson { gap:14px; padding:16px 0 calc(var(--action-bar-h) + var(--action-gap)); }
+    #screen .act, #screen .sideact { left:18px; right:18px; width:auto; }
+    #screen .act { bottom:24px; }
+    #screen .sideact { bottom:102px; }
+    .prompt { text-align:center; font-size:30px; }
+    #screen.lesson-screen > .why { height:var(--action-bar-h); padding:14px 18px; flex-direction:column; align-items:stretch; justify-content:center; gap:10px; }
+    #screen.lesson-screen > .why .result-head { max-width:none; width:100%; }
+    #screen.lesson-screen > .why .act { width:100%; min-width:0; min-height:52px; margin:0; }
+    .result-head { gap:9px; }
+    .result-mark { width:30px; height:30px; font-size:20px; }
+    .result-word { font-size:18px; }
+    .result-copy { font-size:14px; -webkit-line-clamp:2; }
+    .why .replay { padding:7px 12px; font-size:15px; }
+    .lesson-answer.choice-answer, .match-answer { padding-top:0; }
+    .choice-answer .opts { grid-template-columns:1fr; gap:8px; }
+    .choice-answer .bigzh { font-size:34px; margin-bottom:12px; }
+    .choice-answer .opt { min-height:54px; font-size:20px; padding:12px 14px; }
+    .match-grid { gap:8px; }
+    .match-grid .opt { min-height:50px; font-size:18px; padding:10px 12px; }
+    .boss-layout { gap:14px; padding:4px 0 24px; }
+    .boss-clue { min-height:74px; }
+    .boss-answer .btn { min-height:54px; }
+    .boss-options .opt { min-height:50px; font-size:19px; }
+    .lesson.teach-lesson { gap:16px; }
+    .lesson-answer.teach-answer { padding-top:0; }
+    .teach-layout { grid-template-columns:1fr; grid-template-rows:auto auto auto; grid-template-areas:"word" "tools" "why"; align-content:center; gap:12px; }
+    .teach-tools { flex-direction:row; justify-content:center; }
+    .teach-tools .replay { width:auto; min-width:130px; }
+    .teach-word { font-size:50px; }
+    .teach-syllables { font-size:38px; margin-top:8px; }
+    .teach-why { min-height:96px; font-size:16px; line-height:1.55; padding:16px; }
+    .skipchoices { grid-template-columns:1fr; }
+  }
+  @media (max-height: 760px) and (min-width: 721px) {
+    .lesson-answer.teach-answer { padding-top:0; }
+    .teach-layout { gap:10px 24px; }
+    .teach-word { font-size:58px; }
+    .teach-syllables { font-size:42px; margin:6px 0 2px; }
+    .teach-zh { margin-top:8px; font-size:20px; }
+    .teach-why { min-height:78px; padding:14px 16px; font-size:16px; line-height:1.45; }
+    .teach-tools .replay { padding:12px 16px; font-size:18px; }
+  }

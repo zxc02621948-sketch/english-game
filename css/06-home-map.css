@@ -1,0 +1,22 @@
+  /* 主畫面外殼:左分類 / 中圓形地圖 / 右上金幣 */
+  .wrap { width:min(1040px,94vw); }
+  .topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:26px; }
+  .logo { font-size:26px; font-weight:700; }
+  .coin { display:flex; align-items:center; gap:8px; background:#1d2c3a; border:1px solid #2c3e52; border-radius:99px; padding:9px 20px; font-size:20px; color:#f0b86e; font-weight:700; }
+  .homebody { display:flex; gap:22px; align-items:stretch; }
+  .side { width:220px; flex-shrink:0; display:flex; flex-direction:column; gap:14px; }
+  .cat { background:#16202c; border:1px solid #243343; border-radius:16px; padding:18px; cursor:pointer; font-size:17px; transition:.12s; }
+  .cat:hover { border-color:#3a5170; }
+  .cat .cati { font-size:30px; margin-bottom:10px; }
+  .cat.active { background:#13324a; border-color:#2563eb; }
+  .cat .catcoin { font-size:14px; color:#f0b86e; margin-top:7px; }
+  .cat.ph { border-style:dashed; color:#5f7488; opacity:.55; cursor:default; }
+  .cat.ph:hover { border-color:#2c3e52; }
+  .map { flex:1; background:#13202e; border:1px solid #243343; border-radius:16px; padding:22px 14px; min-height:460px; }
+  .maptitle { font-size:15px; color:#6f8398; text-align:center; margin-bottom:14px; }
+  .mapscroll { height: min(60vh, 520px); overflow-y:auto; overflow-x:hidden; scrollbar-width:thin; scrollbar-color:#2c3e52 transparent; }
+  .mapboss { transition:.12s; }
+  .mapboss:hover { filter:brightness(1.18); }
+  .mapjump { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-bottom:12px; }
+  .mapjump button { background:#1d2c3a; border:1px solid #2c3e52; color:#9fb4c8; border-radius:99px; padding:6px 12px; cursor:pointer; font-size:13px; }
+  .mapjump button.cur { border-color:#5aa9ff; color:#cfe6ff; }
