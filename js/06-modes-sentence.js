@@ -110,11 +110,9 @@ function sentenceWithWord(w, sourceWords = sentenceSourceWords()) {
     patternRequirementsMet(p) &&
     (asList(p.requires).includes(w.id) || Object.values(p.slots).some(slot => wordMatchesSlot(w, slot)))
   ));
-  for (const p of pats) {
-    const s = buildSentenceFromPattern(p, sourceWords, w);
-    if (s && s.text.toLowerCase().split(/[^a-z]+/).filter(Boolean).includes(w.en.toLowerCase())) return s;
-  }
-  return null;
+  const cands = pats.map(p => buildSentenceFromPattern(p, sourceWords, w))
+    .filter(s => s && s.text.toLowerCase().split(/[^a-z]+/).filter(Boolean).includes(w.en.toLowerCase()));
+  return pickFresh(cands);   // 避開最近出過的句子
 }
 
 function askBuildSentence(sourceWords = sentenceSourceWords(), done = showDone, forced = null) {
@@ -124,6 +122,7 @@ function askBuildSentence(sourceWords = sentenceSourceWords(), done = showDone, 
     $('cont').onclick = done;
     return;
   }
+  rememberSentence(sentence.text);   // 記下這句 → 接下來幾題避開重複
   const target = sentence.text.replace(/[.?!]/g, '').split(/\s+/).filter(Boolean);
   const arrange = () => mountArrange({
     promptText: '看中文,排出英文',
@@ -184,13 +183,14 @@ function askBuildSentence(sourceWords = sentenceSourceWords(), done = showDone, 
 const TRANSFORM_PATTERN_IDS = ["pat_this_is_a_noun", "pat_this_is_my_noun", "pat_this_is_adj", "pat_i_am_adj"];
 function pickTransformSentence(sourceWords = sentenceSourceWords()) {
   const pats = PATTERNS.filter(p => TRANSFORM_PATTERN_IDS.includes(p.id) && p.q && patMastery(p.id) > 0);   // 直述句練過(patMastery>0)才轉換 → 有「我會這句、現在改問句」的對照
-  return shuffle(pats.map(p => buildSentenceFromPattern(p, sourceWords)).filter(Boolean))[0] || null;
+  return pickFresh(shuffle(pats.map(p => buildSentenceFromPattern(p, sourceWords)).filter(Boolean)));   // 避開最近出過的句子(I am 只有 happy,沒避開會一直重複)
 }
 function canTransform() { return !!pickTransformSentence(); }
 function askTransform(w, done) {
   const s = pickTransformSentence();
   const cont = done || (() => { onCorrect(w); updateBar(); nextQuestion(); });
   if (!s) return askBuildSentence(sentenceSourceWords(), cont);                       // 湊不出問句 → 退回一般排句
+  rememberSentence(s.text);   // 記下這句 → 接下來幾題避開重複(I am happy 連出三次就是這裡沒擋)
   const stmt = s.text.replace(/[.?!]/g, '').split(/\s+/).filter(Boolean);             // This is a cat / I am happy
   const qTok = s.question.replace(/[.?!]/g, '').split(/\s+/).filter(Boolean);         // Is this a cat / Am I happy
   const beVerb = stmt[1] || 'is';                                                     // 被提到句首的 be 動詞(is/am),aha 文案動態用

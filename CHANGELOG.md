@@ -726,3 +726,9 @@
 - CSS:.lesson-stage 由橫排改直排(對單一 prompt 視覺不變),讓「我要複習」鈕乾淨落在題目下方;新增 .reviewlink 樣式(細框 pill,非固定操作列)。
 - 驗(瀏覽器,DOM 狀態):補考直接出題型(非重看卡)+ 我要複習鈕在;點鈕→重看卡(cat+音節+字根+回去答題)、複習鈕消失;回去→補考+鈕回來;答對→消題到過關;node --check OK;零 console error。
 - ⚠ 版面幾何/截圖:此環境 preview 視窗回報 0×0 且截圖逾時,無法量按鈕座標——版面靠 CSS 直排堆疊判斷(低風險),請玩家在 8182 目視。
+
+### 本輪(Claude Opus): 防句子重複(一關連出三次 I am happy)
+- 使用者截圖:一關 4 題出現 3 次「I am happy → Am I happy?」。根因:句子隨機抽、沒擋最近出過的;且 I am 家族只有 happy 一個字,抽到 I-am 永遠是同一句。
+- 加防重複:recentSentences(記最近 3 句)+ pickFresh(優先沒最近出過的,真沒得選才回退)。pickBuildSentence / pickTransformSentence / sentenceWithWord 都套;askBuildSentence / askTransform 實際出句時 rememberSentence。
+- 驗(瀏覽器):連抽 10 轉換句 + 12 排句,最多連續 1 次、任意 3 句窗內無重複、各 9~10 種不同;I am happy 兩次出現間隔 ≥7;render 正常、零 console error。
+- 註:真正多樣性還是要靠擴句型/擴字(I am 只有 happy);這版先把「短時間內重複」擋掉。

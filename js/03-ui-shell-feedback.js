@@ -117,8 +117,12 @@ function sentenceSourceWords(baseWords = levelWords) {
   });
   return [...out.values()];
 }
+// 防句子重複:記最近出過的幾句,抽題時避開(治「一關 4 題出現 3 次 I am happy」)。I am 家族只有 happy → 沒避開就一直重複。
+let recentSentences = [];
+const rememberSentence = text => { if (text) recentSentences = [text, ...recentSentences.filter(t => t !== text)].slice(0, 3); };
+const pickFresh = list => list.find(s => !recentSentences.includes(s.text)) || list[0] || null;   // 優先沒最近出過的;真的只剩重複的才回退
 function pickBuildSentence(sourceWords = sentenceSourceWords()) {
-  return shuffle(buildSentencePatterns().map(p => buildSentenceFromPattern(p, sourceWords)).filter(Boolean))[0] || null;
+  return pickFresh(shuffle(buildSentencePatterns().map(p => buildSentenceFromPattern(p, sourceWords)).filter(Boolean)));
 }
 // 玩法層:容易混淆的近義 / 對照字 + 選錯時教的差別(不放進 BANK,跟 SPEECH_ALIASES 同層,避免單字資料變肥)
 const CONFUSE_PAIRS = {
