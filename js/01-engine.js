@@ -79,7 +79,7 @@ function buildLevel() {
   add(needsWrite);                     // 2. 還沒默寫成功過的字:打王前必須補到
   add(active.slice(0, ACTIVE_CAP));    // 3. 學習中(主力)
   add(due);                            // 4. 到期複習(填到 MAX)
-  if (picked.length < 4) add(shuffle(BANK.filter(w => isLearned(w) && w.pos !== 'function')));   // 5. 太少(後半鞏固期、沒新字也沒到期)→ 補學會的實詞回鍋,讓關卡有料 + 句子題有字可組
+  if (picked.length < 4 && !fresh.length) add(shuffle(BANK.filter(w => isLearned(w) && w.pos !== 'function')));   // 5. 太少且「沒有新字可學了」(純鞏固期)才補學會的字回鍋;還有新字沒學就專心出新字,別塞已會的湊數(治「只剩 1 個不會卻硬補一堆已會的」)
   if (!picked.length) add(fresh);      // 極早期保險:還是空 → 多給新字
   return shuffle(picked);
 }
@@ -183,7 +183,7 @@ function markWordKnown(w) {
   const c = rec(w), wasLearned = isLearned(w);
   c.taught = true; c.mastery = LEARNED; c.wrote = true;
   if (!wasLearned && !c.coined) { meta.coins++; c.coined = true; saveMeta(); }   // 第一次算會 → 給金幣(known 也是會)
-  c.ivl = 1; c.due = (meta.clock || 0) + 1;   // 排進 SRS,之後句子複習會帶到
+  c.ivl = 8; c.due = (meta.clock || 0) + 8;   // 你都說會了 → 停遠一點(別下一關馬上又抓回來複習);之後再用句子輕度抽查
   save();
   const k = wordKey(w);
   if (quota[k] != null) lgot[k] = quota[k];   // 本關這個字直接視為完成,不再考

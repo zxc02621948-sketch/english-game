@@ -750,3 +750,10 @@
 - stageReadyAt 改:該階字全部 isLearned(含跳過)→ 不必等 stageDeadlineLevel,直接可打王;部分會則仍要跑鞏固關。→「整階都按我會了就直接打王」。
 - 驗(瀏覽器):教卡有鈕、點了字變 learned+wrote+消題+金幣;stage1 全標會 → stageReadyAt(1)=true(deadline=5 也放行)、部分會=false;showDone 全標會 → bossReady + 出挑戰王鈕;node --check OK;零 console error。
 - 設計討論:確認「自由選字」會打斷依賴鏈不做;「跳過已會」相容。受眾定位=通用。
+
+### 本輪(Claude Opus): 修「跳過已會 → 關卡混亂」
+- 使用者點破:整批字大多按「我會了」、只剩 1 個不會時,關卡會混亂——① 剛標會的字下一關又被抓回複習;② 只剩 1 個不會,buildLevel 還硬補已會的字湊到 4 個。
+- markWordKnown:跳過字的 SRS due 從 clock+1 改成 ivl=8/due=clock+8(停遠,不下一關馬上複習;之後句子輕度抽查)。
+- buildLevel:「picked<4 補學會的字湊數」加 `&& !fresh.length` 守衛 → 還有沒學的新字就專心出新字,純鞏固期(無 fresh)才補。
+- 效果:「5 字只剩 1 個不會」→ buildLevel 只出那 1 個 → 學完(+整階已會)直接打王,不混亂。
+- 驗(瀏覽器):標 4 會留 cat → buildLevel=[cat](不補已會);純複習期(全會無 fresh)→ 仍補滿不空;跳過字 due=clock+8(停遠);node --check OK;零 console error。
