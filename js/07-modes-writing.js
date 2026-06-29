@@ -68,7 +68,7 @@ function askSylType(w) {
     const c = rec(w); c.sylMiss = c.sylMiss || {};
     wrong.forEach(i => c.sylMiss[i] = (c.sylMiss[i] || 0) + 1);     // 記逐節錯誤
     save();
-    $('submit').style.display = 'none';
+    clearBottomActions();   // 收掉送出 + 特訓學會鈕,別跟結算列重疊
     const allOk = !wrong.length;
     const hi = wrong.map(i => syls[i].toLowerCase()).find(s => SYL_HINT[s]);   // 常錯節有記憶法就上
     const why = $('why'); why.className = allOk ? 'why' : 'why bad';

@@ -201,6 +201,7 @@ function markSpeak(ok) { const el = $('bigen'); if (el) { el.classList.remove('o
 // 說題結算:一律示範一次正確念法 + 🔊 可重聽;對 → 前進,連錯 3 次 → 丟後面補考
 function speakResult(w, ok) {
   ok ? sfx.correct() : sfx.wrong();
+  clearBottomActions();   // 收掉特訓「我學會了」鈕,別跟結算列重疊
   const be = $('bigen');
   if (be && be.textContent.includes('＿')) be.innerHTML = sylOf(w).map(s => `<span class="syl">${s}</span>`).join('<span class="sep">·</span>');  // 盲聽:結算時揭曉(用音節分塊)
   speak(w.en);
@@ -216,6 +217,7 @@ function speakResult(w, ok) {
 }
 // 辨識抓不到時的自評:Web Speech 對單字辨識本來就不準,別硬判失敗 → 讓使用者自己確認,過了不扣分
 function offerSelfAssess(w) {
+  clearBottomActions();   // 收掉特訓「我學會了」鈕,別跟自評列重疊
   if ($('mic')) $('mic').style.display = 'none';
   ['demo', 'skipspeak'].forEach(id => { const el = $(id); if (el) (el.closest('.speakrow') || el.closest('.skipline') || el).style.display = 'none'; });  // 收掉題目原本的「聽示範」+「跳過」,別跟自評的「再聽正解」重複
   { const sc = $('skipchoices'); if (sc) sc.style.display = 'none'; }

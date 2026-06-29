@@ -817,3 +817,8 @@
 - askMatch:5 組 → 4 組(others.slice(0,3)、不足門檻 <3),固定版面放得下(一般關卡的配對題也一起修好短螢幕切字)。
 - injectTrainKnown:從頂部 .reviewlink pill 改成左下 .sideact 大鈕(跟教卡 iknow/patknow 一致、顯眼),接到 #screen(fixed);說題左下已有 skipspeak → train-known 疊到它上方(bottom 110px)不重疊。
 - 驗(瀏覽器):配對 4 組;train-known 是 .sideact、parent=screen、不在 stage;說題時 bottom=calc(110px) 疊高;點擊→移除+標會+下一題;node --check OK;零 console error。
+
+### 本輪(Claude Opus): 修特訓「我學會了」鈕疊在結算列上
+- 使用者:答完題後底部結算列(.why)出現,特訓「我學會了」鈕沒收掉、疊在上面。點破:現成就有「答完收掉送出鈕」的機制,該套同一個。
+- 抽 clearBottomActions()(收掉 submit/trainknown/skipspeak),finish 改用它;finishGroupSuccess / speakResult / offerSelfAssess / askSylType 結算也呼叫 → 所有結算路徑統一收掉底部動作鈕。
+- 驗(瀏覽器):選擇題(finish)、配對題(finishGroupSuccess)答完後 trainknown 收掉、.why 正常顯示不重疊;node --check OK;零 console error。

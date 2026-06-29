@@ -155,9 +155,13 @@ function wrongHint(w, picked) {
   return `${pickedLine}再聽一次,下一輪補考。`;
 }
 
+// 答完收掉「釘在底部固定區、會跟結算列(.why)重疊」的動作鈕:送出 + 特訓「我學會了」。所有結算路徑共用。
+function clearBottomActions() {
+  ['submit', 'trainknown', 'skipspeak'].forEach(id => { const el = $(id); if (el) el.style.display = 'none'; });
+}
 // 答完的共用結算:對 → 加分前進;錯 → 給字根 + 繼續
 function finish(right, w, picked = null) {
-  { const sb = $('submit'); if (sb) sb.style.display = 'none'; }   // 答完收掉送出鈕(它釘在底部固定區,別跟結算列重疊)
+  clearBottomActions();   // 收掉送出 / 特訓學會鈕,別跟底部結算列重疊
   const why = $('why');
   if (right) {
     sfx.correct();
@@ -195,6 +199,7 @@ function finish(right, w, picked = null) {
 }
 function finishGroupSuccess(title, copy, onContinue) {
   sfx.correct();
+  clearBottomActions();   // 收掉特訓學會鈕等,別跟結算列重疊
   const why = $('why');
   why.className = 'why';
   why.innerHTML = `<div class="result-head compact">
