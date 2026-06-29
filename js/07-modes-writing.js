@@ -33,7 +33,7 @@ function askSylFill(w) {
 // 音節克漏字(寫階,長字友善):顯示音節、遮 1~2 節讓你「打」出來(不是選)。逐節對錯 → 記哪節常錯(sylMiss),之後多遮那節;最難的節有記憶法提示。
 function askSylType(w) {
   const syls = sylOf(w);
-  if (syls.length < 2) return askType(w);                          // 單音節沒得遮 → 整字聽寫
+  if (syls.length < 3) return askType(w);                          // 只長字(3+ 音節)才分段練;短字直接整字聽寫(治 happy 被拆 hap·py 的混亂)
   const miss = rec(w).sylMiss || {};
   const nBlank = syls.length >= 4 && Math.random() < 0.5 ? 2 : 1;  // 4+ 音節有時遮 2 節
   const wt = i => 1 + (miss[i] || 0) * 2;                          // 常錯的節權重高 → 多練那裡
@@ -58,8 +58,10 @@ function askSylType(w) {
   const go = () => {
     if (!inputs.length || inputs[0].disabled) return;
     const wrong = [];
+    const clean = s => (s || '').normalize('NFKC').replace(/[^a-z]/gi, '').toLowerCase();   // 去空白/全形/非字母再比
     inputs.forEach(inp => {
-      const i = +inp.dataset.i, ok = inp.value.trim().toLowerCase() === syls[i].toLowerCase();
+      const i = +inp.dataset.i, typed = clean(inp.value);
+      const ok = typed === clean(syls[i]) || (inputs.length === 1 && typed === clean(w.en));  // 打對那一節算對;只挖 1 節時「直接打整個字」也算對(治「打 happy 卻說錯」)
       inp.disabled = true; inp.classList.add(ok ? 'right' : 'wrong');
       if (!ok) { inp.value = syls[i]; wrong.push(i); }              // 錯 → 填回正解
     });
@@ -95,7 +97,7 @@ function askSylType(w) {
 }
 // 寫階 dispatcher:長字第 1 次 → 音節填空(鷹架);之後 / 短字 → 整字聽寫 / 默寫
 function askWrite(w) {
-  if ((rec(w).mastery || 0) < 84 && sylOf(w).length >= 2) return askSylFill(w);   // 寫階低 % → 音節填空鷹架;高 % → 整字聽寫 / 默寫 / 看圖寫
+  if ((rec(w).mastery || 0) < 84 && sylOf(w).length >= 3) return askSylFill(w);   // 寫階低 % + 長字(3+ 音節)→ 音節填空鷹架;短字 / 高 % → 整字聽寫 / 默寫 / 看圖寫
   const pool = visualOf(w) ? [askType, askFlashType, askPicType] : [askType, askFlashType];
   return pool[Math.floor(Math.random() * pool.length)](w);
 }

@@ -10,8 +10,8 @@ const FORMATS = [
   { id:'speak_direct', lv:3, skill:'speak',  ok:() => true,                          run: w => sp(w,'direct') }, // 直接說
   { id:'speak_blind',  lv:3, skill:'speak',  ok:() => true,                          run: w => sp(w,'blind') },  // 盲聽說
   { id:'speak_pic',    lv:3, skill:'speak',  ok: w => !!visualOf(w),                 run: w => sp(w,'pic') },    // 看圖說
-  { id:'sylfill',      lv:4, skill:'write',  ok: w => sylOf(w).length >= 2,          run: askSylFill },          // 音節填空(選擇版)
-  { id:'syltype',      lv:4, skill:'write',  ok: w => sylOf(w).length >= 2,          run: askSylType },          // 音節克漏字(打字版,長字寫階友善)
+  { id:'sylfill',      lv:4, skill:'write',  ok: w => sylOf(w).length >= 3,          run: askSylFill },          // 音節填空(選擇版)— 只給 3+ 音節的長字(短字如 happy 拆音節反而混亂)
+  { id:'syltype',      lv:4, skill:'write',  ok: w => sylOf(w).length >= 3,          run: askSylType },          // 音節克漏字(打字版)— 同上,只長字才分段
   { id:'type',         lv:4, skill:'write',  ok: w => w.en.length > 1,               run: askType },             // 聽寫(單字母不練寫)
   { id:'pictype',      lv:4, skill:'write',  ok: w => !!visualOf(w),                 run: askPicType },          // 看圖寫
   { id:'flashtype',    lv:5, skill:'write',  ok: w => w.en.length > 1,               run: askFlashType },        // 默寫(單字母不練寫)

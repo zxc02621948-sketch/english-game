@@ -772,3 +772,9 @@
 - askReadPick / askListenPick / askListenWord / askPicture / askClozePick 全改用 mountChoices(原本各自 el.onclick=pickAnswer 點了就判)。
 - CSS:加 #screen .act:disabled 灰掉樣式。Boss 四選一不改(戰鬥保持秒判);配對題 askMatch 不改。
 - 驗(瀏覽器):初始確認鈕 disabled;點錯選項只選定不判分;改選 sel 會移動;按確認才判(標對+鎖定+收確認鈕+出結算+繼續);5 種選擇題都有確認鈕;node --check OK;零 console error。
+
+### 本輪(Claude Opus): 修音節克漏字「答對判錯」+ 短字不再拆音節
+- 使用者:happy 打對卻判錯;女友覺得音節中間的「·」很奇怪。根因:① 答錯會把輸入覆寫成正解(看到的紅字是正解不是你打的),最可能是打了整個字「happy」但只挖「hap」一節→不符;② 2 音節短字(happy)被拆成 hap·py 出音節題,既confusing又出現那個點。
+- askSylType 比對:加 NFKC+去非字母正規化;只挖 1 節時「打整個字」也算對(treat full word 等同)。→ 打 happy 不再被判錯。
+- 門檻 2→3:sylfill/syltype 的 FORMATS ok、askWrite dispatcher、askSylType 內部都改成「3+ 音節」才分段。短字(happy/water/project/hungry/thirsty 等 2 音節)走整字拼寫,不再出現音節「·」。只 beautiful(3)/experience(4) 等長字才分段練。
+- 驗(瀏覽器):happy 打整個字→判對、打錯→判錯;happy/hungry 的 sylfill/syltype ok=false、beautiful/experience=true;node --check OK;零 console error。
