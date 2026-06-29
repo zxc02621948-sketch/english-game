@@ -89,7 +89,7 @@ function startTraining(words) {
 function trainNext() {
   if (!trainPool.length) return trainingDone();
   const w = shuffle(trainPool)[0];
-  current = w; currentRung = 1;
+  current = w; currentRung = 1; inReview = false;   // 特訓不是補考 → 答對正常加熟練度
   trainAsk(w);
 }
 // 特訓出題:該字適用的「聽說讀寫」題型混出(忽略關卡 lv、排除句子題=特訓練單字),避開連續同題型。

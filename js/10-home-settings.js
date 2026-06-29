@@ -113,11 +113,11 @@ function showTrainPicker() {
   inTraining = false;
   homeEl.hidden = true; screen.hidden = false;
   screen.className = 'card'; screen.innerHTML = '';
-  const words = BANK.filter(w => w.pos !== 'function' && wordIsTaught(w)).sort((a, b) => pOf(a) - pOf(b));   // 教過的實詞,弱的排前面
+  const words = BANK.filter(w => w.pos !== 'function' && wordIsTaught(w) && !isLearned(w)).sort((a, b) => pOf(a) - pOf(b));   // 教過、還沒滿 100% 的實詞(滿了不用特訓),弱的排前面
   if (!words.length) {
     screen.innerHTML = `<main class="start-panel"><div style="text-align:center;font-size:40px">🎯</div>
-      <h2 style="text-align:center">還沒有可特訓的字</h2>
-      <div class="sub" style="text-align:center">先去「練習單字」學幾個字,再回來加強。</div>
+      <h2 style="text-align:center">目前沒有需要加強的字</h2>
+      <div class="sub" style="text-align:center">教過的字都已經 100% 了 —— 去「練習單字」學新字,弱掉的字之後也會出現在這。</div>
       <button class="btn" id="tback" style="margin-top:14px">← 回主畫面</button></main>`;
     $('tback').onclick = showHome; return;
   }

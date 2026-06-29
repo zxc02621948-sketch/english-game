@@ -55,7 +55,7 @@
 
 ## 核心原理(現況 2026-06-27 — 詳見 DESIGN_MASTERY.md)
 舊「計次」已全換掉。現在六根支柱:
-1. **連續熟練度 %**:每字 `store[id] = { taught, mastery 0~100, coined, due, ivl }`(localStorage `eng_progress_v2`,key=`w.id`)。**答對 +25 / 答錯 −20 / 100% = 學會**;教不加不扣。`rec()` 自癒舊資料。
+1. **連續熟練度 %**:每字 `store[id] = { taught, mastery 0~100, coined, due, ivl }`(localStorage `eng_progress_v2`,key=`w.id`)。**答對 +25 / 答錯 −20 / 100% = 學會**;教不加不扣。**★ 補考(`inReview`)答對只消題、不補 %、不算 `wrote`**(剛看過答案的重答不算真的會)→ 要**下次主回合真的一次過**才補(`onCorrect` 的加 % 那段 `else if (!inReview)`)。`rec()` 自癒舊資料。
 2. **答錯補考(同題型)**:答錯 → `reviewQueue`(存 `{w, run}` 連題型一起記);主回合跑完進「補考回合」。**`reviewThenAsk`**:**連續答錯 `reviewMiss[k]` < 2(第一次錯)→ 直接補考**(同一種題型,錯默寫補默寫),畫面下方留「📖 我要複習」**可選**鈕(`injectReviewButton`)——手滑打錯的人直接重答即可;**連錯 ≥2 次(真的卡住)→ 強制先走重看卡 `showReviewCard`(字+音節+🔊念+字根)再考**。`reviewMiss`:`onWrong`+1、`onCorrect`歸零、`startLevel`清空。答對才消、又錯再補考,**永不卡死**。
 3. **出哪種題 = 關卡解鎖 × 熟練度頻率**:`FORMATS` 每格標 `lv`(第幾關解鎖,**向下取累加**)。一關題型池 = `lv ≤ 當前關`。熟練度當**頻率權重**(靠近該字當前難度的題型抽中機率高,難的不消失只變少)。**功能詞封認**(`tier ≤ maxRungOf`)。**★ 難度跟該字 `tierOfMastery` 爬,別跳級**:`ask` 裡 ① **`!wrote` 強制補寫只在該字已到寫階(target≥3)**才生效(別一教完就逼默寫);② **句子題權重也吃 target**:認階(剛學)句子題壓低(`sentence_build` 7、`sentence_cloze` 0)、說階才主打排句(40)、寫階才出句子默寫(`sentence_cloze` 18)。→ 新字走 認/聽/說 → 排詞 → 默寫,不會剛學就被丟句子默寫。
 4. **出哪個字 = 浮動 `buildLevel`(沒固定 5)**:**學習中 `active`(cap 5)為主力** + 新字(`NEW`)+ 少量補默寫/到期複習。★ **新字會節流**:`NEW = active.length >= 3 ? 0 : 2` —— **在學的字 ≥3 就先不引新字**,把在學的練到會再解鎖(治「一直冒新字、堆一堆沒練到的、認識/學習量失衡」)。補默寫 `needsWrite` 跟到期複習 `due` 各只穿插 ≤2(舊字主要靠句子複習帶,別灌一堆已會的淹掉學習);`MAX=8`。純鞏固期(沒新字)才用學會的字補滿。
@@ -100,7 +100,7 @@
 
 ## 主畫面 / 設定 / 音樂
 - **`showHome`**:左分類(練習單字 / **🎯 單字特訓** / 衍生🔒 / 小遊戲 backlog)+ **地圖鏡頭**(固定視窗、進場置中目前關、滑鼠/觸控捲動、王快捷)+ ⚙ / 🎵 / 🔄 / 🪙。
-- **🎯 單字特訓**(自選刷,治「補考硬過又忘、想自己加強」):`showTrainPicker`(js/10)選教過的實詞(弱的排前面)→ `startTraining` → `trainNext`/`trainAsk`(js/08)聽說讀寫**混合**出題(忽略關卡 lv、排除句子題)、每題塞「✓ 我學會了」鈕(`injectTrainKnown` → `markWordKnown` + 移出 `trainPool`)。`inTraining` 旗標:`nextQuestion`→`trainNext`、`onCorrect`/`onWrong` 只加熟練度/金幣/SRS、**不碰主回合 quota/reviewQueue**。答對字留著繼續練、`我學會了`才移除、清空→`trainingDone`。`showHome` 進場一律 `inTraining=false`。
+- **🎯 單字特訓**(自選刷,治「補考硬過又忘、想自己加強」):`showTrainPicker`(js/10)選**教過、還沒滿 100%**的實詞(弱的排前面、顯示熟練度%;滿了的不列)→ `startTraining` → `trainNext`/`trainAsk`(js/08)聽說讀寫**混合**出題(忽略關卡 lv、排除句子題)、每題塞「✓ 我學會了」鈕(`injectTrainKnown` → `markWordKnown` + 移出 `trainPool`)。`inTraining` 旗標:`nextQuestion`→`trainNext`、`onCorrect`/`onWrong` 只加熟練度/金幣/SRS、**不碰主回合 quota/reviewQueue**。答對字留著繼續練、`我學會了`才移除、清空→`trainingDone`。`showHome` 進場一律 `inTraining=false`。
 - **洗牌**:`shuffle` 是 Fisher-Yates(舊的 `sort(()=>random)` 有偏差、短陣列常洗回原序);`mountArrange` 還會「洗出來剛好是正解順序就重洗」→ 排詞卡不會直接給正解。
 - **`showSettings`**:聽說讀寫技能開關 + BGM 清單。
 - `sfx`(合成音效)、`bgm`(`BGM_TRACKS` 5 + `BOSS_TRACKS` 3,音量 10%,臨死加速)。

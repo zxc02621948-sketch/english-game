@@ -805,3 +805,9 @@
 - 新功能 單字特訓:showHome 加「🎯 單字特訓」分類 → showTrainPicker(選教過的實詞,弱的排前、顯示熟練度%)→ startTraining/trainNext/trainAsk(聽說讀寫混合、忽略 lv、排除句子題、避免連續同題型)→ 每題 injectTrainKnown「✓ 我學會了」鈕(markWordKnown + 移出 trainPool)。
 - inTraining 旗標:nextQuestion→trainNext;onCorrect/onWrong 只加熟練度/金幣/SRS,不碰主回合 quota/reviewQueue;showHome 進場重置。答對字留著繼續練、清空→trainingDone。
 - 驗(瀏覽器):選字頁列教過字/選取啟用開始鈕;訓練出題+學會鈕、答對留池+熟練度升、點學會移除+標會、清空→完成頁;node --check 4 檔 OK;零 console error。
+
+### 本輪(Claude Opus): 補考答對不補熟練度 + 特訓只列沒滿100%的字
+- 使用者:① 特訓選字頁只顯示沒 100% 的字;② 答錯後補考(剛看過答案)硬過不該把熟練度補回,要下次主回合真的一次過才補。
+- onCorrect:加熟練度/wrote 那段改 else if (!inReview) → 補考(inReview)答對只消題、不加 %、不算 wrote;主回合(inReview=false)才加。trainNext 設 inReview=false(特訓不是補考,答對正常加分)。
+- showTrainPicker:濾掉 isLearned(100%)的字,只列 <100% 的;全滿時換訊息「目前沒有需要加強的字」。
+- 驗(瀏覽器):補考答對 mastery 留 40、主回合答對 40→65、補考默寫 wrote=false;選字頁濾掉 100% 的 cat、特訓答對仍加分(40→65);node --check OK;零 console error。

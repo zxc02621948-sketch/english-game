@@ -150,7 +150,7 @@ function startLevel() {
 function onCorrect(w) {
   const wasLearned = isLearned(w);
   if (currentRung === 0) rec(w).taught = true;   // 教:只記「教過了」,不加 %
-  else {
+  else if (!inReview) {                          // ★ 補考(剛看過答案的重答)答對「不補熟練度、不算 wrote」→ 要下次主回合真的一次過才補(治「答錯→補考硬過→分數補回但其實沒會」)
     const c = rec(w);
     c.mastery = Math.min(LEARNED, (c.mastery || 0) + MASTERY_OK);   // 認/說/寫答對 → 熟練度 +MASTERY_OK
     if (currentSkill === 'write') c.wrote = true;                  // 王考默寫前,至少要真的寫對過一次
