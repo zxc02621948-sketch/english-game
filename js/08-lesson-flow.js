@@ -80,6 +80,52 @@ function ask(w) {
   f.run(w);
 }
 
+/* ---- 🎯 單字特訓:自選字、聽說讀寫混合、各題可「我學會了」移除(玩法層) ---- */
+function startTraining(words) {
+  inTraining = true; trainPool = words.slice();
+  homeEl.hidden = true; screen.hidden = false;
+  trainNext();
+}
+function trainNext() {
+  if (!trainPool.length) return trainingDone();
+  const w = shuffle(trainPool)[0];
+  current = w; currentRung = 1;
+  trainAsk(w);
+}
+// 特訓出題:該字適用的「聽說讀寫」題型混出(忽略關卡 lv、排除句子題=特訓練單字),避開連續同題型。
+function trainAsk(w) {
+  const k = wordKey(w);
+  let pool = FORMATS.filter(f => !/^sentence/.test(f.id) && skillOn(f.skill) && f.ok(w) && (f.tier || (f.skill === 'write' ? 3 : f.skill === 'speak' ? 2 : 1)) <= maxRungOf(w));
+  if (!pool.length) pool = [READPICK];
+  if (pool.length > 1) { const alt = pool.filter(f => f.run !== lastFormat); if (alt.length) pool = alt; }
+  const f = shuffle(pool)[0];
+  currentSkill = f.skill; lastAsked[k] = f.run; lastAskedSkill[k] = f.skill; lastFormat = f.run;
+  f.run(w);
+  injectTrainKnown(w);
+}
+// 每題塞「✓ 這個我學會了」鈕 → markWordKnown + 移出特訓題庫 + 下一題
+function injectTrainKnown(w) {
+  const host = document.querySelector('.lesson-stage');
+  if (!host || document.getElementById('trainknown')) return;
+  const b = document.createElement('button');
+  b.id = 'trainknown'; b.className = 'reviewlink';
+  b.textContent = '✓ 這個我學會了,移除';
+  b.onclick = () => { markWordKnown(w); trainPool = trainPool.filter(x => x.id !== w.id); trainNext(); };
+  host.appendChild(b);
+}
+function trainingDone() {
+  inTraining = false; trainPool = [];
+  screen.classList.remove('lesson-screen', 'boss-screen', 'start-screen');
+  screen.classList.add('done-screen');
+  screen.innerHTML = `<main class="done-panel"><div style="text-align:center;font-size:40px">🎯</div>
+    <h2 style="text-align:center">特訓完成!</h2>
+    <div class="sub" style="text-align:center">選的字都練過 / 標會了。</div>
+    <button class="btn" id="tdmore" style="margin-top:14px">再選一批特訓 →</button>
+    <button class="btn" id="tdhome" style="margin-top:10px;background:#1d2c3a;border-color:#2c3e52">← 回主畫面</button></main>`;
+  $('tdmore').onclick = showTrainPicker;
+  $('tdhome').onclick = showHome;
+}
+
 /* ---- 關卡面板 / 過關畫面(玩法層,之後可換成華麗地圖) ---- */
 function levelProgressHTML() {
   return levelWords.map(w => `<div class="wordrow"><div class="en">${w.en}</div>

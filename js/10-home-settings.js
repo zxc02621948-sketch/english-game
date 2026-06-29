@@ -36,6 +36,7 @@ function mapSVG() {
   return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto"><path d="${path}" fill="none" stroke="#2c3e52" stroke-width="4" stroke-dasharray="2 13" stroke-linecap="round"/>${bossLines}${circles}${bossNodes}</svg>`;
 }
 function showHome() {
+  inTraining = false;                    // 從任何地方回主畫面都結束特訓
   normalizeBossGate();
   screen.classList.remove('lesson-screen', 'boss-screen', 'done-screen', 'start-screen');
   screen.hidden = true; homeEl.hidden = false;
@@ -54,6 +55,7 @@ function showHome() {
     <div class="homebody">
       <div class="side">
         <div class="cat active" id="catPractice"><div class="cati">📚</div>練習單字</div>
+        <div class="cat" id="catTrain"><div class="cati">🎯</div>單字特訓<div class="catcoin">自選字加強</div></div>
         <div class="cat" id="catDeriv"><div class="cati">🔒</div>衍生<div class="catcoin">需 30 🪙</div></div>
         <div class="cat ph"><div class="cati">⋯</div>之後</div>
       </div>
@@ -75,6 +77,7 @@ function showHome() {
     }
   };
   document.getElementById('catPractice').onclick = () => enterLevel(meta.maxLevel);
+  document.getElementById('catTrain').onclick = showTrainPicker;
   document.getElementById('catDeriv').onclick = () => { homeEl.querySelector('#catDeriv .catcoin').textContent = '金幣不夠,之後開放'; };
   homeEl.querySelectorAll('.mapnode').forEach(c => { const lv = +c.dataset.lv; if (lv <= meta.maxLevel) c.onclick = () => enterLevel(lv); });
   homeEl.querySelectorAll('.mapboss').forEach(c => {
@@ -104,6 +107,45 @@ function showHome() {
 function enterLevel(lv) {
   level = lv; homeEl.hidden = true; screen.hidden = false;
   showStart();
+}
+// 🎯 單字特訓:自選教過的字 → 各種聽說讀寫混合練 → 每題可「✓ 學會」把字移出特訓題庫(見 js/08 trainNext)。
+function showTrainPicker() {
+  inTraining = false;
+  homeEl.hidden = true; screen.hidden = false;
+  screen.className = 'card'; screen.innerHTML = '';
+  const words = BANK.filter(w => w.pos !== 'function' && wordIsTaught(w)).sort((a, b) => pOf(a) - pOf(b));   // 教過的實詞,弱的排前面
+  if (!words.length) {
+    screen.innerHTML = `<main class="start-panel"><div style="text-align:center;font-size:40px">🎯</div>
+      <h2 style="text-align:center">還沒有可特訓的字</h2>
+      <div class="sub" style="text-align:center">先去「練習單字」學幾個字,再回來加強。</div>
+      <button class="btn" id="tback" style="margin-top:14px">← 回主畫面</button></main>`;
+    $('tback').onclick = showHome; return;
+  }
+  const sel = new Set();
+  screen.innerHTML = `<main class="train-pick">
+    <div style="text-align:center;font-size:40px">🎯</div>
+    <h2 style="text-align:center">單字特訓</h2>
+    <div class="sub" style="text-align:center">挑想加強的字(弱的排前面)→ 聽說讀寫混合練 → 練到會了點「✓ 學會」移除。</div>
+    <div class="train-words" id="twords"></div>
+    <button class="btn train-start" id="tstart" disabled>先選幾個字</button>
+    <button class="btn" id="tback" style="margin-top:10px;background:#1d2c3a;border-color:#2c3e52">← 回主畫面</button>
+  </main>`;
+  const box = $('twords');
+  words.forEach(w => {
+    const el = document.createElement('button');
+    el.className = 'twordchip'; el.dataset.id = w.id;
+    el.innerHTML = `<b>${w.en}</b> <span class="tzh">${w.zh}</span> <span class="tpct">${pOf(w)}%</span>`;
+    el.onclick = () => {
+      if (sel.has(w)) { sel.delete(w); el.classList.remove('sel'); }
+      else { sel.add(w); el.classList.add('sel'); }
+      const n = sel.size;
+      $('tstart').disabled = !n;
+      $('tstart').textContent = n ? `開始特訓 ${n} 個字 →` : '先選幾個字';
+    };
+    box.appendChild(el);
+  });
+  $('tstart').onclick = () => { if (sel.size) startTraining([...sel]); };
+  $('tback').onclick = showHome;
 }
 function showSettings() {
   screen.classList.remove('lesson-screen', 'boss-screen', 'done-screen', 'start-screen');

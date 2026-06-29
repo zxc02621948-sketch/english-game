@@ -798,3 +798,10 @@
 - 修 buildLevel:① NEW 節流 = active.length>=3 ? 0 : 2(在學的字 ≥3 就先別引新字,把在學的練到會再解鎖);② active 提到主力優先;③ needsWrite/due 各只穿插 ≤2(舊字主要靠句子複習,別淹掉學習);④ MAX 10→8。
 - 效果(實測):4 個在學時→0 新 + 4 在學 + 2 舊(專心練在學的、不冒新);2 個在學時→2 新回來。新字隨「在學的練完」自然節流。
 - 驗:同情境模擬前後對比如上;node --check OK;零 console error。
+
+### 本輪(Claude Opus): 排詞洗牌修正 + 🎯 單字特訓自選關
+- 使用者:① 排詞卡常直接是正解順序;② 想要自選單字特訓關(背不起來的字自己加強,練到會了點移除)。
+- 洗牌:shuffle 換 Fisher-Yates(舊 sort(()=>random-0.5) 有偏差、短陣列常洗回原序,驗:首位分佈均勻);mountArrange 洗出來等於正解就重洗(驗:30/30 不再是正解序)。
+- 新功能 單字特訓:showHome 加「🎯 單字特訓」分類 → showTrainPicker(選教過的實詞,弱的排前、顯示熟練度%)→ startTraining/trainNext/trainAsk(聽說讀寫混合、忽略 lv、排除句子題、避免連續同題型)→ 每題 injectTrainKnown「✓ 我學會了」鈕(markWordKnown + 移出 trainPool)。
+- inTraining 旗標:nextQuestion→trainNext;onCorrect/onWrong 只加熟練度/金幣/SRS,不碰主回合 quota/reviewQueue;showHome 進場重置。答對字留著繼續練、清空→trainingDone。
+- 驗(瀏覽器):選字頁列教過字/選取啟用開始鈕;訓練出題+學會鈕、答對留池+熟練度升、點學會移除+標會、清空→完成頁;node --check 4 檔 OK;零 console error。

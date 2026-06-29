@@ -30,7 +30,7 @@ const rec = w => {
 // meta:金幣 + 解鎖到第幾關(跟字進度分開存)
 let meta = (() => { try { return JSON.parse(localStorage.getItem('eng_meta_v1')) || { coins:0, maxLevel:1 }; } catch { return { coins:0, maxLevel:1 }; } })();
 const saveMeta = () => localStorage.setItem('eng_meta_v1', JSON.stringify(meta));
-const shuffle = a => a.slice().sort(() => Math.random() - 0.5);
+const shuffle = a => { const r = a.slice(); for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; };   // Fisher-Yates(正規洗牌;舊的 sort(()=>random) 有偏差、短陣列常洗回原序)
 
 // 功能詞(is/a/my…)只要「認得」就好,不考開口說 / 默寫(虛詞念/寫不自然)→ 最高只到階 1;實詞到階 3。
 const maxRungOf = w => w.pos === 'function' ? 1 : 3;
@@ -136,6 +136,7 @@ let level = 1, levelWords = [], queue = [], current = null;
 let plan = null, currentRung = 0;
 let quota = {}, lgot = {}, reviewQueue = [], inReview = false;     // 這關每字「要答對幾次 / 已答對幾次」;reviewQueue = 答錯待回顧重答的題
 let reviewMiss = {};                                               // 每字「連續答錯次數」(答對歸零)→ 連錯 2 次補考強制走複習卡
+let inTraining = false, trainPool = [];                            // 🎯 單字特訓:自選字、聽說讀寫混合、各題可「我學會了」移除;不走主回合 quota/SRS 佇列(見 js/08 trainNext)
 function startLevel() {
   meta.clock = (meta.clock || 0) + 1; saveMeta();   // SRS 時鐘:每開一關 +1(見 DESIGN_MASTERY §6)
   plan = levelPlan(level);
@@ -161,6 +162,7 @@ function onCorrect(w) {
     c.ivl = wasLearned ? Math.min((c.ivl || 1) * 2, 30) : 1;  // 複習答對 → 間隔 ×2 封頂 30;剛學會 → 起始 1
     c.due = (meta.clock || 0) + c.ivl; save();
   }
+  if (inTraining) return;                                    // 🎯 特訓:熟練度 / 金幣 / SRS 照加,但不碰主回合 quota/queue
   const k = wordKey(w);
   reviewMiss[k] = 0;                                          // 答對 → 連錯次數歸零
   if (inReview) { lgot[k] = quota[k]; }                       // 回顧重答答對 → 這題清掉(本關視為完成)
@@ -179,6 +181,7 @@ function onWrong(w) {                              // 答錯 → 熟練度 −MA
     c.ivl = 1; c.due = (meta.clock || 0) + 1;     // SRS:答錯 → 間隔歸 1、很快再考(原為學會的話 mastery 掉破→變 active 也會優先回來)
     save();
   }
+  if (inTraining) return;                                      // 🎯 特訓:答錯只扣熟練度,不進 reviewQueue(它自己循環)
   reviewMiss[wordKey(w)] = (reviewMiss[wordKey(w)] || 0) + 1;   // 連續答錯 +1(補考時 ≥2 就強制走複習卡)
   reviewQueue.push({ w, run: lastAsked[wordKey(w)], skill: lastAskedSkill[wordKey(w)] });   // 連同剛剛的題型一起記 → 補考用「同一種題型」再考(錯默寫就補默寫,不是換簡單的)
 }
@@ -193,6 +196,7 @@ function markWordKnown(w) {
   if (quota[k] != null) lgot[k] = quota[k];   // 本關這個字直接視為完成,不再考
 }
 function nextQuestion() {
+  if (inTraining) return trainNext();                                                                         // 🎯 特訓:走自己的循環,不碰主回合 quota/review
   if (queue.length) { inReview = false; current = queue.shift(); return ask(current); }                       // 主回合
   if (reviewQueue.length) { inReview = true; const e = reviewQueue.shift(); current = e.w; return reviewThenAsk(e.w, e.run, e.skill); }   // 主回合跑完 → 回顧重答錯題(同題型)
   showDone();

@@ -99,7 +99,9 @@
 - **打贏 → `stage++`**;**打輸 → 惡補關**(`boss.missed` 的字 mastery−30 + due=now → 只練那些字 → 再挑戰)。
 
 ## 主畫面 / 設定 / 音樂
-- **`showHome`**:左分類(練習單字 / 衍生🔒 / 小遊戲 backlog)+ **地圖鏡頭**(固定視窗、進場置中目前關、滑鼠/觸控捲動、王快捷)+ ⚙ / 🎵 / 🔄 / 🪙。
+- **`showHome`**:左分類(練習單字 / **🎯 單字特訓** / 衍生🔒 / 小遊戲 backlog)+ **地圖鏡頭**(固定視窗、進場置中目前關、滑鼠/觸控捲動、王快捷)+ ⚙ / 🎵 / 🔄 / 🪙。
+- **🎯 單字特訓**(自選刷,治「補考硬過又忘、想自己加強」):`showTrainPicker`(js/10)選教過的實詞(弱的排前面)→ `startTraining` → `trainNext`/`trainAsk`(js/08)聽說讀寫**混合**出題(忽略關卡 lv、排除句子題)、每題塞「✓ 我學會了」鈕(`injectTrainKnown` → `markWordKnown` + 移出 `trainPool`)。`inTraining` 旗標:`nextQuestion`→`trainNext`、`onCorrect`/`onWrong` 只加熟練度/金幣/SRS、**不碰主回合 quota/reviewQueue**。答對字留著繼續練、`我學會了`才移除、清空→`trainingDone`。`showHome` 進場一律 `inTraining=false`。
+- **洗牌**:`shuffle` 是 Fisher-Yates(舊的 `sort(()=>random)` 有偏差、短陣列常洗回原序);`mountArrange` 還會「洗出來剛好是正解順序就重洗」→ 排詞卡不會直接給正解。
 - **`showSettings`**:聽說讀寫技能開關 + BGM 清單。
 - `sfx`(合成音效)、`bgm`(`BGM_TRACKS` 5 + `BOSS_TRACKS` 3,音量 10%,臨死加速)。
 

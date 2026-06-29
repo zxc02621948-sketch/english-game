@@ -20,7 +20,10 @@ function mountArrange({ promptText, zh, introHTML = '', cards, targetTokens, cas
     <div class="chunks sentence-bank" id="bank"></div>
     <div class="buildactions" id="bactions" style="grid-template-columns:1fr"><button class="btn act" id="check">確定</button></div>`);
   let slots = Array(cards.length).fill(null);
+  const _norm = t => caseInsensitive ? (t || '').toLowerCase() : t;
+  const _target = targetTokens.map(_norm).join(' ');
   let bank = shuffle(cards);
+  for (let _t = 0; _t < 12 && cards.length > 1 && bank.map(c => _norm(c.text)).join(' ') === _target; _t++) bank = shuffle(cards);   // 洗出來剛好是正解順序 → 重洗,別直接送正解給人排
   let draggingId = null;
 
   const cardById = id => cards.find(c => c.id === id);
