@@ -110,19 +110,20 @@
 - `BATCHES` 正式編了:**批1(實詞 cat/book/friend/happy/water)+ 批2(膠水 this/is/a/my/I/am)+ 批3「吃喝與感受」(hungry/thirsty/tired/sad + eat/drink + rice/bread/tea/milk)**;其餘字**每 5 個自動切批**接在後面(`batchOf = BATCHES.length + …`)→ 多王推進 `stage` 就陸續解鎖。**擴字庫時要正式編進 `BATCHES`(主題化)+ 擴 `PATTERNS`**,別讓字隨機亂分;動詞句的動詞放句型 `requires`、受詞放 slot(配 flag:visible/buyable/drinkable/readable/eatable)。先讀 `CONTENT_RULES.md`。
 - ⚠ **擴字後驗證注意**:瀏覽器會硬快取 `js/*.js`,改完 `location.reload()` 常跑到舊碼(看到 BANK 沒變多就是中了)→ 先 `fetch('js/00-content.js',{cache:'reload'})` 重抓再 reload,或重啟 preview。
 
-## 待辦(優先序;最新進度見 CHANGELOG 尾段 + CURRICULUM「進度」)
-0. ✅ **phase-aware 彈性階段 + 內容驅動王觸發**(已做,2026-06-27):後半鞏固自動發生(fresh=當前批,引完就空);王觸發改 `stageReady()`(當前批字練到會寫 ≥67)非強制。剩下兩個小的:
-1. **適應性**:音節克漏字某節連錯 N 次 → 退回該字一輪聽·看·選;擴 `SYL_HINT`(AI 生使用者審)。**這是當前主線。**
-2. **補圖**:幫更多字掛 `EMOJI`,抽象字沒圖就不出圖題(治「看圖題只有那幾個字」)。
- 3. **UI 細修**:固定分區已接上且 CSS 已拆檔(`css/01-lesson-shell.css` 到 `css/07-responsive.css`),下一步是逐題型實測間距與比例,尤其長字、多選項、句型拖曳、說題麥克風狀態。
-4. **擴字庫**(38 → 更多)+ 正式分批主題(`BATCHES`/`PATTERNS`)。先讀 `CONTENT_RULES.md`。
-5. **🎮 小遊戲區**(獨立、10 金幣解鎖,見 CURRICULUM)。衍生關(左欄佔位)。
-6. dead code 清理(`chooseRung`/`plan`/`levelPlan`/舊 `askWrite` dispatcher 可能沒用了)。
-- 玩家 🔄 重來實測整條弧(跨版本舊存檔會亂)。
+## 待辦(優先序;最新進度見 CHANGELOG 尾段)
+> 2026-06-29 這輪(逐筆見 CHANGELOG)主要修「遊玩手感 / 課程節奏 / UX」:退出鈕+答對也出面板、句子系統大擴(動詞句 see/buy/read/drink/eat、★轉換題 this is↔is this / I am↔Am I、防句子重複)、擴字批3「吃喝與感受」、「我已經會了」跳過(教卡+句型卡,整階全會直接打王)、選擇題改「點選定+確認才判」、★**難度跟 mastery 分級**(剛學不默寫句子)、補考強化(連錯2次強制複習、補考答對不補熟練度)、課程節奏節流(在學≥3 不引新字)、🎯 單字特訓自選關、音節題只長字、Fisher-Yates 洗牌。
+
+1. **★ 擴內容(最高槓桿,治後期重複的根)**:① orphan 動詞句型(look/listen→at/to、speak→語言、do/make→受詞、go/come→home…)要先加介係詞/受詞字;② 更多情緒形容詞(angry/scared…)讓 `I am ___` 更多變;③ 可數食物(apple→an)要另開冠詞句型;④ 之後的主題批 + 正式編 `BATCHES`/`PATTERNS`。**先讀 `CONTENT_RULES.md`**;動詞句=動詞放 `requires`、受詞放 slot(配 flag visible/buyable/drinkable/readable/eatable)。
+2. **補圖 `EMOJI`**:幫更多具體字掛圖(看圖題才有變化);抽象字沒圖就不出。注意同視覺守衛(`visualKey`,👀/👁️ 已歸一)。
+3. **音節題適應性**:某節連錯 N 次 → 退回該字一輪聽·看·選;擴 `SYL_HINT`。
+4. **🎮 小遊戲區**(獨立、10 金幣解鎖,見 CURRICULUM);衍生關(左欄佔位)。
+5. **dead code 清理**:`chooseRung`/`plan`/`levelPlan`/舊 `askWrite` dispatcher 可能沒用了。
+6. **矮螢幕實測**:`.lesson-screen` 固定不捲,極矮螢幕仍可能切版(配對已降 4 組)。玩家 🔄 重來實測整條弧。
 
 ## 可調常數
-- 熟練度:`MASTERY_OK 25` / `MASTERY_BAD 20` / `LEARNED 100`;`tierOfMastery` 切點 34/67。
-- 浮動關卡:`MAX 10` / `NEW 2` / `ACTIVE_CAP 5`;SRS `ivl×2` 封頂 30。
-- 句子頻率:`sentence_build` weight stage≥2 = `40`(約半數題,受 `lastFormat` 防連續壓上限~50%)、前期 7。分批:`BATCHES`。
-- Boss:`BOSS_HP_BASE 50` / `BOSS_HP_PER_STAGE 30` / `BOSS_DMG`(占總血 %) / `BOSS_CUR_WEIGHT 4` / `BOSS_SENTENCE_PROB .3` / `PANIC_HITS 2` / 惡補 mastery−30。音樂音量 `volume .1`、臨死加速 `playbackRate 1.3`。
+- 熟練度:`MASTERY_OK 25` / `MASTERY_BAD 20` / `LEARNED 100`;`tierOfMastery` 切點 34/67(<34 認 / <67 說 / 餘 寫)。**補考(`inReview`)答對不加 %**。
+- 浮動關卡:`MAX 8` / `ACTIVE_CAP 5`;★ **`NEW = active.length >= 3 ? 0 : 2`**(在學的字 ≥3 就先不引新字);`needsWrite`/`due` 各只穿插 ≤2。SRS `ivl×2` 封頂 30;跳過字(`markWordKnown`)`ivl=8`。
+- 出題難度跟字 `tierOfMastery` 爬:`!wrote` 強制補寫只在 target≥3;`sentence_build` 認階 7 / 說階以上 40;`sentence_transform` 說階以上 20;`sentence_cloze` 寫階(target≥3)18,否則 0。
+- 王:`BOSS_READY_MIN_LEVELS 5`(整階全 `isLearned` 可免鞏固提早開);`BOSS_HP_BASE 50` / `BOSS_HP_PER_STAGE 30` / `BOSS_DMG`(占總血 %) / `BOSS_CUR_WEIGHT 4` / `BOSS_SENTENCE_PROB .3` / `PANIC_HITS 2` / 惡補 mastery−30。
+- 句子防重複:`recentSentences` 記最近 3 句、`pickFresh` 避開。配對 `askMatch` 4 組。音樂音量 `.1`、臨死 `playbackRate 1.3`。
 - 音節克漏字:`SYL_HINT`(記憶法 map)、遮節權重 `1+miss×2`。語音:`pickBestVoice`、慢速 rate `0.5`。

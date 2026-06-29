@@ -128,3 +128,26 @@
 
 ### 語音
 - `speak` 挑最佳英文語音(`pickBestVoice`:Google > 微軟 Natural > en-US);設 voice 包 try/catch。句子結算有「🐢 慢速」(rate 0.5)。
+
+## 2026-06-29 本輪引擎新規則(凌駕上面舊描述;逐筆見 CHANGELOG 尾段)
+> 這輪重點是「遊玩手感 / 課程節奏」,使用者大量實玩逐點修。動引擎前讀這段。
+
+### ★ 難度跟字的 `tierOfMastery` 分級,不跳級(`ask`)
+- **`!wrote` 強制補寫只在 target≥3(寫階)** 才生效 —— 別一教完(認階)就逼默寫。
+- **句子題權重也吃 target**:`sentence_build` 認階 7 / 說階以上 40;`sentence_transform` 說階以上才 20;`sentence_cloze`(打字補字=句子默寫)**只寫階(target≥3)才出**(18),否則 0。→ 新字走 **認/聽/說 → 排詞 → 默寫**,不會剛學就被丟句子默寫。
+
+### 補考強化(`reviewThenAsk` / `onCorrect`)
+- **連錯計數 `reviewMiss[k]`**(`onWrong`+1、`onCorrect`歸零、`startLevel`清空):**連錯 <2 → 直接補考**(同題型,留可選「📖 我要複習」`injectReviewButton`);**連錯 ≥2(真卡住)→ 強制走重看卡 `showReviewCard`** 再考。治「手滑別罰、真卡住才帶複習」。
+- **★ 補考(`inReview`)答對「不補熟練度、不算 `wrote`」**(`onCorrect` 加 % 那段 `else if (!inReview)`):剛看過答案的重答不算真會 → 要**下次主回合真的一次過**才補 %。
+
+### 「我已經會了」跳過 + 整階全會直接打王
+- 教卡 `teach`(`markWordKnown`)、句型卡 `teachPattern`(`onKnown`→`bumpPat LEARNED`)都有 `.sideact` 跳過鈕:標 100%+wrote、給金幣、SRS 停遠(`ivl=8`)、字仍在字庫(**句子照樣組得出,依賴鏈不斷**)。`stageReadyAt`:該階字全 `isLearned`(含跳過)→ 免鞏固關直接可打王。
+
+### 課程節奏:新字節流(`buildLevel`)
+- **`NEW = active.length >= 3 ? 0 : 2`** —— 在學的字 ≥3 就先別引新字,把在學的練到會再解鎖(治「一直冒新字、舊字淹掉學習」)。`active` 為主力;`needsWrite`/`due` 各只穿插 ≤2;`MAX=8`。純鞏固期(無 fresh)才用學會的字補滿。
+
+### 句子系統擴充(內容,非引擎)
+- 動詞句 `I see/buy/read/drink/eat {x}`(動詞放 `requires`、受詞放 slot+flag);**★ 轉換題 `askTransform`**:把練過的直述句「同一批字重排成問句」(`This is→Is this`、`I am→Am I`,be 動詞句加 `q`/`qzh`);防句子重複 `recentSentences`+`pickFresh`;`mountArrange` 共用拖曳引擎(排詞/轉換)+ 洗到等於正解就重洗。
+
+### 🎯 單字特訓(`inTraining`)
+- 自選字 → 聽說讀寫混合(`trainAsk`,忽略 lv、排除句子題)→ 每題「✓ 我學會了」(`injectTrainKnown`)。`inTraining` 旗標:`nextQuestion`→`trainNext`、`onCorrect`/`onWrong` 只加熟練度/金幣/SRS、不碰主回合 quota/reviewQueue。
