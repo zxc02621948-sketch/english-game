@@ -89,6 +89,7 @@
 
 ## Boss(已大改 — 詳見 DESIGN_MASTERY「本階段引擎新規則」/ CURRICULUM「★結構定案」)
 - **觸發**:✅ **內容驅動** `stageReady()` —— 當前批(`batchOf===stage-1`)字都練到會寫(mastery≥`BOSS_READY_MASTERY 67`)→ `meta.bossReady`,過關畫面 + 地圖快捷出「⚔ 挑戰王」鈕,**非強制**(可挑戰或再練)。取代舊的固定 5×stage。
+- **「我已經會了」跳過(通用向,治「強迫已會的人從基礎爬」)**:教卡(`teach`)有 `.sideact`「這個我已經會了」鈕 → `markWordKnown(w)`(標 taught+100%+wrote、給金幣、排 SRS、本關消題)。字仍在字庫 → **句子照樣組得出(依賴鏈不斷)**。`stageReadyAt`:該階字**全部 `isLearned`**(含跳過的)→ 不必等 `stageDeadlineLevel` 鞏固關,**直接開王**(部分會則仍要跑完鞏固)。所以「整階都按我會了 → 直接打王」。
 - **血 / 傷害**:HP 隨階段縮放(`bossMaxHp = 50 + (stage-1)×30`);**傷害 = 總血 %、按題型**(四選一 5% / 拼字 8% / 2字 12% / 句子默寫 20% / 臨死組合 25%),舊「字母數 + cap10」已拔。
 - **綜合考、偏重現學**:`bossPickWords` 加權現學批次(`BOSS_CUR_WEIGHT 4:1`);題型混 看中 / 聽 / 看圖 / 四選一(`BOSS_MODES`)+ **句子默寫**(`bossSentenceQuestion`,`BOSS_SENTENCE_PROB .3`,學過句子才出);題庫 `bossPool` 排功能詞。
 - **不連續同答案**:`boss.lastAnswerKey` + `bossAnswerKey(q)` 追蹤上一題標準英文;`bossQuestion` 單字題會先排除上一題答案,句子題與臨死連段也會用 avoid set 重抽,避免王戰連續出完全相同答案。

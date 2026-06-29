@@ -743,3 +743,10 @@
 - 更新 CONTENT_RULES(eatable flag + I eat)、HANDOFF(BANK 47 + 批3 + 快取驗證注意)。
 - 驗(瀏覽器):BANK 47、句型全生成、batchOf 正確(吃喝感受=batch2/stage3、舊字+1階)、rice 看圖題出、轉換含新情緒;node --check 四檔 OK;零 console error。
 - ⚠ 驗證踩雷:瀏覽器硬快取 js,需 fetch(cache:'reload')重抓才看到新 BANK(已記進 HANDOFF)。
+
+### 本輪(Claude Opus): 教卡「我已經會了」跳過 + 整階全會直接打王
+- 使用者(通用向):不該強迫已經會基礎的人從 cat 慢慢爬;但又不能自由選字(會打斷「依賴鏈」=句子組不出)。解法:跳過=標記成已學會(不是移除)。
+- 教卡加 .sideact「這個我已經會了」鈕 → markWordKnown(w):標 taught+mastery100+wrote、給金幣、排 SRS、本關消題。字仍在字庫 → 句子照樣組得出、王門檻認帳,鏈不斷。
+- stageReadyAt 改:該階字全部 isLearned(含跳過)→ 不必等 stageDeadlineLevel,直接可打王;部分會則仍要跑鞏固關。→「整階都按我會了就直接打王」。
+- 驗(瀏覽器):教卡有鈕、點了字變 learned+wrote+消題+金幣;stage1 全標會 → stageReadyAt(1)=true(deadline=5 也放行)、部分會=false;showDone 全標會 → bossReady + 出挑戰王鈕;node --check OK;零 console error。
+- 設計討論:確認「自由選字」會打斷依賴鏈不做;「跳過已會」相容。受眾定位=通用。

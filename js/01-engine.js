@@ -102,11 +102,11 @@ const stageWordsFor = (stage = meta.stage || 1) => {
 };
 function stageReadyAt(lv = level) {
   const sw = stageWordsFor();
-  const enoughLevels = lv >= stageDeadlineLevel();
-  return enoughLevels && sw.length > 0 && sw.every(w => {
-    const c = rec(w);
-    return c.taught && c.wrote;
-  });
+  if (!sw.length) return false;
+  const allWrote = sw.every(w => { const c = rec(w); return c.taught && c.wrote; });
+  if (!allWrote) return false;
+  const allKnown = sw.every(isLearned);                 // 全部已學會(含「我已經會了」跳過的)→ 不必再陪跑鞏固關,直接可打王
+  return allKnown || lv >= stageDeadlineLevel();
 }
 const stageReady = () => stageReadyAt(level);
 const stageDeadlineReached = () => level >= stageStartLevel() + stageMinLevels() - 1;
@@ -177,6 +177,16 @@ function onWrong(w) {                              // 答錯 → 熟練度 −MA
     save();
   }
   reviewQueue.push({ w, run: lastAsked[wordKey(w)], skill: lastAskedSkill[wordKey(w)] });   // 連同剛剛的題型一起記 → 補考用「同一種題型」再考(錯默寫就補默寫,不是換簡單的)
+}
+// 「我已經會了」:把字直接標成學會(taught + 100% + wrote)→ 不再單獨考,但仍進句子 / SRS;本關這格視為完成。整階都標會 → stageReadyAt 直接放行打王。
+function markWordKnown(w) {
+  const c = rec(w), wasLearned = isLearned(w);
+  c.taught = true; c.mastery = LEARNED; c.wrote = true;
+  if (!wasLearned && !c.coined) { meta.coins++; c.coined = true; saveMeta(); }   // 第一次算會 → 給金幣(known 也是會)
+  c.ivl = 1; c.due = (meta.clock || 0) + 1;   // 排進 SRS,之後句子複習會帶到
+  save();
+  const k = wordKey(w);
+  if (quota[k] != null) lgot[k] = quota[k];   // 本關這個字直接視為完成,不再考
 }
 function nextQuestion() {
   if (queue.length) { inReview = false; current = queue.shift(); return ask(current); }                       // 主回合

@@ -157,7 +157,8 @@ function teach(w) {
       </div>
       <div class="teach-why">${w.why}</div>
     </div>
-    <button class="btn act" id="known" style="margin-top:14px">我記住了 →</button>`);
+    <button class="btn act" id="known" style="margin-top:14px">我記住了 →</button>
+    <button class="btn sideact" id="iknow">這個我已經會了 →</button>`);
   $('prompt').classList.add('center');
   $('body').classList.add('teach-answer');
   document.querySelector('.lesson').classList.add('teach-lesson');
@@ -165,6 +166,7 @@ function teach(w) {
   $('play').onclick = () => speakSyllables(w, 0.9);
   $('slow').onclick = () => speakSyllables(w, 0.5);
   $('known').onclick = () => { onCorrect(w); updateBar(); nextQuestion(); };
+  $('iknow').onclick = () => { markWordKnown(w); updateBar(); nextQuestion(); };   // 已經會了 → 標學會、跳過、不再考(整階都跳 → 直接可打王)
 }
 // 階梯題型池:由淺到深。階 0 教 → 1 認 → 2 說 → 3 寫。(題型本身在上面,這裡只把皮掛上階梯。)
 // ★ 題型按關卡「向下取」解鎖:一關的題型池 = 所有 lv ≤ 當前關 解鎖的格式;越高關越豐富、同一關也混多種。新字一律先教。
