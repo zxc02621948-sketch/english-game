@@ -77,7 +77,7 @@ function buildSentenceFromPattern(pattern, sourceWords = BANK, mustInclude = nul
     questionZh: pattern.qzh ? fillZh(pattern.qzh) : null
   };
 }
-const BUILD_SENTENCE_PATTERN_IDS = ["pat_this_is_a_noun", "pat_this_is_my_noun", "pat_this_is_adj", "pat_i_am_adj", "pat_i_see_a_noun", "pat_i_buy_a_noun", "pat_i_read_noun", "pat_i_drink_noun"];
+const BUILD_SENTENCE_PATTERN_IDS = ["pat_this_is_a_noun", "pat_this_is_my_noun", "pat_this_is_adj", "pat_i_am_adj", "pat_i_see_a_noun", "pat_i_buy_a_noun", "pat_i_read_noun", "pat_i_drink_noun", "pat_i_eat_noun"];
 const buildSentencePatterns = () => PATTERNS.filter(p => BUILD_SENTENCE_PATTERN_IDS.includes(p.id));
 function learnedByRecord(c) {
   return c && (c.mastery || 0) >= LEARNED;

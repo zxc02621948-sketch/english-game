@@ -732,3 +732,14 @@
 - 加防重複:recentSentences(記最近 3 句)+ pickFresh(優先沒最近出過的,真沒得選才回退)。pickBuildSentence / pickTransformSentence / sentenceWithWord 都套;askBuildSentence / askTransform 實際出句時 rememberSentence。
 - 驗(瀏覽器):連抽 10 轉換句 + 12 排句,最多連續 1 次、任意 3 句窗內無重複、各 9~10 種不同;I am happy 兩次出現間隔 ≥7;render 正常、零 console error。
 - 註:真正多樣性還是要靠擴句型/擴字(I am 只有 happy);這版先把「短時間內重複」擋掉。
+
+### 本輪(Claude Opus): 擴內容批3「吃喝與感受」(+8 字 + I eat 句型)
+- 使用者要擴內容讓後期不重複,照「教新字→組句→應用」的弧。第一批補最常重複的 I am / I drink。
+- 新增 8 字:hungry/thirsty/tired/sad(emotion 形容詞)、tea/milk(drinkable)、rice/bread(eatable 新 flag)。
+- 新句型 pat_i_eat_noun(I eat {x},requires eat、slot eatable),掛進 BUILD_SENTENCE_PATTERN_IDS。其餘重用 I am / I drink。
+- 正式編 BATCHES 批3「吃喝與感受」(感受形容詞先→eat/drink+食物飲料;eat/drink 收進同批讓吃喝句自給自足)。既有未分批字往後挪 1 階(擾動最小)。
+- 食物飲料加 EMOJI(🍚🍞🍵🥛)→ 有看圖題;感受抽象不加。
+- 效果:I am ___ 1→5 句、I drink ___ 1→3、新增 I eat ___ 2;轉換題 Am I hungry/tired/sad…;配合防重複,後期變化大增。
+- 更新 CONTENT_RULES(eatable flag + I eat)、HANDOFF(BANK 47 + 批3 + 快取驗證注意)。
+- 驗(瀏覽器):BANK 47、句型全生成、batchOf 正確(吃喝感受=batch2/stage3、舊字+1階)、rice 看圖題出、轉換含新情緒;node --check 四檔 OK;零 console error。
+- ⚠ 驗證踩雷:瀏覽器硬快取 js,需 fetch(cache:'reload')重抓才看到新 BANK(已記進 HANDOFF)。

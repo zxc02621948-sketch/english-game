@@ -50,6 +50,8 @@ const pOf = w => rec(w).mastery || 0;
 const BATCHES = [
   ['word_cat','word_book','word_friend','word_happy','word_water'],   // 批1(L1-5)實詞
   ['word_this','word_is','word_a','word_my','word_i','word_am'],      // 批2(L6-10)膠水詞 → 一學會就能造句
+  // 批3 吃喝與感受:感受形容詞先(I am hungry/tired…,只需 I/am)→ 吃喝動詞+食物飲料(I eat rice / I drink tea,動詞與受詞同批自給自足)
+  ['word_hungry','word_thirsty','word_tired','word_sad','word_eat','word_drink','word_rice','word_bread','word_tea','word_milk'],
 ];
 const _batchSet = new Set(BATCHES.flat());
 const _rest = BANK.filter(w => !_batchSet.has(w.id));                 // 還沒編進 BATCHES 的字 → 每 5 個自動切一批接在後面(擴字庫時再正式分主題)→ 多王推進 stage 就會陸續解鎖

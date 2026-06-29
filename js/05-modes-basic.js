@@ -41,6 +41,7 @@ function askListenWord(w) {
 const EMOJI = {
   word_cat:"🐱", word_water:"💧", word_book:"📚", word_happy:"😄", word_friend:"👥", word_house:"🏠", word_home:"🏠",
   word_eat:"🍽️", word_drink:"🥤", word_go:"🚶", word_come:"🙋", word_buy:"🛒",
+  word_rice:"🍚", word_bread:"🍞", word_tea:"🍵", word_milk:"🥛",
   word_look:"👀", word_see:"👁️", word_listen:"👂", word_hear:"👂", word_speak:"🗣️",
   word_say:"💬", word_big:"🐘", word_small:"🐜", word_good:"👍", word_bad:"👎",
 };

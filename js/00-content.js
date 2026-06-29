@@ -41,6 +41,15 @@ const BANK = [
   { id:"word_and",        en:"and",        zh:"和",     pos:"function", flags:[], syl:["and"], why:"and 把兩個東西接在一起,意思是和、而且。" },
   { id:"word_or",         en:"or",         zh:"或",     pos:"function", flags:[], syl:["or"], why:"or 表示選一個:cat or dog。" },
   { id:"word_read",       en:"read",       zh:"讀",     pos:"verb", flags:[], syl:["read"], why:"read 是讀文字、書或訊息,重點是看懂內容。" },
+  // 批3「吃喝與感受」:感受形容詞(I am ___)+ 吃喝動詞與食物飲料(I eat/drink ___)
+  { id:"word_hungry",     en:"hungry",     zh:"餓",     pos:"adj",  flags:["emotion"], syl:["hun","gry"], why:"hungry 是肚子餓,想吃東西。" },
+  { id:"word_thirsty",    en:"thirsty",    zh:"渴",     pos:"adj",  flags:["emotion"], syl:["thirs","ty"], why:"thirsty 是口渴,想喝東西。" },
+  { id:"word_tired",      en:"tired",      zh:"累",     pos:"adj",  flags:["emotion"], syl:["tired"], why:"tired 是累了、沒力氣、想休息。" },
+  { id:"word_sad",        en:"sad",        zh:"難過",   pos:"adj",  flags:["emotion"], syl:["sad"], why:"sad 是難過、不開心,跟 happy 相反。" },
+  { id:"word_rice",       en:"rice",       zh:"飯",     pos:"noun", flags:["eatable"], syl:["rice"], why:"rice 是米飯,亞洲的主食。" },
+  { id:"word_bread",      en:"bread",      zh:"麵包",   pos:"noun", flags:["eatable"], syl:["bread"], why:"bread 是麵包。" },
+  { id:"word_tea",        en:"tea",        zh:"茶",     pos:"noun", flags:["drinkable"], syl:["tea"], why:"tea 是茶。" },
+  { id:"word_milk",       en:"milk",       zh:"牛奶",   pos:"noun", flags:["drinkable"], syl:["milk"], why:"milk 是牛奶。" },
 ];
 
 const PATTERNS = [
@@ -89,6 +98,13 @@ const PATTERNS = [
     zh: "我讀一本{x}。",
     requires: ["word_i", "word_read"],
     slots: { x: { pos: "noun", flags: ["readable"] } }
+  },
+  {
+    id: "pat_i_eat_noun",
+    text: "I eat {x}.",
+    zh: "我吃{x}。",
+    requires: ["word_i", "word_eat"],
+    slots: { x: { pos: "noun", flags: ["eatable"] } }
   },
   {
     id: "pat_this_is_adj",

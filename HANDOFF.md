@@ -100,9 +100,10 @@
 - **`showSettings`**:聽說讀寫技能開關 + BGM 清單。
 - `sfx`(合成音效)、`bgm`(`BGM_TRACKS` 5 + `BOSS_TRACKS` 3,音量 10%,臨死加速)。
 
-## 字庫（`BANK` 39 字）
+## 字庫（`BANK` 47 字）
 - 每字 `{ id, en, zh, pos, flags, syl, why }`。**why 是靈魂。**
-- `BATCHES` 目前只正式編了**批1(實詞 cat/book/friend/happy/water)+ 批2(膠水 this/is/a/my/I/am)**;其餘 28 字**每 5 個自動切批**(`batchOf` 0~7)→ 多王推進 `stage` 就陸續解鎖。`word_read` 先補在 `BANK` 尾端,避免既有自動分批整體位移;之後主題化時再正式編批。**擴字庫時要正式編進 `BATCHES`(主題化)+ 擴 `PATTERNS`**,別讓字隨機亂分。先讀 `CONTENT_RULES.md`。
+- `BATCHES` 正式編了:**批1(實詞 cat/book/friend/happy/water)+ 批2(膠水 this/is/a/my/I/am)+ 批3「吃喝與感受」(hungry/thirsty/tired/sad + eat/drink + rice/bread/tea/milk)**;其餘字**每 5 個自動切批**接在後面(`batchOf = BATCHES.length + …`)→ 多王推進 `stage` 就陸續解鎖。**擴字庫時要正式編進 `BATCHES`(主題化)+ 擴 `PATTERNS`**,別讓字隨機亂分;動詞句的動詞放句型 `requires`、受詞放 slot(配 flag:visible/buyable/drinkable/readable/eatable)。先讀 `CONTENT_RULES.md`。
+- ⚠ **擴字後驗證注意**:瀏覽器會硬快取 `js/*.js`,改完 `location.reload()` 常跑到舊碼(看到 BANK 沒變多就是中了)→ 先 `fetch('js/00-content.js',{cache:'reload'})` 重抓再 reload,或重啟 preview。
 
 ## 待辦(優先序;最新進度見 CHANGELOG 尾段 + CURRICULUM「進度」)
 0. ✅ **phase-aware 彈性階段 + 內容驅動王觸發**(已做,2026-06-27):後半鞏固自動發生(fresh=當前批,引完就空);王觸發改 `stageReady()`(當前批字練到會寫 ≥67)非強制。剩下兩個小的:

@@ -38,8 +38,9 @@
   - `countable`: 可數名詞；若要放進 `This is a {x}.`，還要同時有 `presentable`。
   - `presentable`: 適合被介紹為「這是一個...」的具體名詞。
   - `ownable`: 可被擁有，可放進 `This is my {x}.`
-  - `drinkable`: 可喝的名詞，可放進 `I drink {x}.`
+  - `drinkable`: 可喝的名詞，可放進 `I drink {x}.`，例如 `water/tea/milk`。
   - `readable`: 可讀的名詞，可放進 `I read a {x}.`
+  - `eatable`: 可吃的名詞，可放進 `I eat {x}.`，例如 `rice/bread`。先用不可數主食（不接冠詞）；要可數食物（apple→an）再另開句型。
   - `visible`: 看得到的具體東西（含人），可放進 `I see a {x}.`，例如 `cat/book/friend/house`。抽象的（project/experience）不要給。
   - `buyable`: 買得到的東西，可放進 `I buy a {x}.`，例如 `cat/book/house`。不給 `friend`（不買朋友）、不給抽象名詞。
   - `emotion`: 情緒形容詞，可放進 `I am {x}.`
@@ -92,7 +93,7 @@
 - 每個 slot 都要寫 `pos` 和必要的 `flags`。
 - 句型只能抽符合 `pos + flags` 的字。
 - 符合條件的字不夠時，跳過該句型，不要硬組怪句子。
-- 組句題目前支援 `This is a {x}.`、`This is my {x}.`、`This is {x}.`、`I am {x}.`、`I see a {x}.`、`I buy a {x}.`、`I read a {x}.`、`I drink {x}.`(動詞句的動詞放 `requires`,受詞放 slot)
+- 組句題目前支援 `This is a {x}.`、`This is my {x}.`、`This is {x}.`、`I am {x}.`、`I see a {x}.`、`I buy a {x}.`、`I read a {x}.`、`I drink {x}.`、`I eat {x}.`(動詞句的動詞放 `requires`,受詞放 slot)
 - **問句形(轉換題用)**:**be 動詞句**(`This is …`、`I am …`)可加 `q` / `qzh` 兩個欄位,寫問句模板(例 `q:"Is this a {x}?"`、`qzh:"這是一個{x}嗎?"`;`I am {x}` → `q:"Am I {x}?"`)。有 `q` 的句型才會進「轉換題」(`askTransform`:把直述句的同一批字重排成問句)。
   - 只放「be 動詞提到句首」就成立的:`This is → Is this`、`I am → Am I`。**不要寫 `Are you …?` 這種**——那換了字(am→are、I→you),不是純重排,不符合轉換題機制。
   - `I + 一般動詞` 句(I see / I buy …)**不要加 `q`**(變問句要 do/does,不是純重排)。
