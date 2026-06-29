@@ -134,12 +134,13 @@ const levelPlan = lv => ({ topRung: 3 });
 let level = 1, levelWords = [], queue = [], current = null;
 let plan = null, currentRung = 0;
 let quota = {}, lgot = {}, reviewQueue = [], inReview = false;     // 這關每字「要答對幾次 / 已答對幾次」;reviewQueue = 答錯待回顧重答的題
+let reviewMiss = {};                                               // 每字「連續答錯次數」(答對歸零)→ 連錯 2 次補考強制走複習卡
 function startLevel() {
   meta.clock = (meta.clock || 0) + 1; saveMeta();   // SRS 時鐘:每開一關 +1(見 DESIGN_MASTERY §6)
   plan = levelPlan(level);
   levelWords = (remedialWords && remedialWords.length) ? remedialWords : buildLevel();   // 惡補關:用打輸王時卡住的字
   remedialWords = null;
-  quota = {}; lgot = {}; reviewQueue = []; inReview = false;
+  quota = {}; lgot = {}; reviewQueue = []; inReview = false; reviewMiss = {};
   levelWords.forEach(w => { const k = wordKey(w); lgot[k] = 0; quota[k] = (rungOf(w) === 0 && w.pos !== 'function') ? 2 : 1; }); // 新字:教+馬上考(2);功能詞只教不單獨考(1);複習字:1
   queue = shuffle([...levelWords]);
   nextQuestion();
@@ -160,6 +161,7 @@ function onCorrect(w) {
     c.due = (meta.clock || 0) + c.ivl; save();
   }
   const k = wordKey(w);
+  reviewMiss[k] = 0;                                          // 答對 → 連錯次數歸零
   if (inReview) { lgot[k] = quota[k]; }                       // 回顧重答答對 → 這題清掉(本關視為完成)
   else {
     lgot[k]++;
@@ -176,6 +178,7 @@ function onWrong(w) {                              // 答錯 → 熟練度 −MA
     c.ivl = 1; c.due = (meta.clock || 0) + 1;     // SRS:答錯 → 間隔歸 1、很快再考(原為學會的話 mastery 掉破→變 active 也會優先回來)
     save();
   }
+  reviewMiss[wordKey(w)] = (reviewMiss[wordKey(w)] || 0) + 1;   // 連續答錯 +1(補考時 ≥2 就強制走複習卡)
   reviewQueue.push({ w, run: lastAsked[wordKey(w)], skill: lastAskedSkill[wordKey(w)] });   // 連同剛剛的題型一起記 → 補考用「同一種題型」再考(錯默寫就補默寫,不是換簡單的)
 }
 // 「我已經會了」:把字直接標成學會(taught + 100% + wrote)→ 不再單獨考,但仍進句子 / SRS;本關這格視為完成。整階都標會 → stageReadyAt 直接放行打王。
@@ -199,8 +202,12 @@ function reviewThenAsk(w, run, skill) {
   currentRung = 1;
   currentSkill = skill || (run && SKILL.get(run)) || null;
   const r = run || ask;
-  r(w);                                   // 先直接補考(同一種題型)
-  injectReviewButton(w, r);               // 補考畫面塞「我要複習」可選鈕
+  if ((reviewMiss[wordKey(w)] || 0) >= 2) {   // 連錯 ≥2 次 = 真的卡住 → 強制先走一輪複習卡(看字+音節+念+字根)再考
+    showReviewCard(w, r);
+  } else {                                     // 第一次錯 → 直接補考(手滑不被罰),畫面留「我要複習」可選鈕
+    r(w);
+    injectReviewButton(w, r);
+  }
 }
 // 在補考題目下方塞一顆「我要複習」鈕(可選);點了走重看卡,看完回來繼續補考
 function injectReviewButton(w, r) {

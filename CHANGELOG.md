@@ -785,3 +785,9 @@
 - 效果(實測分佈):mastery 0 新字→認/聽 ~60% + 說 + 少量排詞,sentence_cloze=0(不再默寫剛學的字);mastery 50→排句主軸;mastery 80→才強制寫+句子默寫。→ 新字走 認/聽/說→排詞→默寫,不跳級。
 - 驗:probe ask 300 次 ×3 mastery 階,分佈如上;node --check OK;零 console error。
 - 未動:答錯→補考的「我要複習」仍是可選(之前使用者要求);難度修好後「被不會的硬題卡住」的情況本身大幅減少。複習要不要改強制另議。
+
+### 本輪(Claude Opus): 補考連錯第二次才強制複習
+- 使用者:錯了希望有複習一輪(但之前又要求手滑別被罰)。取中間:第一次錯直接補考+可選複習;連錯第二次=真卡住→強制複習卡。
+- 新增 reviewMiss[k]「連續答錯次數」:onWrong +1、onCorrect 歸零、startLevel 清空。
+- reviewThenAsk:reviewMiss<2 → 直接補考(留可選「我要複習」鈕);≥2 → 強制 showReviewCard(看字+音節+念+字根)再考。
+- 驗(瀏覽器):連錯1→直接補考(可選鈕)、連錯2→強制複習卡→看完回補考;計數 錯1→2、對歸零、再錯1;node --check OK;零 console error。

@@ -56,7 +56,7 @@
 ## 核心原理(現況 2026-06-27 — 詳見 DESIGN_MASTERY.md)
 舊「計次」已全換掉。現在六根支柱:
 1. **連續熟練度 %**:每字 `store[id] = { taught, mastery 0~100, coined, due, ivl }`(localStorage `eng_progress_v2`,key=`w.id`)。**答對 +25 / 答錯 −20 / 100% = 學會**;教不加不扣。`rec()` 自癒舊資料。
-2. **答錯補考(同題型)**:答錯 → `reviewQueue`(存 `{w, run}` 連題型一起記);主回合跑完進「補考回合」。**`reviewThenAsk` 先直接補考**(用**同一種題型**,錯默寫補默寫、不換簡單認題),畫面下方多一顆「📖 我要複習」**可選**鈕(`injectReviewButton`)——點了才出重看卡 `showReviewCard`(字+音節+🔊念+字根),看完回去繼續補考。**治「手滑打錯被強迫看完整重看」**(舊版是先強制重看才給答)。答對才消、又錯再補考,**永不卡死**。
+2. **答錯補考(同題型)**:答錯 → `reviewQueue`(存 `{w, run}` 連題型一起記);主回合跑完進「補考回合」。**`reviewThenAsk`**:**連續答錯 `reviewMiss[k]` < 2(第一次錯)→ 直接補考**(同一種題型,錯默寫補默寫),畫面下方留「📖 我要複習」**可選**鈕(`injectReviewButton`)——手滑打錯的人直接重答即可;**連錯 ≥2 次(真的卡住)→ 強制先走重看卡 `showReviewCard`(字+音節+🔊念+字根)再考**。`reviewMiss`:`onWrong`+1、`onCorrect`歸零、`startLevel`清空。答對才消、又錯再補考,**永不卡死**。
 3. **出哪種題 = 關卡解鎖 × 熟練度頻率**:`FORMATS` 每格標 `lv`(第幾關解鎖,**向下取累加**)。一關題型池 = `lv ≤ 當前關`。熟練度當**頻率權重**(靠近該字當前難度的題型抽中機率高,難的不消失只變少)。**功能詞封認**(`tier ≤ maxRungOf`)。**★ 難度跟該字 `tierOfMastery` 爬,別跳級**:`ask` 裡 ① **`!wrote` 強制補寫只在該字已到寫階(target≥3)**才生效(別一教完就逼默寫);② **句子題權重也吃 target**:認階(剛學)句子題壓低(`sentence_build` 7、`sentence_cloze` 0)、說階才主打排句(40)、寫階才出句子默寫(`sentence_cloze` 18)。→ 新字走 認/聽/說 → 排詞 → 默寫,不會剛學就被丟句子默寫。
 4. **出哪個字 = 浮動 `buildLevel`(沒固定 5)**:新字(`NEW=2`)+ 學習中(`active` cap 5)+ **到期複習**(SRS `due ≤ clock`,最逾期先),填到 `MAX≈10`、超出順延。
 5. **SRS 間隔**:學會的字排 `due`/`ivl`;複習答對 `ivl×2`(越拉越久)、答錯歸 1。`meta.clock` 每開一關 +1。**複習主軸=句子**:`ask` 裡「學會 + 已默寫過(`isLearned && wrote`)」的字**不再單獨刷**,改抽**含該字的句子**(`sentenceWithWord`)複習(`creditSentence` 推 SRS);沒句型的 orphan 動詞退一般句子;完全組不出句子(stage1 功能詞未解鎖)才退單字。**還沒學會 / 還沒默寫過的字照常走單字題**(要靠單字題學起來 + 補默寫門檻)。第一階段王在第 `BOSS_READY_MIN_LEVELS=5` 關可開。
