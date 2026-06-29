@@ -710,3 +710,12 @@
 - askTransform 的 aha 文案改動態抓 be 動詞(stmt[1]):This is 顯示「把 is 移到最前面」、I am 顯示「把 am 移到最前面」。
 - 更新 CONTENT_RULES(be 動詞句才加 q;不要寫 Are you 這種非純重排)。
 - 驗(瀏覽器):I am happy → Am I happy?(我開心嗎?)、模擬重排 am/I/happy 判對、文案顯示 am;This is 仍顯示 is;node --check OK;零 console error。
+
+### 本輪(Claude Opus): 前期縮短 + 學會的字改用句子複習
+- 使用者實測:前期 1~6 關太長、太多重複純單字題很無聊;且主軸已轉句子,後期不該一直出已學會單字的單獨練習,複習要把舊字塞進句子。
+- 第一階段王門檻 BOSS_READY_MIN_LEVELS 6 → 5。
+- ask() 加複習路由(出題層,不動引擎 buildLevel):isLearned(w) && wrote 的字不再單獨刷,改抽「含該字的句子」(sentenceWithWord)複習,creditSentence 推 SRS;orphan 動詞(還沒句型:make/do/look/listen/hear/speak/say/eat/go/come/bring/take/get)退一般句子;完全組不出句子(stage1 功能詞未解鎖)才退單字。
+- 還沒學會 / 還沒默寫過的字照常走單字題(要靠單字學起來 + 補默寫門檻);功能詞不受影響(本來就不進關卡)。
+- 新增 sentenceWithWord(w)(js/06):組保證含 w 的句子(w 當 slot 或當 requires 動詞)。buildSentenceFromPattern 加 mustInclude 參數強制把字塞進 slot。askBuildSentence 加 forced 參數吃指定句子。
+- 驗(瀏覽器):cat(學會+默寫)16/16 走句子且每句含 cat;make(orphan)16/16 走句子;friend(還在學)16/16 單字;cat(沒默寫)16/16 單字;stage1 組不出句子→退單字不當機;BOSS_READY_MIN_LEVELS=5;node --check 四檔 OK;零 console error。
+- ⚠ 殘留:orphan 動詞目前靠「一般句子(不含該字)」複習=軟複習。要讓它們真的進句子,得補動詞句型(之前 deferred 的擴字/擴句)。

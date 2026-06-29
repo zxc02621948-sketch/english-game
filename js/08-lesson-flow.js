@@ -40,6 +40,16 @@ let lastAsked = {}, lastAskedSkill = {}, lastFormat = null, currentSkill = null;
 function ask(w) {
   if (isFresh(w)) { currentRung = 0; currentSkill = null; lastFormat = teach; return teach(w); }       // 新字一律先教(認識)
   currentRung = 1;                                                                // 非教 → 算有產出,onCorrect 會 +mastery
+  // ★ 複習主軸 = 句子:學會又默寫過的字不再單獨刷,改用「含這個字的句子」複習(creditSentence 會幫它加分 + 排 SRS)。
+  //   湊不出含它的句子(還沒句型的動詞、或句型字還沒解鎖)才退回單字題。還沒學會 / 還沒默寫過的字照常走單字題(要靠單字題學起來)。
+  if (isLearned(w) && rec(w).wrote) {
+    const s = sentenceWithWord(w) || pickBuildSentence(sentenceSourceWords());   // 優先「含這個字」的句子;還沒句型的動詞(orphan)退而求其次給一般句子(仍是句子複習、onCorrect 照樣推 SRS,不再單獨刷)。完全沒句子可組(如 stage1 功能詞還沒解鎖)才退單字題。
+    if (s) {
+      currentSkill = 'read';
+      lastAsked[wordKey(w)] = askBuildSentence; lastAskedSkill[wordKey(w)] = 'read'; lastFormat = askBuildSentence;
+      return askBuildSentence(sentenceSourceWords(), () => { onCorrect(w); updateBar(); nextQuestion(); }, s);
+    }
+  }
   let pool = FORMATS.filter(f => f.lv <= level && skillOn(f.skill) && f.ok(w) && (f.tier || (f.skill === 'write' ? 3 : f.skill === 'speak' ? 2 : 1)) <= maxRungOf(w));  // 向下取 + 不超過該字上限(功能詞 maxRungOf=1 → 只認題,不被叫去說/寫)
   if (!pool.length) pool = [READPICK];                                            // 保險:至少出看中選英
   const k = wordKey(w);

@@ -18,6 +18,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "8184", "--directory", "E:/english-game"],
       "port": 8184
+    },
+    {
+      "name": "ai-print-preflight",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "4599", "--directory", "E:/ai-print-preflight"],
+      "port": 4599
     }
   ]
 }

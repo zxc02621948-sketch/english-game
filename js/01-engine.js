@@ -83,7 +83,7 @@ function buildLevel() {
 }
 // 王可挑戰的條件(內容驅動,取代固定第 5×stage 關):跑夠鞏固關 + 當前批次的實詞都教過 + 寫對過 + 練到「會寫」。
 const BOSS_READY_MASTERY = 67;   // 保留給未來調難度;目前王解鎖以「至少默寫成功一次」為主。
-const BOSS_READY_MIN_LEVELS = 6;  // 第一階段縮短:每個實詞至少默寫成功一次後,第 6 關可開王。
+const BOSS_READY_MIN_LEVELS = 5;  // 第一階段:每個實詞至少默寫成功一次後,第 5 關可開王(前期別拖太長、避免重複疲乏)。
 const SENTENCE_STAGE_MIN_LEVELS = 4;   // 只有功能詞/句型的階段:縮短,主打句子練習 + 少量舊字回鍋。
 const stageMinLevels = (stage = meta.stage || 1) => stageHasRealWords(stage) ? BOSS_READY_MIN_LEVELS : SENTENCE_STAGE_MIN_LEVELS;
 const defaultStageStartLevel = stage => {

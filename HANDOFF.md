@@ -59,7 +59,7 @@
 2. **答錯回顧重答(同題型)**:答錯 → `reviewQueue`(存 `{w, run}` 連題型一起記);主回合跑完進「回顧回合」(`reviewThenAsk(w, run)` 先重看再用**同一種題型**重答 → 錯默寫補默寫,不因 mastery 掉而換簡單認題;答對才消、又錯再回顧,**永不卡死**)。
 3. **出哪種題 = 關卡解鎖 × 熟練度頻率**:`FORMATS` 每格標 `lv`(第幾關解鎖,**向下取累加**)。一關題型池 = `lv ≤ 當前關`。熟練度當**頻率權重**(靠近該字當前難度的題型抽中機率高,難的不消失只變少)。**功能詞封認**(`tier ≤ maxRungOf`)。
 4. **出哪個字 = 浮動 `buildLevel`(沒固定 5)**:新字(`NEW=2`)+ 學習中(`active` cap 5)+ **到期複習**(SRS `due ≤ clock`,最逾期先),填到 `MAX≈10`、超出順延。
-5. **SRS 間隔**:學會的字排 `due`/`ivl`;複習答對 `ivl×2`(越拉越久)、答錯歸 1。`meta.clock` 每開一關 +1。
+5. **SRS 間隔**:學會的字排 `due`/`ivl`;複習答對 `ivl×2`(越拉越久)、答錯歸 1。`meta.clock` 每開一關 +1。**複習主軸=句子**:`ask` 裡「學會 + 已默寫過(`isLearned && wrote`)」的字**不再單獨刷**,改抽**含該字的句子**(`sentenceWithWord`)複習(`creditSentence` 推 SRS);沒句型的 orphan 動詞退一般句子;完全組不出句子(stage1 功能詞未解鎖)才退單字。**還沒學會 / 還沒默寫過的字照常走單字題**(要靠單字題學起來 + 補默寫門檻)。第一階段王在第 `BOSS_READY_MIN_LEVELS=5` 關可開。
 6. **句型軌(句型 %)+ 靠句子學字**:排詞造句 `sentence_build` 進主流程(**weight stage≥2 = 40 = 主軸**、前期 7),拖曳排序,湊得出句才出;沒教過先 `teachPattern` 教結構。排對 → 句型 % + **`creditSentence` 連帶幫組成的每個字加熟練度 + 排 SRS**(靠排詞自然學會字);**順序錯 → 扣句型、不扣單字**。句型 % 存 `store[patId]`(`pat_xxx`),`bumpPat`/`patMastery`。
 > **鐵律不變:沒教過的字絕不叫他產出 / 也不當誘答**(`isFresh` 守衛)。
 > **功能詞(膠水)= 不出教卡、不單獨刷,只在句子裡學**:`buildLevel` 的 `fresh`/`active`/`due` 都排除 `pos==='function'`;批次一解鎖就**靜默標 `taught`**(讓句子組得出)。意義交給 `teachPattern` + 句子;熟練度靠 `creditSentence`。(治「am 只跟 I 搭配卻叫你單獨背」「是=yes/is/am 歧義」。)

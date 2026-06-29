@@ -104,8 +104,21 @@ function mountArrange({ promptText, zh, introHTML = '', cards, targetTokens, cas
   };
 }
 
-function askBuildSentence(sourceWords = sentenceSourceWords(), done = showDone) {
-  const sentence = pickBuildSentence(sourceWords);
+// 複習用:組一句「保證含 w」的句子(w 當 slot 受詞,或 w 是句型的 requires 動詞)→ 學會的字靠句子複習,不再單獨刷。湊不出(如還沒句型的動詞)回 null。
+function sentenceWithWord(w, sourceWords = sentenceSourceWords()) {
+  const pats = shuffle(buildSentencePatterns().filter(p =>
+    patternRequirementsMet(p) &&
+    (asList(p.requires).includes(w.id) || Object.values(p.slots).some(slot => wordMatchesSlot(w, slot)))
+  ));
+  for (const p of pats) {
+    const s = buildSentenceFromPattern(p, sourceWords, w);
+    if (s && s.text.toLowerCase().split(/[^a-z]+/).filter(Boolean).includes(w.en.toLowerCase())) return s;
+  }
+  return null;
+}
+
+function askBuildSentence(sourceWords = sentenceSourceWords(), done = showDone, forced = null) {
+  const sentence = forced || pickBuildSentence(sourceWords);
   if (!sentence) {
     shell('組句小練習', `<div class="sub2">這批字還組不出自然句,先繼續練單字。</div><button class="btn act" id="cont">繼續 →</button>`);
     $('cont').onclick = done;

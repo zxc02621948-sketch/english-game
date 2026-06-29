@@ -55,14 +55,19 @@ function wordZhForSlot(word, slot) {
   const zh = word ? word.zh : "";
   return asList(slot && slot.flags).includes("descriptive") ? zh.replace(/的$/, "") : zh;
 }
-function buildSentenceFromPattern(pattern, sourceWords = BANK) {
+function buildSentenceFromPattern(pattern, sourceWords = BANK, mustInclude = null) {
   if (!patternRequirementsMet(pattern)) return null;
   const picks = {};
+  let placedMust = false;                                       // 複習用:把指定的字(mustInclude)強制塞進它能填的第一個 slot,讓句子保證含這個字
   for (const [name, slot] of Object.entries(pattern.slots)) {
     const used = new Set(Object.values(picks).map(w => w.id));
     const candidates = getEligibleWords(slot, sourceWords).filter(w => !used.has(w.id));
     if (!candidates.length) return null;
-    picks[name] = shuffle(candidates)[0];
+    if (mustInclude && !placedMust && candidates.some(c => c.id === mustInclude.id)) {
+      picks[name] = mustInclude; placedMust = true;
+    } else {
+      picks[name] = shuffle(candidates)[0];
+    }
   }
   const fill = s => s.replace(/\{(\w+)\}/g, (_, name) => picks[name] ? picks[name].en : "");
   const fillZh = s => s.replace(/\{(\w+)\}/g, (_, name) => picks[name] ? wordZhForSlot(picks[name], pattern.slots[name]) : "");
