@@ -778,3 +778,10 @@
 - askSylType 比對:加 NFKC+去非字母正規化;只挖 1 節時「打整個字」也算對(treat full word 等同)。→ 打 happy 不再被判錯。
 - 門檻 2→3:sylfill/syltype 的 FORMATS ok、askWrite dispatcher、askSylType 內部都改成「3+ 音節」才分段。短字(happy/water/project/hungry/thirsty 等 2 音節)走整字拼寫,不再出現音節「·」。只 beautiful(3)/experience(4) 等長字才分段練。
 - 驗(瀏覽器):happy 打整個字→判對、打錯→判錯;happy/hungry 的 sylfill/syltype ok=false、beautiful/experience=true;node --check OK;零 console error。
+
+### 本輪(Claude Opus): 修「剛學就默寫句子」跳難度
+- 使用者:剛學「餓/hungry」沒練習就被要求句子默寫(sentence_cloze),且一直出卡住(Duolingo 最痛點)。根因:① ask 的「!wrote → 強制只出寫題」一教完就生效 → 跳過認/聽/說直接逼默寫;② 句子題固定高權重(sentence_build 40、sentence_cloze 18)不分該字熟練度 → 剛學的字一直被丟句子。
+- 修:難度跟該字 tierOfMastery 爬。① !wrote 強制補寫改成只在 target≥3(寫階)才生效;② 句子題權重吃 target:認階壓低(build 7、transform 4、cloze 0)、說階主打排句(build 40/transform 20)、寫階才出句子默寫(cloze 18)。
+- 效果(實測分佈):mastery 0 新字→認/聽 ~60% + 說 + 少量排詞,sentence_cloze=0(不再默寫剛學的字);mastery 50→排句主軸;mastery 80→才強制寫+句子默寫。→ 新字走 認/聽/說→排詞→默寫,不跳級。
+- 驗:probe ask 300 次 ×3 mastery 階,分佈如上;node --check OK;零 console error。
+- 未動:答錯→補考的「我要複習」仍是可選(之前使用者要求);難度修好後「被不會的硬題卡住」的情況本身大幅減少。複習要不要改強制另議。

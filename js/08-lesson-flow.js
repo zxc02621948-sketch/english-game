@@ -59,17 +59,18 @@ function ask(w) {
     if (!alt.length) alt = pool.filter(f => f.run !== lastAsked[k]);
     if (alt.length) pool = alt;
   }
-  if (!rec(w).wrote) {
+  // ★ 熟練度 = 出現頻率(不是 gate):靠近該字當前難度的題型抽中機率高,難的不會消失、只是變少;字越熟、難題出現越多。
+  const fmtTier = f => f.tier || (f.skill === 'write' ? 3 : f.skill === 'speak' ? 2 : 1);   // 認/讀=1、說=2、寫=3;f.tier 可覆寫(句子=3)
+  const target = tierOfMastery(rec(w).mastery || 0);   // 該字現在的難度階(1認 / 2說 / 3寫),跟 mastery 走
+  if (!rec(w).wrote && target >= 3) {   // 只在「已練到寫階」才強制補寫(打王門檻);別一教完(認階)就逼默寫 → 治跳難度
     const writePool = pool.filter(f => f.skill === 'write');
     if (writePool.length) pool = writePool;
   }
-  // ★ 熟練度 = 出現頻率(不是 gate):靠近該字當前難度的題型抽中機率高,難的不會消失、只是變少;字越熟、難題出現越多。
-  const fmtTier = f => f.tier || (f.skill === 'write' ? 3 : f.skill === 'speak' ? 2 : 1);   // 認/讀=1、說=2、寫=3;f.tier 可覆寫(句子=3)
-  const target = tierOfMastery(rec(w).mastery || 0);
   const wt = f => {
-    if (f.id === 'sentence_build') return !stageHasRealWords(meta.stage || 1) ? 90 : (meta.stage || 1) >= 2 ? 40 : 7;   // 句型階段主打句子;有新實詞的階段只提高到穿插練習。
-    if (f.id === 'sentence_transform') return (meta.stage || 1) >= 2 ? 20 : 8;   // 直述↔問句轉換:直述句練過才會出(canTransform 守),出現頻率中等
-    if (f.id === 'sentence_cloze') return (meta.stage || 1) >= 3 ? 18 : 0;
+    // 句子題的權重也跟該字難度階走:剛學的字(認階)先練認/聽/說,別一上來就主打句子;到說階才主打排句、寫階才出句子默寫。
+    if (f.id === 'sentence_build') return !stageHasRealWords(meta.stage || 1) ? 90 : (target >= 2 ? 40 : 7);   // 純句型階段一律主打;有實詞的階段:該字到說階才主打句子,認階先少出
+    if (f.id === 'sentence_transform') return ((meta.stage || 1) >= 2 && target >= 2) ? 20 : 4;   // 轉換題同理(說階以上才常出)
+    if (f.id === 'sentence_cloze') return ((meta.stage || 1) >= 3 && target >= 3) ? 18 : 0;   // 句子默寫(打字補字)= 寫階才出,別對剛學的字默寫
     const d = Math.abs(fmtTier(f) - target); return d === 0 ? 3 : d === 1 ? 1 : 0.3;
   };
   let tot = pool.reduce((s, c) => s + wt(c), 0), pick = Math.random() * tot, f = pool[pool.length - 1];
