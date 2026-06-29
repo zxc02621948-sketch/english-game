@@ -66,20 +66,21 @@ const stageHasRealWords = stage => BANK.some(w => batchOf(w) === stage - 1 && w.
 function buildLevel() {
   // ★ 浮動關卡(SRS,見 DESIGN_MASTERY §6):大小由內容決定,沒固定 5 字。新字 + 學習中 + 到期複習,填到 MAX、超出順延下一關。
   const sentenceFocus = !stageHasRealWords(meta.stage || 1);
-  const MAX = sentenceFocus ? 4 : 10, NEW = 2, ACTIVE_CAP = sentenceFocus ? 2 : 5, clock = meta.clock || 0;
+  const MAX = sentenceFocus ? 4 : 8, ACTIVE_CAP = sentenceFocus ? 2 : 5, clock = meta.clock || 0;
   let _g = false; BANK.forEach(w => { if (w.pos === 'function' && batchOf(w) < (meta.stage || 1) && isFresh(w)) { rec(w).taught = true; _g = true; } }); if (_g) save();   // 功能詞(膠水)沒單獨意義 → 不出教卡;批次一解鎖就靜默標 taught(讓句子組得出),意義交給句子 + teachPattern
   const fresh  = LEARN_ORDER.filter(w => isFresh(w) && batchOf(w) < (meta.stage || 1) && w.pos !== 'function');   // 解鎖批內的新「實詞」(功能詞不走教卡)
   const needsWrite = BANK.filter(w => !isFresh(w) && w.pos !== 'function' && !rec(w).wrote && batchOf(w) < (meta.stage || 1));
   const active = shuffle(BANK.filter(w => !isFresh(w) && !isLearned(w) && w.pos !== 'function')); // 學習中(<100%),主力。功能詞排除 → 不單獨刷,只在句子裡練
   const due    = BANK.filter(w => isLearned(w) && w.pos !== 'function' && (rec(w).due || 0) <= clock) // 到期該複習的學會字(功能詞除外,走句子)
                      .sort((a, b) => (rec(a).due || 0) - (rec(b).due || 0));              // 最逾期先
+  const NEW = active.length >= 3 ? 0 : 2;   // ★ 在學的字 ≥3 就先別引新字 → 把在學的練到會再解鎖,別一直冒新字、堆一堆沒練到的(治「認識/學習量比例失衡」)
   const picked = [];
   const add = arr => { for (const w of arr) { if (picked.length >= MAX) break; if (!picked.some(p => p.id === w.id)) picked.push(w); } };
-  add(fresh.slice(0, NEW));            // 1. 新字(保證進度)
-  add(needsWrite);                     // 2. 還沒默寫成功過的字:打王前必須補到
-  add(active.slice(0, ACTIVE_CAP));    // 3. 學習中(主力)
-  add(due);                            // 4. 到期複習(填到 MAX)
-  if (picked.length < 4 && !fresh.length) add(shuffle(BANK.filter(w => isLearned(w) && w.pos !== 'function')));   // 5. 太少且「沒有新字可學了」(純鞏固期)才補學會的字回鍋;還有新字沒學就專心出新字,別塞已會的湊數(治「只剩 1 個不會卻硬補一堆已會的」)
+  add(fresh.slice(0, NEW));            // 1. 新字(在學的太多就先不加,先把在學的練完)
+  add(active.slice(0, ACTIVE_CAP));    // 2. 學習中(主力)— 優先練這些,這關的重點
+  add(needsWrite.slice(0, 2));         // 3. 補默寫:只穿插幾個(打王前要寫對過)
+  add(due.slice(0, 2));                // 4. 到期複習:只穿插幾個(舊字主要靠句子複習帶,別灌一堆已會的淹掉學習)
+  if (picked.length < 4 && !fresh.length) add(shuffle(BANK.filter(w => isLearned(w) && w.pos !== 'function')));   // 5. 太少且「沒有新字可學了」(純鞏固期)才補學會的字回鍋
   if (!picked.length) add(fresh);      // 極早期保險:還是空 → 多給新字
   return shuffle(picked);
 }
