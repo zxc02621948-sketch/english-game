@@ -89,7 +89,7 @@
 
 ## Boss(已大改 — 詳見 DESIGN_MASTERY「本階段引擎新規則」/ CURRICULUM「★結構定案」)
 - **觸發**:✅ **內容驅動** `stageReady()` —— 當前批(`batchOf===stage-1`)字都練到會寫(mastery≥`BOSS_READY_MASTERY 67`)→ `meta.bossReady`,過關畫面 + 地圖快捷出「⚔ 挑戰王」鈕,**非強制**(可挑戰或再練)。取代舊的固定 5×stage。
-- **「我已經會了」跳過(通用向,治「強迫已會的人從基礎爬」)**:教卡(`teach`)有 `.sideact`「這個我已經會了」鈕 → `markWordKnown(w)`(標 taught+100%+wrote、給金幣、本關消題、**`due` 停遠 `ivl=8`**=不會下一關馬上又抓回來複習)。字仍在字庫 → **句子照樣組得出(依賴鏈不斷)**。`stageReadyAt`:該階字**全部 `isLearned`**(含跳過的)→ 不必等 `stageDeadlineLevel` 鞏固關,**直接開王**(部分會則仍要跑完鞏固)。所以「整階都按我會了 → 直接打王」。
+- **「我已經會了」跳過(通用向,治「強迫已會的人從基礎爬」)**:第一次出現的教學都有 `.sideact` 跳過鈕——**單字教卡** `teach` 跟 **句型教卡** `teachPattern`(「先看這個句型」第一次出現時,傳 `onKnown` → 點了 `bumpPat(id, LEARNED)` 標滿句型 + 跳過排句 + `done()` 直接 continue;之後同句型不再出教卡)。單字那顆 → `markWordKnown(w)`(標 taught+100%+wrote、給金幣、本關消題、**`due` 停遠 `ivl=8`**=不會下一關馬上又抓回來複習)。字仍在字庫 → **句子照樣組得出(依賴鏈不斷)**。`stageReadyAt`:該階字**全部 `isLearned`**(含跳過的)→ 不必等 `stageDeadlineLevel` 鞏固關,**直接開王**(部分會則仍要跑完鞏固)。所以「整階都按我會了 → 直接打王」。
   - ★ 治「只剩 1 個不會卻關卡混亂」:`buildLevel` 的「<4 補學會的字湊數」**改成只在 `!fresh.length`(沒有新字可學了)才補** → 還有不會的字就專心出那幾個,不塞已會的進來;搭配跳過字停遠,「5 字只有 1 個不會」=乾淨的「只練那 1 個 → 學完直接打王」。
 - **血 / 傷害**:HP 隨階段縮放(`bossMaxHp = 50 + (stage-1)×30`);**傷害 = 總血 %、按題型**(四選一 5% / 拼字 8% / 2字 12% / 句子默寫 20% / 臨死組合 25%),舊「字母數 + cap10」已拔。
 - **綜合考、偏重現學**:`bossPickWords` 加權現學批次(`BOSS_CUR_WEIGHT 4:1`);題型混 看中 / 聽 / 看圖 / 四選一(`BOSS_MODES`)+ **句子默寫**(`bossSentenceQuestion`,`BOSS_SENTENCE_PROB .3`,學過句子才出);題庫 `bossPool` 排功能詞。

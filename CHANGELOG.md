@@ -757,3 +757,11 @@
 - buildLevel:「picked<4 補學會的字湊數」加 `&& !fresh.length` 守衛 → 還有沒學的新字就專心出新字,純鞏固期(無 fresh)才補。
 - 效果:「5 字只剩 1 個不會」→ buildLevel 只出那 1 個 → 學完(+整階已會)直接打王,不混亂。
 - 驗(瀏覽器):標 4 會留 cat → buildLevel=[cat](不補已會);純複習期(全會無 fresh)→ 仍補滿不空;跳過字 due=clock+8(停遠);node --check OK;零 console error。
+
+### 本輪(Claude Opus): 句型教卡也加「我已經會了」
+- 使用者:句型教學(先看這個句型)也該能跳過,語句現階段很簡單很多人會。第一次出現的教學都要有跳過鈕。
+- teachPattern 加 onKnown 參數 + .sideact「這個句型我已經會了」鈕;askBuildSentence 傳 onKnown=()=>{ bumpPat(id, LEARNED); done(); }(句型標滿、跳過排句、直接 continue)。
+- patMastery 標滿後,同句型不再出教卡(直接 arrange),與單字「我已經會了」一致。
+- 教學是內容驅動(第一次遇到才教),非固定關卡:單字=該字第一次被引入;句型=該句型第一次出題(patMastery===0)。
+- 驗(瀏覽器):教卡有鈕、點了 patMastery 10→100、done 觸發推進;標滿後同句型直接排句不再教;node --check OK;零 console error。
+- ⚠ 未做:boss 門檻仍是「單字」基準(stageReadyAt 看 word taught+wrote);純句型階段「patterns 都會了→跳王」沒獨立接(句型沒按階分批,難定義「這階的句型」)。要的話另議。

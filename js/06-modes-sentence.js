@@ -1,11 +1,13 @@
-function teachPattern(sentence, then) {
+function teachPattern(sentence, then, onKnown) {
   const chunks = sentence.text.replace(/[.?!]/g, '').split(/\s+/).filter(Boolean);
   shell('先看這個句型', `
     <div class="buildzh">${sentence.zh}</div>
     <div class="buildline">${chunks.map(c => `<div class="opt chunk">${c}</div>`).join('')}</div>
     <div class="sub2" style="margin-top:12px">英文照這個順序:<b style="color:#9bd2ff">${sentence.text}</b></div>
-    <button class="btn act" id="gotit" style="margin-top:16px">懂了,我來排 →</button>`);
+    <button class="btn act" id="gotit" style="margin-top:16px">懂了,我來排 →</button>
+    ${onKnown ? '<button class="btn sideact" id="patknow">這個句型我已經會了 →</button>' : ''}`);
   $('gotit').onclick = then;
+  if (onKnown) { const b = $('patknow'); if (b) b.onclick = onKnown; }   // 已經會這句型 → 標會、跳過排句、continue
 }
 
 // 共用拖曳排序引擎:給 cards + 正解 token 順序,渲染 slots/bank + 拖曳/點擊 + 確定;判對錯交給 onCheck 出回饋。
@@ -172,7 +174,7 @@ function askBuildSentence(sourceWords = sentenceSourceWords(), done = showDone, 
 
   if (patMastery(sentence.patternId) === 0) {
     bumpPat(sentence.patternId, 10);
-    teachPattern(sentence, arrange);
+    teachPattern(sentence, arrange, () => { bumpPat(sentence.patternId, LEARNED); done(); });   // 「這句型我已經會了」→ 句型標滿、跳過排句、直接 continue
   } else {
     arrange();
   }
