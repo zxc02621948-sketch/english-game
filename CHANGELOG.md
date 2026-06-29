@@ -719,3 +719,10 @@
 - 新增 sentenceWithWord(w)(js/06):組保證含 w 的句子(w 當 slot 或當 requires 動詞)。buildSentenceFromPattern 加 mustInclude 參數強制把字塞進 slot。askBuildSentence 加 forced 參數吃指定句子。
 - 驗(瀏覽器):cat(學會+默寫)16/16 走句子且每句含 cat;make(orphan)16/16 走句子;friend(還在學)16/16 單字;cat(沒默寫)16/16 單字;stage1 組不出句子→退單字不當機;BOSS_READY_MIN_LEVELS=5;node --check 四檔 OK;零 console error。
 - ⚠ 殘留:orphan 動詞目前靠「一般句子(不含該字)」複習=軟複習。要讓它們真的進句子,得補動詞句型(之前 deferred 的擴字/擴句)。
+
+### 本輪(Claude Opus): 補考改「先考、複習當可選」
+- 使用者:補考前強制看完整重看卡太煩;有人只是手滑打錯(water→wster),應該直接讓他重答,想複習才複習。
+- reviewThenAsk 反過來:先直接補考(同題型),畫面下方加一顆可選「📖 我要複習」鈕(injectReviewButton);點了才出重看卡 showReviewCard(字+音節+念+字根),看完按「回去答題」回補考。重看卡本身不再有複習鈕(避免循環)。
+- CSS:.lesson-stage 由橫排改直排(對單一 prompt 視覺不變),讓「我要複習」鈕乾淨落在題目下方;新增 .reviewlink 樣式(細框 pill,非固定操作列)。
+- 驗(瀏覽器,DOM 狀態):補考直接出題型(非重看卡)+ 我要複習鈕在;點鈕→重看卡(cat+音節+字根+回去答題)、複習鈕消失;回去→補考+鈕回來;答對→消題到過關;node --check OK;零 console error。
+- ⚠ 版面幾何/截圖:此環境 preview 視窗回報 0×0 且截圖逾時,無法量按鈕座標——版面靠 CSS 直排堆疊判斷(低風險),請玩家在 8182 目視。

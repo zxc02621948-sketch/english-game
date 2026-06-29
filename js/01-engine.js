@@ -181,14 +181,33 @@ function nextQuestion() {
   if (reviewQueue.length) { inReview = true; const e = reviewQueue.shift(); current = e.w; return reviewThenAsk(e.w, e.run, e.skill); }   // 主回合跑完 → 回顧重答錯題(同題型)
   showDone();
 }
-// 回顧重答(DESIGN_MASTERY step 2):答錯的題集中到主回合後,先重看一次(字 + 念 + 中文 + 字根)再重答 → 永不卡死
+// 補考(DESIGN_MASTERY step 2):答錯的題集中到主回合後重答 → 永不卡死。
+// 2026-06 UX:先直接補考(手滑打錯的人直接重答即可,不強迫看完整重看卡);補考畫面多一顆「我要複習」可選鈕,想看才走重看流程。
 function reviewThenAsk(w, run, skill) {
+  currentRung = 1;
+  currentSkill = skill || (run && SKILL.get(run)) || null;
+  const r = run || ask;
+  r(w);                                   // 先直接補考(同一種題型)
+  injectReviewButton(w, r);               // 補考畫面塞「我要複習」可選鈕
+}
+// 在補考題目下方塞一顆「我要複習」鈕(可選);點了走重看卡,看完回來繼續補考
+function injectReviewButton(w, r) {
+  const host = document.querySelector('.lesson-stage');
+  if (!host || document.getElementById('wantreview')) return;
+  const b = document.createElement('button');
+  b.id = 'wantreview'; b.className = 'reviewlink';
+  b.textContent = '📖 我要複習這個字';
+  b.onclick = () => showReviewCard(w, r);
+  host.appendChild(b);
+}
+// 重看卡:字 + 音節 + 念 + 字根(原本強制出現的那張,現在改成「我要複習」才看)→ 看完回去補考
+function showReviewCard(w, r) {
   const syls = sylOf(w);
   const sylHTML = syls.map(s => `<span class="syl">${s}</span>`).join('<span class="sep">·</span>');
   const sylBlock = syls.length > 1
     ? `<div class="syllables teach-syllables" id="syls">${sylHTML}</div><div class="syltip teach-tip">「·」只是音節分隔,拼字沒有點</div>`
     : `<div class="syllables teach-syllables" id="syls" hidden>${sylHTML}</div>`;
-  shell('剛剛這題錯了 —— 先回顧一下,再試一次 👇', `
+  shell('複習一下這個字,再回去答 👇', `
     <div class="teach-layout">
       <div class="teach-main">
         <div class="fullword teach-word">${w.en}</div>
@@ -198,12 +217,12 @@ function reviewThenAsk(w, run, skill) {
       <div class="teach-tools"><button class="replay" id="rplay">🔊 念</button></div>
       <div class="teach-why">${w.why}</div>
     </div>
-    <button class="btn act" id="rready" style="margin-top:14px">再試一次 →</button>`);
+    <button class="btn act" id="rback" style="margin-top:14px">看完了,回去答題 →</button>`);
   $('body').classList.add('teach-answer');
   document.querySelector('.lesson').classList.add('teach-lesson');
   speakSyllables(w, 0.9);
   $('rplay').onclick = () => speakSyllables(w, 0.9);
-  $('rready').onclick = () => { currentRung = 1; currentSkill = skill || (run && SKILL.get(run)) || null; (run || ask)(w); };   // 用剛剛答錯的那種題型再考一次
+  $('rback').onclick = () => { r(w); injectReviewButton(w, r); };
 }
 
 /* ============================================================================
