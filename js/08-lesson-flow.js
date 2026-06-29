@@ -103,15 +103,16 @@ function trainAsk(w) {
   f.run(w);
   injectTrainKnown(w);
 }
-// 每題塞「✓ 這個我學會了」鈕 → markWordKnown + 移出特訓題庫 + 下一題
+// 每題塞「✓ 我學會了」鈕 → markWordKnown + 移出特訓題庫 + 下一題。
+// 跟教卡「我已經會了」一致:左下固定 .sideact 大鈕(顯眼)。說題左下已有「跳過說題」→ 疊在它上面避免重疊。
 function injectTrainKnown(w) {
-  const host = document.querySelector('.lesson-stage');
-  if (!host || document.getElementById('trainknown')) return;
+  if (document.getElementById('trainknown')) return;
   const b = document.createElement('button');
-  b.id = 'trainknown'; b.className = 'reviewlink';
-  b.textContent = '✓ 這個我學會了,移除';
+  b.id = 'trainknown'; b.className = 'btn sideact';
+  b.textContent = '✓ 我學會了,移除';
   b.onclick = () => { markWordKnown(w); trainPool = trainPool.filter(x => x.id !== w.id); trainNext(); };
-  host.appendChild(b);
+  if (document.getElementById('skipspeak')) b.style.bottom = 'calc(34px + 76px)';   // 說題左下已有「跳過說題」→ 往上疊
+  screen.appendChild(b);   // .sideact 是 fixed,接到 #screen 即可(下一題 shell 重繪會清掉)
 }
 function trainingDone() {
   inTraining = false; trainPool = [];

@@ -61,8 +61,8 @@ function askPicture(w) {
 function askMatch(w) {
   const seen = new Set([w.zh]), uniq = x => !seen.has(x.zh) && (seen.add(x.zh), true);   // 中文不重複 → 避免「兩個是」這種無法配對
   let others = shuffle(BANK.filter(x => x.id !== w.id && !isFresh(x) && x.pos === w.pos)).filter(uniq);
-  if (others.length < 4) { seen.clear(); seen.add(w.zh); others = shuffle(BANK.filter(x => x.id !== w.id && !isFresh(x))).filter(uniq); }   // 只用教過的、中文不重複;不夠就少幾組
-  let pool = [w, ...others.slice(0, 4)];
+  if (others.length < 3) { seen.clear(); seen.add(w.zh); others = shuffle(BANK.filter(x => x.id !== w.id && !isFresh(x))).filter(uniq); }   // 只用教過的、中文不重複;不夠就少幾組
+  let pool = [w, ...others.slice(0, 3)];   // 4 組(原 5 組在固定不捲版面 + 特訓那顆鈕會被切到底部)
   const ens = shuffle(pool), zhs = shuffle(pool);
   shell('把英文和中文配對起來', `<div class="match-grid">
     <div class="opts" id="ens" style="flex:1"></div>

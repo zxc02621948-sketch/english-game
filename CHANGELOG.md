@@ -811,3 +811,9 @@
 - onCorrect:加熟練度/wrote 那段改 else if (!inReview) → 補考(inReview)答對只消題、不加 %、不算 wrote;主回合(inReview=false)才加。trainNext 設 inReview=false(特訓不是補考,答對正常加分)。
 - showTrainPicker:濾掉 isLearned(100%)的字,只列 <100% 的;全滿時換訊息「目前沒有需要加強的字」。
 - 驗(瀏覽器):補考答對 mastery 留 40、主回合答對 40→65、補考默寫 wrote=false;選字頁濾掉 100% 的 cat、特訓答對仍加分(40→65);node --check OK;零 console error。
+
+### 本輪(Claude Opus): 配對改 4 組 + 特訓「我學會了」移到左下大鈕
+- 使用者:① 特訓配對題 5 組被固定不捲版面切到底部(尤其特訓還多一顆鈕);② 特訓「我學會了」放頂部小 pill,不一致也不顯眼——「我已經會了」既有慣例是左下 .sideact 大鈕(教卡那顆)。
+- askMatch:5 組 → 4 組(others.slice(0,3)、不足門檻 <3),固定版面放得下(一般關卡的配對題也一起修好短螢幕切字)。
+- injectTrainKnown:從頂部 .reviewlink pill 改成左下 .sideact 大鈕(跟教卡 iknow/patknow 一致、顯眼),接到 #screen(fixed);說題左下已有 skipspeak → train-known 疊到它上方(bottom 110px)不重疊。
+- 驗(瀏覽器):配對 4 組;train-known 是 .sideact、parent=screen、不在 stage;說題時 bottom=calc(110px) 疊高;點擊→移除+標會+下一題;node --check OK;零 console error。
