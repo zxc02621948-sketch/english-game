@@ -78,7 +78,8 @@
 - **固定分區**:`shell()` 現在輸出 `.lesson` 骨架,上半是 `.lesson-stage` 題目帶(`#prompt`),下半是 `.lesson-answer` 作答帶(`#body`)。關卡題目頁 `.lesson-screen` 固定 `height:100vh; overflow:hidden`,必須一頁完整顯示,不要靠往下滾才看到內容。一般題型內容放進 `bodyHTML` 後會被固定在同一個作答區,不要再每題自己用大 margin 猜位置。
 - **標題一律置中**:`.lesson-stage .prompt` 已統一 `text-align:center`;不要只在單一題型加 `.center` 補洞。
 - **教卡專用分配**:`teach()` / `reviewThenAsk()` 會加 `.teach-lesson` + `.teach-answer`;`.teach-layout` 吃滿作答區高度,上半置中放字/發音按鈕,`.teach-why` 是大說明卡(有 min-height / 大字 / padding),貼近 action bar 上方。不要讓教卡內容回到全部擠在上半部的自然流,也不要把說明卡縮回細條提示。
-- **選擇/配對題專用分配**:四選一類(`askReadPick`/`askListenPick`/`askListenWord`/`askPicture`)會加 `.choice-answer`,選項高度和間距要用 clamp 壓在 action bar 上方完整顯示。配對題 `askMatch` 會加 `.match-answer` + `.match-grid`;完成後走 `finishGroupSuccess('配對完成', ...)`,不要顯示某一個單字的 `why`。
+- **選擇題 = 點選定 + 確認才判**(治手滑點錯):四選一類(`askReadPick`/`askListenPick`/`askListenWord`/`askPicture`/`askClozePick`)都走共用 `mountChoices(box, opts, getText, w, correctText)` —— 點選項=高亮 `.opt.sel`(可改選)、底部出 `.act#submit`「確認」(沒選時 `disabled`),按了才 `pickAnswer→finish`。**加選擇題就用 `mountChoices`,別自己 `el.onclick=pickAnswer`(那會點了就判)。** Boss 四選一**不走**這套(戰鬥保持秒判)。
+- **選擇/配對題專用分配**:四選一類會加 `.choice-answer`,選項高度和間距要用 clamp 壓在 action bar 上方完整顯示。配對題 `askMatch` 會加 `.match-answer` + `.match-grid`;完成後走 `finishGroupSuccess('配對完成', ...)`,不要顯示某一個單字的 `why`。
 - **Boss 專用分配**:`startBoss` / `renderBossQ` / `bossEnd` 會加 `.boss-screen`;題目頁用 `.boss-layout` 三段式(status / arena / answer)平均吃滿高度,結算頁用 `.boss-result` 置中。`shell()`、`showHome`、設定、音樂頁都會移除 `.boss-screen`;`showHome()` 也會清空 `screen.innerHTML`,不要讓 Boss 結果殘留在首頁。
 - **★ 底部固定操作列**(Duo 式):`#screen::after` 畫出底部 action bar;一般主要動作鈕 `.act` 固定右下、綠色高對比(送出/確定/記住了/換我排/說)。次要動作 `.sideact` 固定左下,目前用在說題「跳過說題」。**加新題型的主按鈕一定要掛 `.act`;跳過/取消類用 `.sideact`,不要再做小字連結。**
 - **答題回饋** `.why`:在 `.lesson-screen` 中會直接吃掉底部 action bar,左側顯示結果/說明/再聽,右側放 `.act` 的繼續鈕。這時 `.why .act` 會改成 `position:static`,**不要再讓繼續鈕另外 fixed 疊在回饋列上**。`.why.bad` = 紅色底部列。`finish()` 不再把 `#prompt` 改成大型「答對了」,避免答題後整頁漂移。

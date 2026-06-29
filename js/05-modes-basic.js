@@ -3,24 +3,14 @@ function askListenPick(w) {
   $('body').classList.add('choice-answer');
   speak(w.en);
   $('replay').onclick = () => speak(w.en);
-  const box = $('opts');
-  fourOptions(w).forEach(o => {
-    const el = document.createElement('div'); el.className = 'opt'; el.textContent = o.zh;
-    el.onclick = () => pickAnswer(box, el, o.en === w.en, w, w.zh, o);
-    box.appendChild(el);
-  });
+  mountChoices($('opts'), fourOptions(w), o => o.zh, w, w.zh);
 }
 
 // 2. 看中文 → 選英文
 function askReadPick(w) {
   shell('看中文,選出英文', `<div class="bigzh">${w.zh}</div><div class="opts" id="opts"></div>`);
   $('body').classList.add('choice-answer');
-  const box = $('opts');
-  fourOptions(w).forEach(o => {
-    const el = document.createElement('div'); el.className = 'opt'; el.textContent = o.en;
-    el.onclick = () => pickAnswer(box, el, o.en === w.en, w, w.en, o);
-    box.appendChild(el);
-  });
+  mountChoices($('opts'), fourOptions(w), o => o.en, w, w.en);
 }
 
 // 2b. 聽發音 → 選英文字(認階:聽音對字形)
@@ -29,12 +19,7 @@ function askListenWord(w) {
   $('body').classList.add('choice-answer');
   speak(w.en);
   $('replay').onclick = () => speak(w.en);
-  const box = $('opts');
-  fourOptions(w).forEach(o => {
-    const el = document.createElement('div'); el.className = 'opt'; el.textContent = o.en;
-    el.onclick = () => pickAnswer(box, el, o.en === w.en, w, w.en, o);
-    box.appendChild(el);
-  });
+  mountChoices($('opts'), fourOptions(w), o => o.en, w, w.en);
 }
 
 // 玩法層:有圖像感的具體字 → emoji(看圖選詞用;沒列到的字就不出圖像題)。跟 SPEECH_ALIASES 同層,不進 BANK。
@@ -69,12 +54,7 @@ function askPicture(w) {
   shell('這個圖是哪個字?', `${vis}<div class="opts" id="opts"></div>`);
   $('body').classList.add('choice-answer');
   if (isImg) { const im = $('picimg'); if (im) im.onerror = () => { im.outerHTML = `<div style="font-size:72px">${EMOJI[wordKey(w)] || '❓'}</div>`; }; }   // 圖載不到 → fallback emoji
-  const box = $('opts');
-  opts.forEach(o => {
-    const el = document.createElement('div'); el.className = 'opt'; el.textContent = o.en;
-    el.onclick = () => pickAnswer(box, el, o.en === w.en, w, w.en, o);
-    box.appendChild(el);
-  });
+  mountChoices($('opts'), opts, o => o.en, w, w.en);
 }
 
 // 2c. 文字配對(認階):一次 5 組英↔中,點英再點中配對,全對才過。配對夥伴優先用「已教過」的字,current 記分、其餘順便複習。
@@ -334,12 +314,7 @@ function askClozePick(w) {
     <div class="opts" id="opts"></div>`);
   screen.classList.add('cloze-pick-screen');
   $('body').classList.add('choice-answer', 'cloze-choice-answer');
-  const box = $('opts');
-  slotOptions().forEach(o => {
-    const el = document.createElement('div'); el.className = 'opt'; el.textContent = o.en;
-    el.onclick = () => pickAnswer(box, el, o.en === w.en, w, w.en, o);
-    box.appendChild(el);
-  });
+  mountChoices($('opts'), slotOptions(), o => o.en, w, w.en);
 }
 
 // 教句型結構:沒教過的句型,排詞前先教「英文怎麼排」(不然只學了字、沒學排列)

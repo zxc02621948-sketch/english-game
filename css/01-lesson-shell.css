@@ -17,6 +17,7 @@
   #screen.lesson-screen > .why .act { position:static; right:auto; bottom:auto; left:auto; transform:none; width:min(300px, 32vw); min-width:220px; min-height:64px; margin:0 0 0 auto; flex-shrink:0; }
   #screen .act { position:fixed; right:max(28px, calc((100vw - 960px) / 2)); bottom:34px; left:auto; transform:none; width:min(300px, calc(48vw - 36px)); min-height:64px; margin:0; z-index:40; background:#8ee000; border-color:#8ee000; border-bottom:5px solid #5fa900; color:#102016; font-weight:800; letter-spacing:0; }   /* ★ 主要動作鈕固定在右下,像 Duo 的 Check/Continue */
   #screen .act:hover { background:#a2ef24; }
+  #screen .act:disabled { background:#22323a; border-color:#22323a; border-bottom-color:#1a262c; color:#5f7488; cursor:default; }   /* 選擇題還沒選 → 確認鈕灰掉 */
   #screen .sideact { position:fixed; left:max(28px, calc((100vw - 960px) / 2)); bottom:34px; width:min(220px, calc(42vw - 36px)); min-height:64px; margin:0; z-index:41; background:transparent; border:2px solid #405762; border-bottom:5px solid #31464f; color:#9fb4c8; font-weight:800; }
   #screen .sideact:hover { background:#18282f; color:#e8eef5; }
   .toprow .bar { flex:1; }

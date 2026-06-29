@@ -216,6 +216,26 @@ function pickAnswer(box, el, right, w, correctText, picked = null) {
   else { el.classList.add('wrong'); [...box.children].forEach(c => { if (c.textContent === correctText) c.classList.add('right'); }); }
   finish(right, w, picked);
 }
+// 選擇題共用:點 = 選定(高亮 .sel),按「確認」才判分 → 治手滑點到就送出。確認前可改選。
+// getText(o) 取選項顯示字;correctText = 正解顯示字(答錯時標綠用)。
+function mountChoices(box, opts, getText, w, correctText) {
+  let sel = null;
+  opts.forEach(o => {
+    const el = document.createElement('div'); el.className = 'opt'; el.textContent = getText(o);
+    el.onclick = () => {
+      if (box.classList.contains('locked')) return;
+      [...box.children].forEach(c => c.classList.remove('sel'));
+      el.classList.add('sel'); sel = { el, o };
+      const sb = $('submit'); if (sb) sb.disabled = false;
+    };
+    box.appendChild(el);
+  });
+  $('body').insertAdjacentHTML('beforeend', '<button class="btn act" id="submit" disabled>確認</button>');
+  $('submit').onclick = () => {
+    if (!sel || box.classList.contains('locked')) return;
+    pickAnswer(box, sel.el, sel.o.en === w.en, w, correctText, sel.o);   // 確認才判分(pickAnswer→finish 會收掉確認鈕、出結算)
+  };
+}
 function fourOptions(w) {
   const opts = [];
   const push = o => { if (o && o.en !== w.en && o.zh !== w.zh && !opts.some(x => x.en === o.en)) opts.push(o); };  // 誘答中文不能跟正解一樣(避免「是」對 is/am 兩個都對)

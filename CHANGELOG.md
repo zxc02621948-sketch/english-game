@@ -765,3 +765,10 @@
 - 教學是內容驅動(第一次遇到才教),非固定關卡:單字=該字第一次被引入;句型=該句型第一次出題(patMastery===0)。
 - 驗(瀏覽器):教卡有鈕、點了 patMastery 10→100、done 觸發推進;標滿後同句型直接排句不再教;node --check OK;零 console error。
 - ⚠ 未做:boss 門檻仍是「單字」基準(stageReadyAt 看 word taught+wrote);純句型階段「patterns 都會了→跳王」沒獨立接(句型沒按階分批,難定義「這階的句型」)。要的話另議。
+
+### 本輪(Claude Opus): 選擇題改「點選定 + 確認才判」
+- 使用者:選擇題點了就=送出,手滑會誤判。改成點=選定、按確認才判分(Duolingo 式),確認前可改選。
+- 新增共用 mountChoices(box, opts, getText, w, correctText):點選項→高亮 .opt.sel(清掉其他)、底部 .act#submit「確認」(沒選 disabled),按確認才 pickAnswer→finish。
+- askReadPick / askListenPick / askListenWord / askPicture / askClozePick 全改用 mountChoices(原本各自 el.onclick=pickAnswer 點了就判)。
+- CSS:加 #screen .act:disabled 灰掉樣式。Boss 四選一不改(戰鬥保持秒判);配對題 askMatch 不改。
+- 驗(瀏覽器):初始確認鈕 disabled;點錯選項只選定不判分;改選 sel 會移動;按確認才判(標對+鎖定+收確認鈕+出結算+繼續);5 種選擇題都有確認鈕;node --check OK;零 console error。
