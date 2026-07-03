@@ -8,6 +8,96 @@
 
 ---
 
+## 最新交接快照（2026-07-02 深夜 / Claude Opus 4.8）— 工作英文 = 主線引擎的第二條「軌」（多軌重構）
+
+> 這輪的最終定案:**不要幫工作英文另做引擎**。工作英文本質 = 同一套引擎 + 不同內容,所以把主線引擎改成**多軌(track)**,工作變成第二條軌。**先前「工作浮動小引擎(`WORK_WORDS`/`WORK_ITEMS`/`workXxx`/`work_progress_v1`)」整套已刪除、作廢**,別再參考任何舊工作引擎描述。
+
+### 為什麼(使用者一路逼出來的結論)
+工作端一直在缺主線早有的東西(補考、音節教學、句子複習…),因為那是「在旁邊重造引擎」。使用者點破:「主題不同而已,應該通用」。→ 引擎多軌化,工作直接繼承主線全部。
+
+### 多軌機制（核心在 `js/01-engine.js`)
+- **做法 = 切軌時「整組換全域」,不改任何引用**(引擎對 `BANK`/`meta.stage` 有上百處引用,逐一改是自殺):
+  - 內容全域改成可換 `let`:`BANK`(js/00)、`PATTERNS`(js/00)、`BATCHES`(js/01)、`BUILD_SENTENCE_PATTERN_IDS`(js/03)、`TRANSFORM_PATTERN_IDS`(js/06)。`applyTrackContent(name)` 整組換 + `rebuildCurriculum()` 重算衍生表(`_batchIndex`/`LEARN_ORDER`)。
+  - 進度用 swap:`setTrack(name)` 把當前軌的 `level` + `meta.{stage,clock,maxLevel,stageStartLevel,boss旗標}` 存進 `meta.tracks[軌]`,再載入目標軌的。舊碼照讀 `meta.stage`,只是讀到當前軌的值。
+- **共用(不分軌)**:`store`(單字熟練度,id 不撞:日常 `word_*` / 工作 `work_*`)、`meta.coins`、`meta.skills`、音效/BGM。
+- **每軌獨立**:內容(BANK/BATCHES/PATTERNS/句型清單)+ 進度(level/stage/clock/maxLevel/王)。
+- `TRACKS` 登錄表 + `currentTrack`;`registerTrack(name, {bank,batches,patterns,buildIds,transformIds})` 在 **js/11-main.js** 註冊(此時內容全載完),再 `showHome()`。
+
+### 工作軌內容（`js/10-work-mode.js` 現在只剩這個)
+- `WORK_BANK` / `WORK_BATCHES` / `WORK_PATTERNS` / `WORK_BUILD_IDS` / `WORK_TRANSFORM_IDS`,格式跟主線 BANK/PATTERNS 一模一樣。
+- 工作字 id 一律 `work_*`;功能詞(I/you/the/could…)`pos:"function"`(不出教卡、只在句子學);句型 slot 空 `{}` = 固定句(之後可加 slot 變生成式)。
+- **擴內容 = 純加資料**:往 `WORK_BANK` 加字(補 `pos`/`syl`/`why`)、`WORK_BATCHES` 加主題批、`WORK_PATTERNS` 加句(`requires` 列出句子用到的 `work_*` id,全教過才生得出)。引擎一行不用動。
+- **★ 工作軌不練默寫**(承接「先求聽懂能回應、不用默寫」):`js/11` 註冊帶 `skills:{write:false}`。`js/08` 的 `trackSkillOn(s)` 濾題型、`wroteOk(w)` 免默寫門檻;`js/09` 王對不練寫的軌改**辨識題**(`bossGridWordQuestion` 挑正確拼法 / `bossGridSentenceQuestion` 點序 / `pickBossMode` 只留 choice)。要「工作也練寫」= 拿掉那個 flag。
+- **★ 內容時態要一致**:句子字面(fixed/works/reported/found)必須有對應的 `WORK_BANK.en`,否則 `creditSentence` 對不到、練的字跟句子不符。有 node 驗證腳本(每個句子 token 都要對得到一個 `WORK_BANK.en`)——擴內容後跑一下。
+
+### 首頁(`js/10-home-settings.js`)
+- `showHome()`/`mapSVG()` 讀的都是 swap 後的 `meta`,所以**同一個 showHome 自動渲染當前軌**。分頁鈕:`dailybranch → setTrack('daily'); showHome()`、`workbranch → setTrack('work'); showHome()`;標題/高亮隨 `currentTrack`。
+- 🔄 重置:清 `store` + `meta.tracks={}` + `currentTrack='daily'; applyTrackContent('daily')` + 重設 live meta → 兩軌一起歸零。
+
+### 內容現況（2026-07-03 已補完 13 主題)
+- 工作軌 = **13 主題全到齊,123 字 / 52 句**,跑主線引擎(音節教學、SRS、句型、王、`why`),兩軌進度隔離、零 console error。
+- **★ 補考潛伏 bug(已修,日常也中過)**:`ask` 的句子複習路徑原本把 `lastAsked` 存成**原始 `askBuildSentence`**;補考 `run(w)` 呼叫它 → `askBuildSentence(w)` 把單一字當 `sourceWords` → `sourceWords.map is not a function` → 複習卡「回去答題」**卡死**。已改存「吃單一字」的 `runSentence(ww)` 包裝。**動這段要維持「run 是 `ww => …`」的呼叫慣例。**
+- **手感**:選項/排詞點了會念(`mountChoices`/`mountArrange` 加 `speak`)、非 daily 軌第 1 關用 6 題 intro(`FIRST_LESSON_RECIPE` 只給 daily)、`hasFreshBuildSentence` 讓句子題只在「有沒出過的新句子」時才出(治狂重播同一句)。
+
+### UI 極簡線條圖示（2026-07-03)
+- `js/02` 的 `ICON`(內嵌 SVG 線條集)+ `.ico` CSS(跟 `currentColor`/`em` 走、`flex-shrink:0` 防在 flex 鈕被壓扁)。UI 的 emoji 大多換成線條或純文字(音訊鈕/上排/側欄/分頁)。**保留**:慶祝時刻大 emoji、看圖題的圖(IMG/EMOJI)、音樂鈕(本就 SVG)、✕、⋯。加圖示 = `${ICON.x}`;文字夠清楚的鈕就不放。
+
+### 方向決策（別走回頭路)
+- **工作 = 主線引擎的一條軌,不是另一套引擎**。要開新主題(旅遊、面試…)= 再註冊一條軌就好。
+- **AI API 陪練**:只做**本機自己用**(自帶 key)、**可拆的選用模組**,核心維持**零 AI 依賴**(才保純靜態可分享);分享版=後端+計費,延後。**現在不動 AI。**
+
+---
+
+## 交接快照（2026-07-02 / Codex）— ⚠ 工作英文部分已被上方快照取代
+
+### 使用者偏好與協作方式
+- 使用者會自己快速實測 UI。Codex 做低成本檢查即可,不要每次慢慢開瀏覽器。
+- **不要用 PowerShell 讀中文檔案內容**。中文容易亂碼。讀檔優先用 `node -e "fs.readFileSync(...,'utf8')"`。
+- 手動改檔用 `apply_patch`。
+- 使用者如果說「做看看」就是要直接實作;如果在討論設計,先講判斷再動。
+
+### 目前主頁設計
+- 主頁右側地圖現在有主線分支:
+  - `📚 日常單字`
+  - `💼 工作英文`
+- 分支切換在右側地圖上方第一行,按鈕較大。
+- `目前 · 第 X 關` 在第二行,不要跟分支切換擠在一起。
+- 左側側欄已移除重複的日常/工作入口,只保留工具型入口:
+  - 挑戰關
+  - 單字特訓
+  - 衍生
+  - 之後
+- 相關檔案:
+  - `js/10-home-settings.js`
+  - `js/10-work-mode.js`
+  - `css/06-home-map.css`
+  - `css/07-responsive.css`
+
+### 工作英文分支 ⚠ 已整個作廢（見本檔最上方 2026-07-02 深夜快照「多軌重構」)
+- **所有舊描述(13 關 SVG 地圖 / 浮動小引擎 / 進度儀表 / `startWorkLevel` / `startWorkSession` / `meta.workMaxLevel`)全部不存在了。** 工作英文現在 = **主線引擎的第二條軌**,分頁鈕走 `setTrack('work') + showHome()`,細節見最上方快照。
+
+### BGM 現況
+- 已移除 Web Audio 合成背景音備援。
+- 現在只播放實體 mp3:
+  - `audio/bgm1.mp3` ~ `audio/bgm5.mp3`
+  - `audio/boss1.mp3` ~ `audio/boss3.mp3`
+- 音檔不存在就安靜,不要再改播合成音。
+- 首頁不再依 `meta.bgm` 自動恢復播放,避免音樂自己響起。
+- `sfx` 點擊/答題音效與 `speak()` TTS 不要移除。
+- 相關檔案:`js/02-runtime-audio.js`。
+
+### 最近可用檢查
+```bash
+node --check js/10-home-settings.js
+node --check js/10-work-mode.js
+node --check js/02-runtime-audio.js
+```
+
+也可檢查工作分支資料:
+```bash
+node -e "const fs=require('fs'); const s=fs.readFileSync('js/10-work-mode.js','utf8'); console.log((s.match(/id:'work_/g)||[]).length)"
+```
+
 ## ⚠ 動引擎前先讀這兩份設計文件
 這個專案在 2026-06 做了一次**核心大重建**(把舊「計次 NEED_RUNG」整套換掉)。動學習引擎前先讀:
 - **[`DESIGN_MASTERY.md`](DESIGN_MASTERY.md)** — 熟練度模型 / 出哪種題 / SRS 間隔 / 浮動關卡 / 惡補關 / 句型軌。
@@ -35,8 +125,11 @@
 - `js/00-content.js` — 單字庫 `BANK`、句型 `PATTERNS`。
 - `js/01-engine.js` — 進度資料、mastery/SRS、批次、`buildLevel`、`startLevel`、`onCorrect/onWrong/nextQuestion`。
 - `js/02-runtime-audio.js` — DOM 入口、TTS、音效、BGM、麥克風權限提示。
-- `js/03-ui-shell-feedback.js` — `shell`、離開確認、進度條、句型工具、共用答題回饋 `finish` / `finishGroupSuccess`。
+- `js/03-sentence-utils.js` — 句型工具、slot eligibility、句子生成、句型熟練度、句子/單字 credit。
+- `js/03-ui-shell-feedback.js` — `shell`、離開確認、進度條。
+- `js/03-feedback-choices.js` — 共用答題回饋 `finish` / `finishGroupSuccess`、選擇題 `mountChoices` / `fourOptions`、混淆提示。
 - `js/04-speech-matching.js` — 語音辨識別名、句子念法覆寫、寬鬆比對。
+- `js/04-visuals.js` — 圖片/emoji registry、`visualOf` / `visualKey` / `picHTML`。
 - `js/05-modes-basic.js` — 基礎題型:選擇、看圖、配對、說題、聽寫、填空。
 - `js/06-modes-sentence.js` — 句型教學與排詞造句。
 - `js/07-modes-writing.js` — 音節/寫作題、`SYL`、`SYL_HINT`、`teach`。
@@ -45,7 +138,7 @@
 - `js/10-home-settings.js` — 主畫面、地圖、設定、音樂選單、全域點擊音效。
 - `js/11-main.js` — 啟動入口 `showHome()`。
 - `DESIGN_MASTERY.md` / `CURRICULUM.md` — 設計文件(見上)。`CHANGELOG.md` 逐筆歷史。`CONTENT_RULES.md` 內容規則。
-- `audio/` — `bgm1~5.mp3`、`boss1~3.mp3`、`README.md`(8-bit,使用者已放好;沒檔 fallback 合成琶音)。
+- `audio/` — `bgm1~5.mp3`、`boss1~3.mp3`、`README.md`(8-bit,使用者已放好;沒檔就安靜,不要再改播合成音)。
 - `img/` — 看圖題的字圖(`house/home/big/small.png` 已切好+去背)、`README.md`。
 
 ## ★ 架構(命脈,別違背):引擎 vs 玩法層 嚴格分離
@@ -55,10 +148,14 @@
 
 ## 核心原理(現況 2026-06-27 — 詳見 DESIGN_MASTERY.md)
 舊「計次」已全換掉。現在六根支柱:
+> 2026-06-29 更新:主線課程節奏改為**每階固定 5 關 + 王**。每關用 `LESSON_RECIPES` 控制題數與題型密度(導入/認字聽音/克漏字/句子應用/王前整理),隨機只做材料與題型變化;不要再把章長改回內容驅動浮動長度。Boss 固定在本階第 5 關後,跳過機制之後要做「整階驗收」,不是階段中間開王。
 1. **連續熟練度 %**:每字 `store[id] = { taught, mastery 0~100, coined, due, ivl }`(localStorage `eng_progress_v2`,key=`w.id`)。**答對 +25 / 答錯 −20 / 100% = 學會**;教不加不扣。**★ 補考(`inReview`)答對只消題、不補 %、不算 `wrote`**(剛看過答案的重答不算真的會)→ 要**下次主回合真的一次過**才補(`onCorrect` 的加 % 那段 `else if (!inReview)`)。`rec()` 自癒舊資料。
 2. **答錯補考(同題型)**:答錯 → `reviewQueue`(存 `{w, run}` 連題型一起記);主回合跑完進「補考回合」。**`reviewThenAsk`**:**連續答錯 `reviewMiss[k]` < 2(第一次錯)→ 直接補考**(同一種題型,錯默寫補默寫),畫面下方留「📖 我要複習」**可選**鈕(`injectReviewButton`)——手滑打錯的人直接重答即可;**連錯 ≥2 次(真的卡住)→ 強制先走重看卡 `showReviewCard`(字+音節+🔊念+字根)再考**。`reviewMiss`:`onWrong`+1、`onCorrect`歸零、`startLevel`清空。答對才消、又錯再補考,**永不卡死**。
 3. **出哪種題 = 關卡解鎖 × 熟練度頻率**:`FORMATS` 每格標 `lv`(第幾關解鎖,**向下取累加**)。一關題型池 = `lv ≤ 當前關`。熟練度當**頻率權重**(靠近該字當前難度的題型抽中機率高,難的不消失只變少)。**功能詞封認**(`tier ≤ maxRungOf`)。**★ 難度跟該字 `tierOfMastery` 爬,別跳級**:`ask` 裡 ① **`!wrote` 強制補寫只在該字已到寫階(target≥3)**才生效(別一教完就逼默寫);② **句子題權重也吃 target**:認階(剛學)句子題壓低(`sentence_build` 7、`sentence_cloze` 0)、說階才主打排句(40)、寫階才出句子默寫(`sentence_cloze` 18)。→ 新字走 認/聽/說 → 排詞 → 默寫,不會剛學就被丟句子默寫。
 4. **出哪個字 = 浮動 `buildLevel`(沒固定 5)**:**學習中 `active`(cap 5)為主力** + 新字(`NEW`)+ 少量補默寫/到期複習。★ **新字會節流**:`NEW = active.length >= 3 ? 0 : 2` —— **在學的字 ≥3 就先不引新字**,把在學的練到會再解鎖(治「一直冒新字、堆一堆沒練到的、認識/學習量失衡」)。補默寫 `needsWrite` 跟到期複習 `due` 各只穿插 ≤2(舊字主要靠句子複習帶,別灌一堆已會的淹掉學習);`MAX=8`。純鞏固期(沒新字)才用學會的字補滿。
+   - **第三階段後 focus group**:進階實詞(`batchOf>=2`)若已教但還沒穩,會排進 focus group 優先多練;但在固定 5 關制下,focus **不再阻止本階剩餘新字導入**。新字導入由 `LESSON_RECIPES` 控制(第 1/2/3 關約 2/2/1 個,第 4/5 關 0 個)。達標=已教、mastery>=67,且若能出句子克漏字則 `clozeOk>=2` 且 `clozeSlots` 至少 2 種。
+   - **克漏字門檻**:長字/第三階段字在 `clozeReadyForDictation(w)` 前不出硬寫題 `type/pictype/flashtype`;`sentence_cloze` 是鷹架,答對只記 `clozeOk/clozeSlots`,不直接算 `wrote`。`wrote` 只由整字聽寫/默寫/看圖寫成功取得。
+   - 固定 5 關制下,每批實詞要拆到約 5 個以內;不要再靠 `stageMinLevels` 拉長章節。
 5. **SRS 間隔**:學會的字排 `due`/`ivl`;複習答對 `ivl×2`(越拉越久)、答錯歸 1。`meta.clock` 每開一關 +1。**複習主軸=句子**:`ask` 裡「學會 + 已默寫過(`isLearned && wrote`)」的字**不再單獨刷**,改抽**含該字的句子**(`sentenceWithWord`)複習(`creditSentence` 推 SRS);沒句型的 orphan 動詞退一般句子;完全組不出句子(stage1 功能詞未解鎖)才退單字。**還沒學會 / 還沒默寫過的字照常走單字題**(要靠單字題學起來 + 補默寫門檻)。第一階段王在第 `BOSS_READY_MIN_LEVELS=5` 關可開。
 6. **句型軌(句型 %)+ 靠句子學字**:排詞造句 `sentence_build` 進主流程(**weight stage≥2 = 40 = 主軸**、前期 7),拖曳排序,湊得出句才出;沒教過先 `teachPattern` 教結構。排對 → 句型 % + **`creditSentence` 連帶幫組成的每個字加熟練度 + 排 SRS**(靠排詞自然學會字);**順序錯 → 扣句型、不扣單字**。句型 % 存 `store[patId]`(`pat_xxx`),`bumpPat`/`patMastery`。
 > **鐵律不變:沒教過的字絕不叫他產出 / 也不當誘答**(`isFresh` 守衛)。
@@ -66,6 +163,7 @@
 
 ## 題型(全在玩法層,掛 `FORMATS`)
 教 `teach` / 看中選英 `readpick` / **配對 `askMatch`(中文不重複,避免兩個「是」)** / 聽選意思 `listenpick`(功能詞不出)/ 看圖選 `picture` / 聽選字 `listenword` / 句中填空 `cloze` / 說 `renderSpeak`(shadow跟讀/direct/blind盲聽/**pic看圖說**)/ 音節填空 `sylfill`(選) / **音節克漏字 `syltype`(打字版,逐節記錯 `sylMiss` + 弱點鎖定 + 記憶法 `SYL_HINT`;⚠ 只 **3+ 音節**長字才出 — 短字如 happy 拆 hap·py 反而混亂;打整個字也算對)** / 聽寫 `type` / 看圖寫 `pictype` / **默寫 `flashtype`(單字母不出)** / **排詞造句 `sentence_build`(拖曳排序;排對連帶 `creditSentence` 幫組成字加分)** / **句子克漏字 `sentence_cloze`(打缺字)** / **★轉換題 `sentence_transform`(招牌:把直述句的同一批字重排成問句,this is ↔ is this;只 be 動詞 This is 家族,句型要有 `q`/`qzh`)**。
+- 主線 `sentence_build` / `sentence_transform` 答錯要走一般錯題流程:顯示正解後「繼續」→ `onWrong` → 主回合結束補考。只有過關後額外按的「組句小練習」保留「重排一次」。
 - **拖曳排序引擎 `mountArrange`**(js/06):給 cards + 正解 token 順序就渲染 slots/bank + 拖曳/點擊 + 判對錯回 callback。`sentence_build` 與 `sentence_transform` 共用,拖曳邏輯不重寫。`caseInsensitive` 給轉換題(This↔this 只大小寫、重點在順序)。
 - **句子系統 = 模板填空,非寫死**:`PATTERNS` 是 `{text, zh, q?, qzh?, requires, slots}` 模板;`buildSentenceFromPattern` 從「學過/學會的字」(`sentenceSourceWords`)填 slot,`requires` 沒教過或 slot 湊不到字就不出。擴句子 = 加模板(`BUILD_SENTENCE_PATTERN_IDS` 掛排句、`TRANSFORM_PATTERN_IDS` + `q/qzh` 掛轉換)或加字,引擎不動。動詞句 = 動詞放 `requires`、受詞放 slot(see/buy/read/drink 已加;eat/look/listen/speak/do 等要先擴字才自然)。
 - **看圖視覺** = `IMG`(自製圖 `img/*.png`)優先、其次 `EMOJI`;同視覺守衛(home/house 已用不同圖、listen/hear 同👂退文字題)。
@@ -107,7 +205,7 @@
 
 ## 字庫（`BANK` 47 字）
 - 每字 `{ id, en, zh, pos, flags, syl, why }`。**why 是靈魂。**
-- `BATCHES` 正式編了:**批1(實詞 cat/book/friend/happy/water)+ 批2(膠水 this/is/a/my/I/am)+ 批3「吃喝與感受」(hungry/thirsty/tired/sad + eat/drink + rice/bread/tea/milk)**;其餘字**每 5 個自動切批**接在後面(`batchOf = BATCHES.length + …`)→ 多王推進 `stage` 就陸續解鎖。**擴字庫時要正式編進 `BATCHES`(主題化)+ 擴 `PATTERNS`**,別讓字隨機亂分;動詞句的動詞放句型 `requires`、受詞放 slot(配 flag:visible/buyable/drinkable/readable/eatable)。先讀 `CONTENT_RULES.md`。
+- `BATCHES` 正式編了:**批1(實詞 cat/book/friend/happy/water)+ 批2(膠水 this/is/a/my/I/am + home/house)+ 批3「感受 + eat」(hungry/thirsty/tired/sad/eat)+ 批4「吃喝句子材料」(drink/rice/bread/tea/milk)**;其餘字**每 5 個自動切批**接在後面(`batchOf = BATCHES.length + …`)→ 多王推進 `stage` 就陸續解鎖。**擴字庫時要正式編進 `BATCHES`(主題化)+ 擴 `PATTERNS`**,別讓字隨機亂分;動詞句的動詞放句型 `requires`、受詞放 slot(配 flag:visible/buyable/drinkable/readable/eatable)。先讀 `CONTENT_RULES.md`。
 - ⚠ **擴字後驗證注意**:瀏覽器會硬快取 `js/*.js`,改完 `location.reload()` 常跑到舊碼(看到 BANK 沒變多就是中了)→ 先 `fetch('js/00-content.js',{cache:'reload'})` 重抓再 reload,或重啟 preview。
 
 ## 待辦(優先序;最新進度見 CHANGELOG 尾段)

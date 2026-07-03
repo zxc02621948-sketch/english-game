@@ -3,14 +3,43 @@
   .boss-status { align-self:start; }
   .boss-arena { min-height:0; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:clamp(12px,2.4vh,22px); text-align:center; }
   .boss-arena .prompt { width:100%; text-align:center; font-size:clamp(28px,4.4vh,44px); }
-  .boss-clue { width:100%; display:flex; justify-content:center; align-items:center; min-height:clamp(64px,12vh,118px); }
+  .boss-clue { width:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:4px; min-height:clamp(64px,12vh,118px); text-align:center; }
   .boss-clue .bigzh { margin:0; font-size:clamp(30px,5vh,46px); line-height:1.15; }
+  .boss-clue .sub2 { margin:2px 0 0; }
   .boss-timer { width:100%; max-width:760px; }
+  #screen.boss-grid-mode .boss-layout { grid-template-rows:auto auto minmax(0,1fr); gap:clamp(10px,2vh,18px); padding-top:clamp(4px,1vh,10px); }
+  #screen.boss-grid-mode .boss-arena { justify-content:flex-start; gap:8px; }
+  #screen.boss-grid-mode .boss-arena .prompt { font-size:clamp(28px,4vh,40px); line-height:1.05; margin:0; }
+  #screen.boss-grid-mode .boss-clue { min-height:auto; gap:0; }
+  .boss-grid-clue { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; line-height:1.1; }
+  .boss-grid-clue .sub2 { display:block; margin:0; line-height:1.25; color:#9bd2ff; }
+  #screen.boss-grid-mode .boss-timer { margin-top:2px; height:8px !important; background:#203142; border:1px solid #2e4155; }
   .boss-answer { width:100%; max-width:760px; margin:0 auto; }
   .boss-answer .inp { margin-bottom:12px; }
   .boss-answer .btn { min-height:62px; }
   .boss-options { gap:10px; }
   .boss-options .opt { min-height:clamp(54px,8vh,72px); display:flex; align-items:center; justify-content:center; }
+  .boss-grid-progress { display:flex; justify-content:center; gap:8px; margin:0 0 10px; min-height:30px; }
+  .boss-grid-progress span { width:28px; height:28px; border-radius:999px; display:grid; place-items:center; background:#1d2c3a; border:1px solid #2c3e52; color:#9fb4c8; font-size:13px; font-weight:800; }
+  .boss-grid-progress span.now { border-color:#5aa9ff; color:#e8eef5; background:#1d3450; }
+  .boss-grid-progress span.done { border-color:#2ecc8f; color:#0f1a1f; background:#6ee7a8; }
+  .boss-grid { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px; width:min(520px,100%); margin:0 auto; }
+  .boss-grid-cell { min-height:clamp(66px,10vh,92px); border-radius:14px; border:1px solid #2c3e52; background:#1d2c3a; color:#e8eef5; font-size:clamp(20px,3vh,27px); font-weight:800; cursor:pointer; display:grid; place-items:center; padding:8px; transition:.12s; }
+  .boss-grid-cell:hover { background:#243a4d; transform:translateY(-1px); }
+  .boss-grid-cell.hit { border-color:#2ecc8f; background:#0e2a1f; color:#6ee7a8; transform:scale(.96); }
+  .boss-grid-cell.wrong { border-color:#e35b6a; background:#2a0e12; color:#ff9ba3; animation:bossGridShake .18s linear 2; }
+  .boss-grid-cell.visual img { width:58px; height:58px; object-fit:contain; }
+  .boss-grid-emoji { font-size:44px; line-height:1; }
+  .boss-grid-clue-word { font-size:clamp(34px,5vh,48px); font-weight:900; color:#f1f6fa; line-height:1; }
+  .boss-category-clue { display:grid; gap:6px; text-align:center; }
+  .boss-category-clue .bigzh { font-size:clamp(24px,4vh,34px); line-height:1.15; }
+  .boss-category-options { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; width:min(680px,100%); margin:0 auto 12px; }
+  .boss-category-options .opt { position:relative; min-height:clamp(56px,8vh,72px); }
+  .boss-category-options .opt.sel { border-color:#6ee7a8; background:#0e2a1f; color:#6ee7a8; }
+  .boss-category-options .opt.sel::after { content:"✓"; position:absolute; right:14px; top:10px; font-size:17px; }
+  .boss-category-options.locked .opt { cursor:default; }
+  .boss-cloze-line { font-size:clamp(28px,4.5vh,42px); font-weight:900; color:#f1f6fa; line-height:1.18; letter-spacing:0; }
+  @keyframes bossGridShake { 0%,100%{ transform:translateX(0); } 35%{ transform:translateX(-5px); } 70%{ transform:translateX(5px); } }
   .boss-result { flex:1; width:100%; max-width:960px; margin:0 auto; display:grid; place-items:center; padding-bottom:clamp(24px,7vh,90px); text-align:center; }
   .boss-result-inner { width:min(620px,100%); display:grid; gap:14px; }
   .boss-result-icon { font-size:52px; line-height:1; }

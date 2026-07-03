@@ -154,8 +154,8 @@ function teach(w) {
         <div class="sub2 teach-zh">${w.zh}</div>
       </div>
       <div class="teach-tools">
-        <button class="replay" id="play">🔊 念</button>
-        <button class="replay" id="slow">🐢 慢念</button>
+        <button class="replay" id="play">${ICON.play}念</button>
+        <button class="replay" id="slow">慢念</button>
       </div>
       <div class="teach-why">${w.why}</div>
     </div>

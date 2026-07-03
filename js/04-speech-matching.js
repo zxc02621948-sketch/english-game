@@ -36,6 +36,24 @@ function speechMatches(w, transcript) {
   const target = normalizeSpeechText(w.en);
   return looseMatch(normalized, target) || tokens.some(t => looseMatch(t, target));
 }
+function sentenceSpeechMatches(targetText, transcript) {
+  const target = normalizeSpeechText(targetText);
+  const heard = normalizeSpeechText(transcript);
+  if (!target || !heard) return false;
+  if (heard.includes(target) || target.includes(heard)) return true;
+  const heardTokens = speechTokens(heard);
+  const targetTokens = speechTokens(target);
+  if (!targetTokens.length || !heardTokens.length) return false;
+  let matched = 0;
+  targetTokens.forEach(tok => {
+    const w = BANK.find(x => x.en.toLowerCase() === tok);
+    const forms = w ? speechForms(w) : [tok];
+    const ok = forms.some(form => heardTokens.includes(form)) || heardTokens.some(h => looseMatch(h, tok));
+    if (ok) matched++;
+  });
+  const need = targetTokens.length <= 2 ? targetTokens.length : Math.ceil(targetTokens.length * 0.72);
+  return matched >= need;
+}
 
 /* ---- 題型們 ---- */
 

@@ -47,48 +47,128 @@ const isLearned = w => rungOf(w) === 4;         // mastery 到 100% = 學會
 const pOf = w => rec(w).mastery || 0;
 
 // 學習順序 + 分批解鎖(課程結構,見 CURRICULUM.md):批1 實詞 → 批2 膠水詞(解鎖造句)→ 之後交替。階段 N 解鎖批 0..N-1。
-const BATCHES = [
-  ['word_cat','word_book','word_friend','word_happy','word_water'],   // 批1(L1-5)實詞
-  ['word_this','word_is','word_a','word_my','word_i','word_am'],      // 批2(L6-10)膠水詞 → 一學會就能造句
-  // 批3 吃喝與感受:感受形容詞先(I am hungry/tired…,只需 I/am)→ 吃喝動詞+食物飲料(I eat rice / I drink tea,動詞與受詞同批自給自足)
-  ['word_hungry','word_thirsty','word_tired','word_sad','word_eat','word_drink','word_rice','word_bread','word_tea','word_milk'],
+let BATCHES = [
+  ['word_water','word_tea','word_coffee','word_sugar','word_or','word_with','word_please'],   // 批1(L1-5)飲料短語:先用 water/tea/coffee/sugar 做生活應用
+  ['word_cat','word_book','word_friend','word_happy','word_this','word_is','word_a','word_my','word_i','word_am','word_home','word_house'], // 批2(L6-10)膠水詞 + 早期具體字 → 造句時也有新材料
+  ['word_hungry','word_thirsty','word_tired','word_sad','word_eat'], // 批3:感受 + eat 暖身
+  ['word_drink','word_rice','word_bread','word_milk'],    // 批4:吃喝句子材料
 ];
-const _batchSet = new Set(BATCHES.flat());
-const _rest = BANK.filter(w => !_batchSet.has(w.id));                 // 還沒編進 BATCHES 的字 → 每 5 個自動切一批接在後面(擴字庫時再正式分主題)→ 多王推進 stage 就會陸續解鎖
-const _batchIndex = {};
-BATCHES.forEach((b, i) => b.forEach(id => { _batchIndex[id] = i; }));
-_rest.forEach((w, j) => { _batchIndex[w.id] = BATCHES.length + Math.floor(j / 5); });
-const LEARN_ORDER = [...BATCHES.flat().map(id => BANK.find(w => w.id === id)).filter(Boolean), ..._rest];
+let _batchSet, _rest, _batchIndex, LEARN_ORDER;
+function rebuildCurriculum() {                                        // 依「當前軌」的 BANK+BATCHES 重算課程衍生表(切軌時要重跑)
+  _batchSet = new Set(BATCHES.flat());
+  _rest = BANK.filter(w => !_batchSet.has(w.id));                     // 還沒編進 BATCHES 的字 → 每 5 個自動切一批接在後面(擴字庫時再正式分主題)
+  _batchIndex = {};
+  BATCHES.forEach((b, i) => b.forEach(id => { _batchIndex[id] = i; }));
+  _rest.forEach((w, j) => { _batchIndex[w.id] = BATCHES.length + Math.floor(j / 5); });
+  LEARN_ORDER = [...BATCHES.flat().map(id => BANK.find(w => w.id === id)).filter(Boolean), ..._rest];
+}
+rebuildCurriculum();
+
+// ── 多軌課程(daily / work…):內容整組換、進度用 meta.tracks 分軌;store(單字熟練度)、coins、skills 共用 ──
+const TRACKS = {};
+let currentTrack = 'daily';
+const TRACK_META_KEYS = ['stage', 'clock', 'maxLevel', 'stageStartLevel', 'bossReady', 'bossCleared', 'challengeCleared'];
+function registerTrack(name, content) { TRACKS[name] = content; }     // content: { bank, batches, patterns, buildIds, transformIds }
+function applyTrackContent(name) {                                    // 整組換掉內容全域 + 重算衍生表(讀 BANK/PATTERNS 的舊碼都不用改)
+  const t = TRACKS[name]; if (!t) return;
+  BANK = t.bank; BATCHES = t.batches; PATTERNS = t.patterns;
+  BUILD_SENTENCE_PATTERN_IDS = t.buildIds; TRANSFORM_PATTERN_IDS = t.transformIds;
+  rebuildCurriculum();
+}
+function snapshotTrackMeta() {                                        // 把當前軌的進度存回 meta.tracks[currentTrack]
+  meta.tracks = meta.tracks || {};
+  const t = meta.tracks[currentTrack] = meta.tracks[currentTrack] || {};
+  TRACK_META_KEYS.forEach(k => { t[k] = meta[k]; });
+  t.level = level;
+}
+function loadTrackMeta(name) {                                        // 載入某軌進度到 live meta(新軌給預設值)
+  meta.tracks = meta.tracks || {};
+  const t = meta.tracks[name] || (meta.tracks[name] = { stage: 1, clock: 0, maxLevel: 1, stageStartLevel: 1, bossReady: false, bossCleared: false, challengeCleared: {} });
+  TRACK_META_KEYS.forEach(k => { if (t[k] !== undefined) meta[k] = t[k]; });
+  level = t.level || 1;
+}
+function setTrack(name) {                                             // 切軌:存當前 → 換內容 → 載目標(store/coins/skills 不動)
+  if (name === currentTrack || !TRACKS[name]) return;
+  snapshotTrackMeta();
+  currentTrack = name;
+  applyTrackContent(name);
+  loadTrackMeta(name);
+  saveMeta();
+}
 const batchOf = w => _batchIndex[w.id] || 0;                          // 第幾批
 const learnIndex = w => LEARN_ORDER.findIndex(x => x.id === w.id);
 const stageHasRealWords = stage => BANK.some(w => batchOf(w) === stage - 1 && w.pos !== 'function');
+const ADVANCED_BATCH_START = 2, MICRO_BATCH_SIZE = 2, MICRO_READY_MASTERY = 67;
+const isAdvancedWord = w => w && w.pos !== 'function' && batchOf(w) >= ADVANCED_BATCH_START;   // 第三階段後:長字/句子應用變多,改小組鎖定
+const isLongWord = w => !!w && ((w.syl && w.syl.length >= 3) || (w.en || '').length >= 8);
+const clozeGateNeeded = w => w && w.pos !== 'function' && (isAdvancedWord(w) || isLongWord(w));
+const clozeSlotCount = w => Object.keys(rec(w).clozeSlots || {}).length;
+function clozeReadyForDictation(w) {
+  if (!clozeGateNeeded(w)) return true;
+  if (typeof canSentenceCloze === 'function' && !canSentenceCloze(w)) return true;   // 目前還湊不出句子克漏字的字,不要永久卡死
+  const c = rec(w);
+  return (c.clozeOk || 0) >= 2 && clozeSlotCount(w) >= 2;
+}
+function microBatchReady(w) {
+  if (!isAdvancedWord(w)) return true;
+  if (!rec(w).taught) return false;
+  if ((rec(w).mastery || 0) < MICRO_READY_MASTERY) return false;
+  return clozeReadyForDictation(w);
+}
+const isHardDictationFormatId = id => ['type', 'pictype', 'flashtype'].includes(id);
 
 function buildLevel() {
-  // ★ 浮動關卡(SRS,見 DESIGN_MASTERY §6):大小由內容決定,沒固定 5 字。新字 + 學習中 + 到期複習,填到 MAX、超出順延下一關。
-  const sentenceFocus = !stageHasRealWords(meta.stage || 1);
+  // ★ 固定 5 關階段中的動態選字:關卡角色決定新字量/題數,內容仍按熟練度挑新字 + 學習中 + 到期複習。
+  const recipe = currentRecipe || lessonRecipeForLevel(level);
+  const stage = stageOfLevel(level);
+  const sentenceFocus = !stageHasRealWords(stage);
   const MAX = sentenceFocus ? 4 : 8, ACTIVE_CAP = sentenceFocus ? 2 : 5, clock = meta.clock || 0;
-  let _g = false; BANK.forEach(w => { if (w.pos === 'function' && batchOf(w) < (meta.stage || 1) && isFresh(w)) { rec(w).taught = true; _g = true; } }); if (_g) save();   // 功能詞(膠水)沒單獨意義 → 不出教卡;批次一解鎖就靜默標 taught(讓句子組得出),意義交給句子 + teachPattern
-  const fresh  = LEARN_ORDER.filter(w => isFresh(w) && batchOf(w) < (meta.stage || 1) && w.pos !== 'function');   // 解鎖批內的新「實詞」(功能詞不走教卡)
-  const needsWrite = BANK.filter(w => !isFresh(w) && w.pos !== 'function' && !rec(w).wrote && batchOf(w) < (meta.stage || 1));
-  const active = shuffle(BANK.filter(w => !isFresh(w) && !isLearned(w) && w.pos !== 'function')); // 學習中(<100%),主力。功能詞排除 → 不單獨刷,只在句子裡練
-  const due    = BANK.filter(w => isLearned(w) && w.pos !== 'function' && (rec(w).due || 0) <= clock) // 到期該複習的學會字(功能詞除外,走句子)
+  let _g = false; BANK.forEach(w => { if (w.pos === 'function' && batchOf(w) < stage && isFresh(w)) { rec(w).taught = true; _g = true; } }); if (_g) save();   // 功能詞(膠水)沒單獨意義 → 不出教卡;批次一解鎖就靜默標 taught(讓句子組得出),意義交給句子 + teachPattern
+  const fresh  = LEARN_ORDER.filter(w => isFresh(w) && batchOf(w) < stage && w.pos !== 'function');   // 解鎖批內的新「實詞」(功能詞不走教卡)
+  const focus = LEARN_ORDER.filter(w => isAdvancedWord(w) && batchOf(w) < stage && !isFresh(w) && !microBatchReady(w));   // 第三階段後:小組沒練穩前,先專注這組,不再開下一組新字
+  const needsWrite = trackSkillOn('write') ? BANK.filter(w => !isFresh(w) && w.pos !== 'function' && !rec(w).wrote && batchOf(w) < stage && clozeReadyForDictation(w)) : [];   // 不練默寫的軌:不排補默寫
+  const active = shuffle(BANK.filter(w => !isFresh(w) && !isLearned(w) && w.pos !== 'function' && batchOf(w) < stage && !focus.some(f => f.id === w.id))); // 學習中(<100%),主力。功能詞排除 → 不單獨刷,只在句子裡練
+  const due    = BANK.filter(w => isLearned(w) && w.pos !== 'function' && batchOf(w) < stage && (rec(w).due || 0) <= clock) // 到期該複習的學會字(功能詞除外,走句子)
                      .sort((a, b) => (rec(a).due || 0) - (rec(b).due || 0));              // 最逾期先
-  const NEW = active.length >= 3 ? 0 : 2;   // ★ 在學的字 ≥3 就先別引新字 → 把在學的練到會再解鎖,別一直冒新字、堆一堆沒練到的(治「認識/學習量比例失衡」)
+  const newCap = recipe.newWords == null ? MICRO_BATCH_SIZE : recipe.newWords;
+  const activeNewCap = recipe.activeNewCap == null ? 3 : recipe.activeNewCap;
+  const NEW = active.length >= activeNewCap ? 0 : newCap;   // ★ 每階前段導入新字;focus 只提高弱字優先度,不再卡住本階剩餘新字
   const picked = [];
   const add = arr => { for (const w of arr) { if (picked.length >= MAX) break; if (!picked.some(p => p.id === w.id)) picked.push(w); } };
-  add(fresh.slice(0, NEW));            // 1. 新字(在學的太多就先不加,先把在學的練完)
-  add(active.slice(0, ACTIVE_CAP));    // 2. 學習中(主力)— 優先練這些,這關的重點
-  add(needsWrite.slice(0, 2));         // 3. 補默寫:只穿插幾個(打王前要寫對過)
+  if (recipe.completion) { add(stagePendingWords(stage)); return shuffle(picked); }   // 少量補完:只練本階最後 1-2 個洞,不要再塞已會舊字
+  add(focus);                          // 1. 第三階段後的小組鎖定:這組還沒穩,先練它
+  add(fresh.slice(0, NEW));            // 2. 新字(在學/焦點太多就先不加,先把在學的練完)
+  add(active.slice(0, ACTIVE_CAP));    // 3. 學習中(主力)— 優先練這些,這關的重點
+  add(needsWrite.slice(0, 2));         // 4. 補默寫:只穿插幾個;長字/第三階段字要先通過克漏字門檻
   add(due.slice(0, 2));                // 4. 到期複習:只穿插幾個(舊字主要靠句子複習帶,別灌一堆已會的淹掉學習)
-  if (picked.length < 4 && !fresh.length) add(shuffle(BANK.filter(w => isLearned(w) && w.pos !== 'function')));   // 5. 太少且「沒有新字可學了」(純鞏固期)才補學會的字回鍋
+  if (picked.length < 4 && !fresh.length) add(shuffle(BANK.filter(w => isLearned(w) && w.pos !== 'function' && batchOf(w) < stage)));   // 5. 太少且「沒有新字可學了」(純鞏固期)才補學會的字回鍋
   if (!picked.length) add(fresh);      // 極早期保險:還是空 → 多給新字
   return shuffle(picked);
 }
 // 王可挑戰的條件(內容驅動,取代固定第 5×stage 關):跑夠鞏固關 + 當前批次的實詞都教過 + 寫對過 + 練到「會寫」。
 const BOSS_READY_MASTERY = 67;   // 保留給未來調難度;目前王解鎖以「至少默寫成功一次」為主。
-const BOSS_READY_MIN_LEVELS = 5;  // 第一階段:每個實詞至少默寫成功一次後,第 5 關可開王(前期別拖太長、避免重複疲乏)。
-const SENTENCE_STAGE_MIN_LEVELS = 4;   // 只有功能詞/句型的階段:縮短,主打句子練習 + 少量舊字回鍋。
-const stageMinLevels = (stage = meta.stage || 1) => stageHasRealWords(stage) ? BOSS_READY_MIN_LEVELS : SENTENCE_STAGE_MIN_LEVELS;
+const STAGE_MAIN_LEVELS = 5;     // 主線節奏:每階固定 5 關 + 王;每關長短/題型密度由 lesson recipe 決定。
+const BOSS_READY_MIN_LEVELS = STAGE_MAIN_LEVELS;
+const stageWordCount = stage => BANK.filter(w => batchOf(w) === stage - 1 && w.pos !== 'function').length;
+const stageMinLevels = () => STAGE_MAIN_LEVELS;
+const stageOfLevel = lv => Math.max(1, Math.floor(((lv || 1) - 1) / STAGE_MAIN_LEVELS) + 1);
+const lessonIndexInStage = lv => (((lv || 1) - 1) % STAGE_MAIN_LEVELS) + 1;
+const LESSON_RECIPES = [
+  { role:'intro', label:'新字導入', questions:6,  newWords:2, activeNewCap:6, weights:{ read:1.25, listen:1.05, speak:0.8, write:0.25, category:0.35, sentence_build:0.35, sentence_speak:0.35, sentence_transform:0.2, sentence_cloze:0 } },
+  { role:'recognition', label:'認字聽音', questions:8,  newWords:2, activeNewCap:6, weights:{ read:1.2, listen:1.25, speak:1.0, write:0.45, category:0.75, sentence_build:0.6, sentence_speak:0.65, sentence_transform:0.35, sentence_cloze:0.15 } },
+  { role:'cloze', label:'克漏字練習', questions:10, newWords:1, activeNewCap:5, weights:{ read:1.0, listen:1.0, speak:0.9, write:0.75, cloze:1.9, category:0.85, sentence_build:1.2, sentence_speak:1.0, sentence_transform:0.8, sentence_cloze:1.6 } },
+  { role:'sentence', label:'句子應用', questions:14, newWords:0, activeNewCap:0, weights:{ read:1.0, listen:0.75, speak:0.75, write:0.9, cloze:1.4, category:1.0, sentence_build:2.2, sentence_speak:1.45, sentence_transform:1.8, sentence_cloze:1.7 } },
+  { role:'review', label:'王前整理', questions:10, newWords:0, activeNewCap:0, weights:{ read:0.75, listen:0.9, speak:0.8, write:1.8, cloze:1.2, category:1.25, sentence_build:1.4, sentence_speak:1.1, sentence_transform:1.1, sentence_cloze:1.8 } },
+];
+const FIRST_LESSON_RECIPE = {
+  role:'first_intro',
+  label:'飲料短語導入',
+  questions:18,
+  newWords:4,
+  activeNewCap:8,
+  weights:{ read:1.05, listen:1.0, speak:0.65, write:0.15, cloze:0.8, category:0.65, sentence_build:1.8, sentence_speak:0.75, sentence_transform:0, sentence_cloze:0 }
+};
+const lessonRecipeForLevel = lv => (lv === 1 && currentTrack === 'daily') ? FIRST_LESSON_RECIPE : (LESSON_RECIPES[lessonIndexInStage(lv) - 1] || LESSON_RECIPES[0]);   // 飲料首關 18 題 recipe 只給日常;其他軌(工作…)第 1 關用一般 intro(6 題),別把稀疏內容硬拉長
 const defaultStageStartLevel = stage => {
   let start = 1;
   for (let s = 1; s < stage; s++) start += stageMinLevels(s);
@@ -101,35 +181,51 @@ const stageWordsFor = (stage = meta.stage || 1) => {
   const stageWords = BANK.filter(w => batchOf(w) === cur && w.pos !== 'function');
   return stageWords.length ? stageWords : BANK.filter(w => batchOf(w) < stage && w.pos !== 'function');
 };
+const wordReadyForBoss = w => rec(w).taught && wroteOk(w) && isLearned(w);   // 不練默寫的軌:wroteOk 視同會寫
+const stagePendingWords = (stage = meta.stage || 1) => stageWordsFor(stage).filter(w => !wordReadyForBoss(w));
+function stageSentencePatterns(stage = meta.stage || 1) {
+  if (typeof buildSentencePatterns !== 'function' || typeof buildSentenceFromPattern !== 'function') return [];
+  const sourceWords = BANK.filter(w => batchOf(w) < stage && rec(w).taught);
+  return buildSentencePatterns().filter(p => buildSentenceFromPattern(p, sourceWords));
+}
+function stageSentencesReady(stage = meta.stage || 1) {
+  const pats = stageSentencePatterns(stage);
+  return !pats.length || pats.every(p => patMastery(p.id) > 0);
+}
+function completionRecipe(pending) {
+  const n = pending.length;
+  if (!n || n > 2 || n >= stageWordsFor().length) return null;   // 只有整階原本就 1-2 字時,別一開始就當「補完最後幾個字」
+  const missingWrite = pending.some(w => rec(w).taught && !rec(w).wrote);
+  return {
+    role:'completion',
+    label:n === 1 ? '補完最後一個字' : '補完最後兩個字',
+    questions:n === 1 ? (missingWrite ? 4 : 3) : (missingWrite ? 6 : 5),
+    newWords:0,
+    activeNewCap:0,
+    completion:true,
+    weights:{ read:0.8, listen:0.9, speak:0.55, write:missingWrite ? 2.5 : 1.25, cloze:1.25, category:0.6, sentence_build:0.75, sentence_speak:0.45, sentence_transform:0.6, sentence_cloze:1.4 }
+  };
+}
 function stageReadyAt(lv = level) {
-  const sw = stageWordsFor();
+  const stage = stageOfLevel(lv);
+  const sw = stageWordsFor(stage);
   if (!sw.length) return false;
-  const allWrote = sw.every(w => { const c = rec(w); return c.taught && c.wrote; });
+  const allWrote = sw.every(w => rec(w).taught && wroteOk(w));
   if (!allWrote) return false;
-  const allKnown = sw.every(isLearned);                 // 全部已學會(含「我已經會了」跳過的)→ 不必再陪跑鞏固關,直接可打王
-  return allKnown || lv >= stageDeadlineLevel();
+  const allKnown = sw.every(isLearned);
+  // 整階單字都標會/學會時,仍要至少碰過本階可組出的核心句型;否則會把句子應用整段跳掉。
+  return (allKnown && stageSentencesReady(stage)) || lv >= stageDeadlineLevel(stage);
 }
 const stageReady = () => stageReadyAt(level);
 const stageDeadlineReached = () => level >= stageStartLevel() + stageMinLevels() - 1;
 function normalizeBossGate() {
   const deadline = stageDeadlineLevel();
-  let changedStore = false;
-  if ((meta.maxLevel || 1) > deadline && !meta.bossReady) {
-    stageWordsFor().forEach(w => {
-      const c = rec(w);
-      if (!c.wrote && c.taught) {
-        c.wrote = true;
-        changedStore = true;
-      }
-    });
-  }
-  if (changedStore) save();
-  if ((meta.maxLevel || 1) >= deadline && stageReadyAt(Math.max(level || 1, meta.maxLevel || 1))) meta.bossReady = true;
+  meta.bossReady = false;   // 王關已改成 optional challenge,不再作主線門檻。
   if (meta.stage && meta.maxLevel > deadline) meta.maxLevel = deadline;
   saveMeta();
 }
 
-// 關卡計畫:難度改由單字 mastery 決定(難度跟%走),關卡不再封頂 → topRung 固定 3。關卡骨架是未決項,之後再談(見 DESIGN_MASTERY.md)。
+// 關卡計畫:難度改由單字 mastery 決定(難度跟%走),關卡不再封頂 → topRung 固定 3。關卡長短/角色由 LESSON_RECIPES 控制。
 const levelPlan = lv => ({ topRung: 3 });
 
 let level = 1, levelWords = [], queue = [], current = null;
@@ -137,13 +233,51 @@ let plan = null, currentRung = 0;
 let quota = {}, lgot = {}, reviewQueue = [], inReview = false;     // 這關每字「要答對幾次 / 已答對幾次」;reviewQueue = 答錯待回顧重答的題
 let reviewMiss = {};                                               // 每字「連續答錯次數」(答對歸零)→ 連錯 2 次補考強制走複習卡
 let inTraining = false, trainPool = [];                            // 🎯 單字特訓:自選字、聽說讀寫混合、各題可「我學會了」移除;不走主回合 quota/SRS 佇列(見 js/08 trainNext)
+let currentRecipe = null;
+function buildLessonQuota(words, recipe) {
+  const q = {}, caps = {}, clock = meta.clock || 0;
+  const desired = Math.max(words.length, (recipe && recipe.questions) || words.length);
+  words.forEach(w => {
+    const k = wordKey(w), c = rec(w);
+    const freshReal = rungOf(w) === 0 && w.pos !== 'function';
+    q[k] = freshReal ? 2 : 1;
+    let cap = q[k];
+    if (!isLearned(w)) cap += 2;                              // 還沒會:可以多練,撐起正常關卡長度
+    if (w.pos !== 'function' && !c.wrote) cap += 1;            // 缺默寫:補一點寫作機會
+    if (isLearned(w) && (c.due || 0) <= clock) cap += 1;       // 到期回顧:最多多抽一次,不要拿已會字硬湊題數
+    if (recipe && (recipe.role === 'sentence' || recipe.role === 'review') && !isLearned(w)) cap += 1;
+    caps[k] = cap;
+  });
+  const totalTarget = Math.min(desired, words.reduce((sum, w) => sum + (caps[wordKey(w)] || 0), 0));
+  let total = words.reduce((sum, w) => sum + (q[wordKey(w)] || 0), 0);
+  const priority = words.slice().sort((a, b) => {
+    const score = w => (isFresh(w) ? 4 : 0) + (!rec(w).wrote && w.pos !== 'function' ? 3 : 0) + (100 - pOf(w)) / 50;
+    return score(b) - score(a);
+  });
+  while (priority.length && total < totalTarget) {
+    let added = false;
+    for (const w of priority) {
+      const k = wordKey(w);
+      if ((q[k] || 0) >= (caps[k] || 0)) continue;
+      q[k] = (q[k] || 0) + 1;
+      total++;
+      added = true;
+      if (total >= totalTarget) break;
+    }
+    if (!added) break;
+  }
+  return q;
+}
 function startLevel() {
   meta.clock = (meta.clock || 0) + 1; saveMeta();   // SRS 時鐘:每開一關 +1(見 DESIGN_MASTERY §6)
   plan = levelPlan(level);
+  const playStage = stageOfLevel(level);
+  currentRecipe = completionRecipe(stagePendingWords(playStage)) || lessonRecipeForLevel(level);
   levelWords = (remedialWords && remedialWords.length) ? remedialWords : buildLevel();   // 惡補關:用打輸王時卡住的字
   remedialWords = null;
   quota = {}; lgot = {}; reviewQueue = []; inReview = false; reviewMiss = {};
-  levelWords.forEach(w => { const k = wordKey(w); lgot[k] = 0; quota[k] = (rungOf(w) === 0 && w.pos !== 'function') ? 2 : 1; }); // 新字:教+馬上考(2);功能詞只教不單獨考(1);複習字:1
+  quota = buildLessonQuota(levelWords, currentRecipe);
+  levelWords.forEach(w => { lgot[wordKey(w)] = 0; }); // 新字至少教+馬上考;其餘題數由本關 recipe 分配
   queue = shuffle([...levelWords]);
   nextQuestion();
 }
@@ -153,7 +287,7 @@ function onCorrect(w) {
   else if (!inReview) {                          // ★ 補考(剛看過答案的重答)答對「不補熟練度、不算 wrote」→ 要下次主回合真的一次過才補(治「答錯→補考硬過→分數補回但其實沒會」)
     const c = rec(w);
     c.mastery = Math.min(LEARNED, (c.mastery || 0) + MASTERY_OK);   // 認/說/寫答對 → 熟練度 +MASTERY_OK
-    if (currentSkill === 'write') c.wrote = true;                  // 王考默寫前,至少要真的寫對過一次
+    if (currentSkill === 'write' && isHardDictationFormatId(currentFormatId)) c.wrote = true;   // 王考默寫前,至少要真的「整字/聽寫/看圖寫」對過;克漏字只算鷹架,不直接算 wrote
   }
   save();
   if (!wasLearned && isLearned(w) && !rec(w).coined) { meta.coins++; rec(w).coined = true; saveMeta(); save(); }   // 第一次學會 → +1 金幣(coined 標記:扣分後重新學會不重複給)
@@ -168,7 +302,7 @@ function onCorrect(w) {
   if (inReview) { lgot[k] = quota[k]; }                       // 回顧重答答對 → 這題清掉(本關視為完成)
   else {
     lgot[k]++;
-    if (lgot[k] < quota[k] && queue.length > 0) {             // 主回合還沒問夠 → 回佇列
+    if (lgot[k] < quota[k]) {                                 // 主回合還沒問夠 → 回佇列
       if (currentRung === 0) queue.splice(Math.min(2, queue.length), 0, w);   // 剛教完 → 隔一兩題就考它(別整關先全教再全考)
       else queue.push(w);
     }
@@ -183,7 +317,7 @@ function onWrong(w) {                              // 答錯 → 熟練度 −MA
   }
   if (inTraining) return;                                      // 🎯 特訓:答錯只扣熟練度,不進 reviewQueue(它自己循環)
   reviewMiss[wordKey(w)] = (reviewMiss[wordKey(w)] || 0) + 1;   // 連續答錯 +1(補考時 ≥2 就強制走複習卡)
-  reviewQueue.push({ w, run: lastAsked[wordKey(w)], skill: lastAskedSkill[wordKey(w)] });   // 連同剛剛的題型一起記 → 補考用「同一種題型」再考(錯默寫就補默寫,不是換簡單的)
+  reviewQueue.push({ w, run: lastAsked[wordKey(w)], skill: lastAskedSkill[wordKey(w)], formatId: lastAskedFormatId[wordKey(w)] });   // 連同剛剛的題型一起記 → 補考用「同一種題型」再考(錯默寫就補默寫,不是換簡單的)
 }
 // 「我已經會了」:把字直接標成學會(taught + 100% + wrote)→ 不再單獨考,但仍進句子 / SRS;本關這格視為完成。整階都標會 → stageReadyAt 直接放行打王。
 function markWordKnown(w) {
@@ -198,14 +332,15 @@ function markWordKnown(w) {
 function nextQuestion() {
   if (inTraining) return trainNext();                                                                         // 🎯 特訓:走自己的循環,不碰主回合 quota/review
   if (queue.length) { inReview = false; current = queue.shift(); return ask(current); }                       // 主回合
-  if (reviewQueue.length) { inReview = true; const e = reviewQueue.shift(); current = e.w; return reviewThenAsk(e.w, e.run, e.skill); }   // 主回合跑完 → 回顧重答錯題(同題型)
+  if (reviewQueue.length) { inReview = true; const e = reviewQueue.shift(); current = e.w; return reviewThenAsk(e.w, e.run, e.skill, e.formatId); }   // 主回合跑完 → 回顧重答錯題(同題型)
   showDone();
 }
 // 補考(DESIGN_MASTERY step 2):答錯的題集中到主回合後重答 → 永不卡死。
 // 2026-06 UX:先直接補考(手滑打錯的人直接重答即可,不強迫看完整重看卡);補考畫面多一顆「我要複習」可選鈕,想看才走重看流程。
-function reviewThenAsk(w, run, skill) {
+function reviewThenAsk(w, run, skill, formatId) {
   currentRung = 1;
   currentSkill = skill || (run && SKILL.get(run)) || null;
+  currentFormatId = formatId || null;
   const r = run || ask;
   if ((reviewMiss[wordKey(w)] || 0) >= 2) {   // 連錯 ≥2 次 = 真的卡住 → 強制先走一輪複習卡(看字+音節+念+字根)再考
     showReviewCard(w, r);
@@ -220,7 +355,7 @@ function injectReviewButton(w, r) {
   if (!host || document.getElementById('wantreview')) return;
   const b = document.createElement('button');
   b.id = 'wantreview'; b.className = 'reviewlink';
-  b.textContent = '📖 我要複習這個字';
+  b.textContent = '我要複習這個字';
   b.onclick = () => showReviewCard(w, r);
   host.appendChild(b);
 }
@@ -238,7 +373,7 @@ function showReviewCard(w, r) {
         ${sylBlock}
         <div class="sub2 teach-zh">${w.zh}</div>
       </div>
-      <div class="teach-tools"><button class="replay" id="rplay">🔊 念</button></div>
+      <div class="teach-tools"><button class="replay" id="rplay">${ICON.play}念</button></div>
       <div class="teach-why">${w.why}</div>
     </div>
     <button class="btn act" id="rback" style="margin-top:14px">看完了,回去答題 →</button>`);

@@ -39,6 +39,8 @@
   - `presentable`: 適合被介紹為「這是一個...」的具體名詞。
   - `ownable`: 可被擁有，可放進 `This is my {x}.`
   - `drinkable`: 可喝的名詞，可放進 `I drink {x}.`，例如 `water/tea/milk`。
+  - `sweetenable`: 適合加糖的飲料，可放進 `{x} with sugar.`，例如 `coffee/tea/milk`。
+  - `sweetener`: 可加進飲料的甜味材料，可放進 `{drink} with {x}.`，例如 `sugar`。
   - `readable`: 可讀的名詞，可放進 `I read a {x}.`
   - `eatable`: 可吃的名詞，可放進 `I eat {x}.`，例如 `rice/bread`。先用不可數主食（不接冠詞）；要可數食物（apple→an）再另開句型。
   - `visible`: 看得到的具體東西（含人），可放進 `I see a {x}.`，例如 `cat/book/friend/house`。抽象的（project/experience）不要給。
@@ -82,6 +84,8 @@
 - `my`
 - `and`
 - `or`
+- `with`
+- `please`
 
 功能詞 `pos` 用 `function`。除非句型模板真的需要，不要替功能詞亂加 flags。
 

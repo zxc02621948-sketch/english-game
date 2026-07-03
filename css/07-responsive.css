@@ -33,6 +33,31 @@
     .teach-syllables { font-size:38px; margin-top:8px; }
     .teach-why { min-height:96px; font-size:16px; line-height:1.55; padding:16px; }
     .skipchoices { grid-template-columns:1fr; }
+    .branch-tabs { width:100%; }
+    .mapjump .branch-tab { flex:1; min-width:0; padding:11px 12px; }
+    .map-status-row { width:100%; }
+    .map-status-row button { flex:1; min-width:0; }
+    .work-start-grid { grid-template-columns:1fr; }
+    .work-level-card { padding:14px; }
+    .work-level-card b { font-size:18px; }
+    .work-en { font-size:34px; }
+    .work-chunks { gap:8px; }
+    .work-chunks div { min-width:0; width:100%; }
+    .work-options { grid-template-columns:1fr; gap:8px; }
+    .work-options .opt { min-height:54px; font-size:19px; padding:12px 14px; }
+    .work-scene.large { font-size:26px; }
+    .work-map { padding:14px 0 28px; }
+    .work-map-head { grid-template-columns:1fr; gap:10px; text-align:center; margin-bottom:16px; }
+    .work-map-head .xexit { justify-self:start; margin-top:0; }
+    .work-map h2 { font-size:30px; }
+    .work-map p { font-size:14px; }
+    .work-map-path { gap:10px; margin:16px 0 18px; }
+    .work-map-path::before { left:28px; top:30px; bottom:30px; }
+    .work-map-node { grid-template-columns:58px 1fr; gap:10px; padding:14px; border-radius:14px; }
+    .work-map-num { width:46px; height:46px; font-size:20px; }
+    .work-map-main b { font-size:18px; }
+    .work-map-main em { font-size:13px; }
+    .work-map-foot { grid-template-columns:1fr; }
   }
   @media (max-height: 760px) and (min-width: 721px) {
     .lesson-answer.teach-answer { padding-top:0; }

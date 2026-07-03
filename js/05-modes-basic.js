@@ -22,24 +22,6 @@ function askListenWord(w) {
   mountChoices($('opts'), fourOptions(w), o => o.en, w, w.en);
 }
 
-// 玩法層:有圖像感的具體字 → emoji(看圖選詞用;沒列到的字就不出圖像題)。跟 SPEECH_ALIASES 同層,不進 BANK。
-const EMOJI = {
-  word_cat:"🐱", word_water:"💧", word_book:"📚", word_happy:"😄", word_friend:"👥", word_house:"🏠", word_home:"🏠",
-  word_eat:"🍽️", word_drink:"🥤", word_go:"🚶", word_come:"🙋", word_buy:"🛒",
-  word_rice:"🍚", word_bread:"🍞", word_tea:"🍵", word_milk:"🥛",
-  word_look:"👀", word_see:"👁️", word_listen:"👂", word_hear:"👂", word_speak:"🗣️",
-  word_say:"💬", word_big:"🐘", word_small:"🐜", word_good:"👍", word_bad:"👎",
-};
-// 玩法層:具體字 → 自製圖(放 img/,優先於 emoji;沒檔 onerror 自動 fallback 回 emoji)。跟 EMOJI 同層,不進 BANK。
-const IMG = { word_house:'img/house.png', word_home:'img/home.png', word_big:'img/big.png', word_small:'img/small.png', word_beautiful:'img/beautiful.png', word_project:'img/project.png', word_experience:'img/experience.png' };
-const visualOf = w => IMG[wordKey(w)] || EMOJI[wordKey(w)] || null;   // 看圖題的視覺:圖優先、其次 emoji
-// 視覺「概念」去重:不同 emoji 但畫面上是同一個東西(👀 看 / 👁️ 看見 都是眼睛)→ 看圖題要當成同一視覺,免得圖分不出 look/see。同視覺守衛用這個比,不是比 emoji 字串。
-const VISUAL_ALIAS = { '👁️': '👀' };
-const visualKey = w => { const v = visualOf(w); return v ? (VISUAL_ALIAS[v] || v) : null; };
-const picHTML = (w, size = 130) => {                                  // 把視覺(圖/emoji)渲染出來,看圖說 / 看圖寫共用
-  const v = visualOf(w); if (!v) return '';
-  return v.endsWith('.png') ? `<img src="${v}" alt="" style="width:${size}px;height:${size}px;object-fit:contain">` : `<div style="font-size:64px">${v}</div>`;
-};
 // 2d. 看圖選英文字(認階,Duolingo 經典)。優先用自製圖、其次 emoji;沒視覺 → 退回看中選英,不硬出圖。
 function askPicture(w) {
   const v = visualOf(w);
@@ -63,7 +45,9 @@ function askMatch(w) {
   let others = shuffle(BANK.filter(x => x.id !== w.id && !isFresh(x) && x.pos === w.pos)).filter(uniq);
   if (others.length < 3) { seen.clear(); seen.add(w.zh); others = shuffle(BANK.filter(x => x.id !== w.id && !isFresh(x))).filter(uniq); }   // 只用教過的、中文不重複;不夠就少幾組
   let pool = [w, ...others.slice(0, 3)];   // 4 組(原 5 組在固定不捲版面 + 特訓那顆鈕會被切到底部)
-  const ens = shuffle(pool), zhs = shuffle(pool);
+  const ens = shuffle(pool);
+  let zhs = shuffle(pool);
+  if (pool.length > 1 && ens.every((o, i) => zhs[i] && zhs[i].id === o.id)) zhs = zhs.slice(1).concat(zhs[0]);   // 避免兩欄剛好排成答案順序
   shell('把英文和中文配對起來', `<div class="match-grid">
     <div class="opts" id="ens" style="flex:1"></div>
     <div class="opts" id="zhs" style="flex:1"></div></div>`);
@@ -93,6 +77,81 @@ function askMatch(w) {
       setTimeout(() => { el.classList.remove('wrong'); bad.classList.remove('sel'); }, 450);
       pickedEn = null;
     }
+  }
+}
+
+// 2e. 分類多選:選出所有同類字。主線低比例出現,用來建立「飲料/食物/感受」這類概念。
+function askCategoryPick(w) {
+  const q = categoryQuestionForWord(w);
+  if (!q) return askReadPick(w);
+  shell(q.category.prompt, `
+    <div class="category-title">${q.category.label}</div>
+    <div class="sub2 category-note">把符合這個分類的英文都選起來。</div>
+    <div class="opts category-options" id="catopts"></div>`);
+  $('body').classList.add('choice-answer', 'category-answer');
+  const box = $('catopts'), selected = new Set();
+  q.options.forEach(o => {
+    const el = document.createElement('div');
+    el.className = 'opt';
+    el.textContent = o.en;
+    el.onclick = () => {
+      if (box.classList.contains('locked')) return;
+      if (selected.has(o.id)) { selected.delete(o.id); el.classList.remove('sel'); }
+      else { selected.add(o.id); el.classList.add('sel'); }
+      const sb = $('submit'); if (sb) sb.disabled = selected.size === 0;
+    };
+    box.appendChild(el);
+  });
+  $('body').insertAdjacentHTML('beforeend', '<button class="btn act" id="submit" disabled>確認</button>');
+  $('submit').onclick = () => {
+    if (box.classList.contains('locked')) return;
+    box.classList.add('locked');
+    const correct = new Set(q.correctIds);
+    const right = selected.size === correct.size && [...selected].every(id => correct.has(id));
+    [...box.children].forEach((el, idx) => {
+      const id = q.options[idx].id;
+      if (correct.has(id)) el.classList.add('right');
+      else if (selected.has(id)) el.classList.add('wrong');
+    });
+    finishCategoryPick(right, w, q, selected);
+  };
+}
+
+function finishCategoryPick(right, w, q, selected) {
+  clearBottomActions();
+  const why = $('why');
+  const correctWords = q.correct.map(x => x.en).join(', ');
+  if (right) {
+    sfx.correct();
+    q.correct.forEach(x => { if (x.id !== w.id) creditWord(x); });
+    onCorrect(w); updateBar();
+    why.className = 'why';
+    why.innerHTML = `<div class="result-head compact">
+      <div class="result-mark">✓</div>
+      <div class="result-main">
+        <div class="result-word">分類正確</div>
+        <div class="result-copy">${q.category.label}: ${correctWords}</div>
+      </div>
+    </div>
+    <button class="btn act" id="cont">繼續 →</button>`;
+    why.hidden = false;
+    $('cont').onclick = nextQuestion;
+  } else {
+    sfx.wrong();
+    const correct = new Set(q.correctIds);
+    const missing = q.correct.filter(x => !selected.has(x.id)).map(x => x.en);
+    const extra = q.options.filter(x => selected.has(x.id) && !correct.has(x.id)).map(x => x.en);
+    why.className = 'why bad';
+    why.innerHTML = `<div class="result-head compact">
+      <div class="result-mark">!</div>
+      <div class="result-main">
+        <div class="result-word">正解: ${correctWords}</div>
+        <div class="result-copy">${missing.length ? `漏選: ${missing.join(', ')}。` : ''}${extra.length ? ` 多選: ${extra.join(', ')}。` : ''}</div>
+      </div>
+    </div>
+    <button class="btn act" id="cont">繼續 →</button>`;
+    why.hidden = false;
+    $('cont').onclick = () => { onWrong(w); nextQuestion(); };
   }
 }
 
@@ -297,12 +356,16 @@ function patternsForWord(w) {
 // 句中挖空選詞(認階,Duolingo「complete the translation」):用句型生句、挖掉 w 那格、4 選 1。
 // w 填不進任何已解鎖句型 → 退回看中選英,不出空句。
 function askClozePick(w) {
-  const pats = patternsForWord(w);
+  const sourceWords = typeof currentSentenceSourceWords === 'function' ? currentSentenceSourceWords() : sentenceSourceWords();
+  const sourceIds = new Set(sourceWords.map(x => x.id));
+  const pats = patternsForWord(w).filter(p => asList(p.requires).every(id => sourceIds.has(id)));
   if (!pats.length) return askReadPick(w);
-  const pat = shuffle(pats)[0];
-  const slotName = Object.keys(pat.slots).find(n => wordMatchesSlot(w, pat.slots[n]));
-  const blanked = s => s.replace(new RegExp(`\\{${slotName}\\}`), '＿＿').replace(/\{\w+\}/g, '');
-  const filledZh = s => s.replace(new RegExp(`\\{${slotName}\\}`), wordZhForSlot(w, pat.slots[slotName])).replace(/\{\w+\}/g, '');
+  const candidates = shuffle(pats).map(pat => ({ pat, sentence: buildSentenceFromPattern(pat, sourceWords, w) }))
+    .filter(x => x.sentence && Object.values(x.sentence.words).some(word => word && word.id === w.id));
+  if (!candidates.length) return askReadPick(w);
+  const { pat, sentence } = candidates[0];
+  const slotName = Object.keys(sentence.words).find(n => sentence.words[n] && sentence.words[n].id === w.id);
+  const blanked = s => s.replace(/\{(\w+)\}/g, (_, name) => name === slotName ? '＿＿' : (sentence.words[name] ? sentence.words[name].en : ''));
   const slotOptions = () => {
     const opts = [w];
     const push = o => { if (o && o.id !== w.id && !opts.some(x => x.id === o.id)) opts.push(o); };
@@ -310,13 +373,15 @@ function askClozePick(w) {
     shuffle(BANK.filter(o => o.pos === w.pos && !isFresh(o))).forEach(push);
     return shuffle(opts.slice(0, 4));
   };
+  const opts = slotOptions();
+  if (opts.length < 2) return askReadPick(w);
   shell('選出空格裡該填的字', `
-    <div class="bigzh" style="font-size:22px">${filledZh(pat.zh)}</div>
-    <div class="cloze-choice-line">${blanked(pat.text)}</div>
+    <div class="bigzh" style="font-size:22px">${sentence.zh}</div>
+    <div class="cloze-choice-line">${hintedEnglish(blanked(pat.text))}</div>
     <div class="opts" id="opts"></div>`);
   screen.classList.add('cloze-pick-screen');
   $('body').classList.add('choice-answer', 'cloze-choice-answer');
-  mountChoices($('opts'), slotOptions(), o => o.en, w, w.en);
+  mountChoices($('opts'), opts, o => o.en, w, w.en);
 }
 
 // 教句型結構:沒教過的句型,排詞前先教「英文怎麼排」(不然只學了字、沒學排列)

@@ -1,5 +1,7 @@
 const homeEl = document.getElementById('home');
 const bossLevelForStage = stage => defaultStageStartLevel(stage) + stageMinLevels(stage) - 1;
+const challengeCleared = stage => !!(meta.challengeCleared && meta.challengeCleared[stage]);
+const latestChallengeStage = () => Math.max(0, (meta.stage || 1) - 1);
 function mapSVG() {
   const total = meta.maxLevel + 2;                       // 已解鎖 + 下一關 + 2 個鎖著
   const W = 720, pad = 58, gap = 98;                     // 大畫布 + 大間距,節點沿正弦蜿蜒散開
@@ -16,21 +18,19 @@ function mapSVG() {
     circles += `<circle class="mapnode" data-lv="${lv}" cx="${p.x}" cy="${p.y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="3.5" style="cursor:${cur}"/>`
       + `<text x="${p.x}" y="${p.y+10}" text-anchor="middle" font-size="27" font-weight="700" fill="${tc}" style="pointer-events:none">${lv}</text>`;
   }
-  for (let stage = 1; stage <= (meta.stage || 1); stage++) {
-    const cleared = stage < (meta.stage || 1);
-    const pending = stage === (meta.stage || 1) && meta.bossReady;
-    if (!cleared && !pending) continue;
+  for (let stage = 1; stage <= latestChallengeStage(); stage++) {
+    const cleared = challengeCleared(stage);
     const lv = bossLevelForStage(stage);
     if (lv > total) continue;
     const p = pt(lv - 1);
     const bx = p.x < W / 2 ? p.x + 92 : p.x - 92;
     const by = p.y;
-    const fill = pending ? '#2a0e12' : '#16202c';
-    const stroke = pending ? '#e35b6a' : '#6ee7a8';
-    const tc = pending ? '#ffd0d6' : '#d9f7e5';
+    const fill = cleared ? '#172713' : '#2a0e12';
+    const stroke = cleared ? '#f7c948' : '#e35b6a';
+    const tc = cleared ? '#ffe08a' : '#ffd0d6';
     bossLines += `<line x1="${p.x}" y1="${p.y}" x2="${bx}" y2="${by}" stroke="${stroke}" stroke-width="3" stroke-dasharray="3 8" stroke-linecap="round" opacity=".75"/>`;
     bossNodes += `<circle class="mapboss" data-boss-stage="${stage}" data-cleared="${cleared ? 1 : 0}" cx="${bx}" cy="${by}" r="28" fill="${fill}" stroke="${stroke}" stroke-width="3.5" style="cursor:pointer"/>`
-      + `<text x="${bx}" y="${by+9}" text-anchor="middle" font-size="22" font-weight="800" fill="${tc}" style="pointer-events:none">${pending ? '王' : '✓'}</text>`;
+      + `<text x="${bx}" y="${by+9}" text-anchor="middle" font-size="${cleared ? 22 : 18}" font-weight="800" fill="${tc}" style="pointer-events:none">${cleared ? '✓' : '挑'}</text>`;
   }
   const H = pad + (total-1)*gap + pad;
   return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto"><path d="${path}" fill="none" stroke="#2c3e52" stroke-width="4" stroke-dasharray="2 13" stroke-linecap="round"/>${bossLines}${circles}${bossNodes}</svg>`;
@@ -45,45 +45,59 @@ function showHome() {
     <div class="topbar">
       <div class="logo">讓英文有道理</div>
       <div style="display:flex;align-items:center;gap:10px">
-        <button id="settingsbtn" style="background:#1d2c3a;border:1px solid #2c3e52;color:#9fb4c8;border-radius:99px;padding:8px 13px;cursor:pointer;font-size:14px">⚙</button>
-        <button id="bgmtoggle" title="靜音開關" style="background:#1d2c3a;border:1px solid #2c3e52;color:#9fb4c8;border-radius:99px;padding:8px 13px;cursor:pointer;font-size:14px">${bgm.isOn() ? '🔊' : '🔇'}</button>
+        <button id="settingsbtn" aria-label="設定" style="background:#1d2c3a;border:1px solid #2c3e52;color:#9fb4c8;border-radius:99px;padding:8px 12px;cursor:pointer;font-size:16px;display:inline-flex;align-items:center">${ICON.gear}</button>
+        <button id="bgmtoggle" aria-label="靜音開關" title="靜音開關" style="background:#1d2c3a;border:1px solid #2c3e52;color:#9fb4c8;border-radius:99px;padding:8px 12px;cursor:pointer;font-size:16px;display:inline-flex;align-items:center">${bgm.isOn() ? ICON.play : ICON.mute}</button>
         <button id="musicbtn" title="背景音樂" style="background:#1d2c3a;border:1px solid #2c3e52;color:#9fb4c8;border-radius:99px;padding:8px 13px;cursor:pointer;display:inline-flex;align-items:center"><svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M15,6H3V8H15V6M15,10H3V12H15V10M3,16H11V14H3V16M17,6V14.18C16.69,14.07 16.35,14 16,14A3,3 0 0,0 13,17A3,3 0 0,0 16,20A3,3 0 0,0 19,17V8H22V6H17Z"/></svg></button>
-        <button id="reset" style="background:#1d2c3a;border:1px solid #2c3e52;color:#9fb4c8;border-radius:99px;padding:8px 15px;cursor:pointer;font-size:13px">🔄 重來</button>
-        <div class="coin">🪙 ${meta.coins}</div>
+        <button id="reset" style="background:#1d2c3a;border:1px solid #2c3e52;color:#9fb4c8;border-radius:99px;padding:8px 15px;cursor:pointer;font-size:14px;display:inline-flex;align-items:center">${ICON.refresh}重來</button>
+        <div class="coin">${ICON.coin}${meta.coins}</div>
       </div>
     </div>
     <div class="homebody">
       <div class="side">
-        <div class="cat active" id="catPractice"><div class="cati">📚</div>練習單字</div>
-        <div class="cat" id="catTrain"><div class="cati">🎯</div>單字特訓<div class="catcoin">自選字加強</div></div>
-        <div class="cat" id="catDeriv"><div class="cati">🔒</div>衍生<div class="catcoin">需 30 🪙</div></div>
+        <div class="cat" id="catChallenge"><div class="cati">${ICON.flag}</div>挑戰關<div class="catcoin">${latestChallengeStage() ? '可選獎勵' : '完成一階解鎖'}</div></div>
+        <div class="cat" id="catTrain"><div class="cati">${ICON.target}</div>單字特訓<div class="catcoin">自選字加強</div></div>
+        <div class="cat" id="catDeriv"><div class="cati">${ICON.lock}</div>衍生<div class="catcoin">需 30 ${ICON.coin}</div></div>
         <div class="cat ph"><div class="cati">⋯</div>之後</div>
       </div>
       <div class="map">
-        <div class="maptitle">第一章 · 高頻日常</div>
-        <div class="mapjump" id="mapjump"></div>
+        <div class="maptitle">${currentTrack === 'work' ? '工作英文 · 職場高頻' : '第一章 · 高頻日常'}</div>
+        <div class="mapjump" id="mapjump">
+          <div class="branch-tabs">
+            <button class="branch-tab ${currentTrack === 'work' ? '' : 'cur'}" id="dailybranch">${ICON.book}日常單字</button>
+            <button class="branch-tab ${currentTrack === 'work' ? 'cur' : ''}" id="workbranch">${ICON.briefcase}工作英文</button>
+          </div>
+          <div class="map-status-row" id="mapstatus"></div>
+        </div>
         <div class="mapscroll" id="mapscroll">${mapSVG()}</div>
       </div>
     </div>`;
-  if (meta.bgm && !bgm.isOn()) bgm.toggle();   // 還原上次的 BGM 開關
-  document.getElementById('bgmtoggle').textContent = bgm.isOn() ? '🔊' : '🔇';   // 修:還原後同步圖示(否則音樂在播卻顯示🔇)
+  document.getElementById('bgmtoggle').innerHTML = bgm.isOn() ? ICON.play : ICON.mute;
   document.getElementById('settingsbtn').onclick = showSettings;
   document.getElementById('musicbtn').onclick = showMusic;
-  document.getElementById('bgmtoggle').onclick = () => { const playing = bgm.toggle(); meta.bgm = playing; saveMeta(); document.getElementById('bgmtoggle').textContent = playing ? '🔊' : '🔇'; };
+  document.getElementById('bgmtoggle').onclick = () => { const playing = bgm.toggle(); meta.bgm = playing; saveMeta(); document.getElementById('bgmtoggle').innerHTML = playing ? ICON.play : ICON.mute; };
   document.getElementById('reset').onclick = () => {
-    if (confirm('清掉所有學習進度,從第 1 關重新開始?')) {
+    if (confirm('清掉所有學習進度(日常 + 工作),從第 1 關重新開始?')) {
       for (const k in store) delete store[k]; localStorage.removeItem('eng_progress_v2');
-      meta.coins = 0; meta.maxLevel = 1; meta.stage = 1; meta.stageStartLevel = 1; meta.bossReady = false; meta.bossCleared = false; meta.skills = {}; saveMeta(); level = 1; showHome();
+      localStorage.removeItem('work_progress_v1'); localStorage.removeItem('work_clock_v1');   // 順手清掉舊工作引擎殘留
+      meta.coins = 0; meta.skills = {}; meta.tracks = {};                                       // 清所有軌進度
+      currentTrack = 'daily'; applyTrackContent('daily');                                       // 回日常軌內容
+      meta.maxLevel = 1; meta.stage = 1; meta.stageStartLevel = 1; meta.clock = 0; meta.bossReady = false; meta.bossCleared = false; meta.challengeCleared = {};
+      saveMeta(); level = 1; showHome();
     }
   };
-  document.getElementById('catPractice').onclick = () => enterLevel(meta.maxLevel);
+  document.getElementById('catChallenge').onclick = () => {
+    const st = latestChallengeStage();
+    const jump = document.getElementById('mapjump');
+    if (!st) { if (jump) jump.innerHTML = `<button class="cur">先完成第一階,挑戰關就會出現在地圖旁邊</button>`; return; }
+    scrollToLv(bossLevelForStage(st), true);
+  };
   document.getElementById('catTrain').onclick = showTrainPicker;
   document.getElementById('catDeriv').onclick = () => { homeEl.querySelector('#catDeriv .catcoin').textContent = '金幣不夠,之後開放'; };
   homeEl.querySelectorAll('.mapnode').forEach(c => { const lv = +c.dataset.lv; if (lv <= meta.maxLevel) c.onclick = () => enterLevel(lv); });
   homeEl.querySelectorAll('.mapboss').forEach(c => {
     const stage = +c.dataset.bossStage;
     const cleared = c.dataset.cleared === '1';
-    c.onclick = () => startBoss(stage, cleared);
+    c.onclick = () => startChallenge(stage);
   });
   // 關卡鏡頭:固定視窗 + 進場置中在目前關 + 滑鼠/觸控捲動 + 王快捷
   const mapscroll = document.getElementById('mapscroll'), mapsvg = mapscroll && mapscroll.querySelector('svg');
@@ -97,11 +111,14 @@ function showHome() {
   requestAnimationFrame(() => scrollToLv(meta.maxLevel, false));     // 保險:萬一同步時尺寸還沒到位,下一幀再置中
   const jump = document.getElementById('mapjump');
   if (jump) {
-    let h = `<button class="cur" data-jump="${meta.maxLevel}">📍 目前 · 第 ${meta.maxLevel} 關</button>`;
-    if (meta.bossReady) h += `<button id="jumpboss" style="border-color:#e35b6a;color:#ffd0d6">⚔ 王關 · 第 ${bossLevelForStage(meta.stage)} 關旁</button>`;
-    jump.innerHTML = h;
+    const status = $('mapstatus');
+    let h = `<button class="cur" data-jump="${meta.maxLevel}">目前 · 第 ${meta.maxLevel} 關</button>`;
+    if (latestChallengeStage()) h += `<button id="jumpboss" style="border-color:#e35b6a;color:#ffd0d6">挑戰關 · 第 ${latestChallengeStage()} 階</button>`;
+    if (status) status.innerHTML = h;
+    $('dailybranch').onclick = () => { setTrack('daily'); showHome(); };
+    $('workbranch').onclick = () => { setTrack('work'); showHome(); };
     jump.querySelectorAll('button[data-jump]').forEach(btn => btn.onclick = () => scrollToLv(+btn.dataset.jump, true));
-    if ($('jumpboss')) $('jumpboss').onclick = () => scrollToLv(bossLevelForStage(meta.stage), true);
+    if ($('jumpboss')) $('jumpboss').onclick = () => scrollToLv(bossLevelForStage(latestChallengeStage()), true);
   }
 }
 function enterLevel(lv) {
@@ -117,7 +134,7 @@ function showTrainPicker() {
   if (!words.length) {
     screen.innerHTML = `<main class="start-panel"><div style="text-align:center;font-size:40px">🎯</div>
       <h2 style="text-align:center">目前沒有需要加強的字</h2>
-      <div class="sub" style="text-align:center">教過的字都已經 100% 了 —— 去「練習單字」學新字,弱掉的字之後也會出現在這。</div>
+      <div class="sub" style="text-align:center">教過的字都已經 100% 了 —— 去「日常單字練習」學新字,弱掉的字之後也會出現在這。</div>
       <button class="btn" id="tback" style="margin-top:14px">← 回主畫面</button></main>`;
     $('tback').onclick = showHome; return;
   }
@@ -180,7 +197,7 @@ function showMusic() {
       <span>${t.name}</span><span style="font-size:20px">${idx === bt ? '🔘' : '⚪'}</span>
     </div>`).join('');
   screen.innerHTML = `<h2>背景音樂</h2>
-    <div class="sub">選一首(放了 mp3 才有那首;沒放的選了用內建合成頂著)。靜音開關在主畫面的 🔊。</div>
+    <div class="sub">選一首你放在 audio/ 的 mp3。音檔不存在就不播放,不再用合成音頂替。開關在主畫面的 🔊。</div>
     <div style="display:flex;flex-direction:column;gap:8px">${trackRows}</div>
     <button class="btn" id="musicback" style="margin-top:16px">← 回主畫面</button>`;
   screen.querySelectorAll('[data-track]').forEach(el => {

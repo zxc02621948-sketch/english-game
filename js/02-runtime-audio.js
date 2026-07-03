@@ -1,6 +1,22 @@
 const screen = document.getElementById('screen');
 const $ = id => document.getElementById(id);
 
+// 極簡線條圖示(內嵌 SVG,stroke 跟著文字顏色/字級走;取代按鈕上的 emoji)。純文字夠清楚的鈕就不放圖示。
+const _ico = p => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const ICON = {
+  play:    _ico('<path d="M4 9.5v5h3.5L12 18V6L8 9.5H4Z"/><path d="M15.5 9.2a4 4 0 0 1 0 5.6"/>'),
+  mute:    _ico('<path d="M4 9.5v5h3.5L12 18V6L8 9.5H4Z"/><path d="m16 10 4 4M20 10l-4 4"/>'),
+  gear:    _ico('<circle cx="12" cy="12" r="3"/><path d="M12 3.5v2.2M12 18.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M3.5 12h2.2M18.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/>'),
+  refresh: _ico('<path d="M20 11a8 8 0 1 0-2.4 5.7"/><path d="M20 5v5h-5"/>'),
+  coin:    _ico('<circle cx="12" cy="12" r="8.3"/><circle cx="12" cy="12" r="3.4"/>'),
+  close:   _ico('<path d="m6 6 12 12M18 6 6 18"/>'),
+  lock:    _ico('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/>'),
+  target:  _ico('<circle cx="12" cy="12" r="8.3"/><circle cx="12" cy="12" r="4.4"/><circle cx="12" cy="12" r="1"/>'),
+  flag:    _ico('<path d="M6 21V4.5"/><path d="M6 5h11l-2.2 3.4L17 12H6"/>'),
+  book:    _ico('<path d="M12 6.6C10.5 5.3 8.3 4.8 6 5.1v12c2.3-.3 4.5.2 6 1.5 1.5-1.3 3.7-1.8 6-1.5v-12c-2.3-.3-4.5.2-6 1.5Z"/><path d="M12 6.6v12.4"/>'),
+  briefcase: _ico('<rect x="4" y="8" width="16" height="11" rx="2"/><path d="M9 8V6.6A1.6 1.6 0 0 1 10.6 5h2.8A1.6 1.6 0 0 1 15 6.6V8"/><path d="M4 13h16"/>'),
+};
+
 // 挑最好的英文語音:Chrome 常有「Google US English」自然很多,但不指定就會被隨便挑(常選到死板的微軟 David/Zira)。
 let bestVoice = null;
 function pickBestVoice() {
@@ -45,8 +61,7 @@ const sfx = (() => {
   };
 })();
 
-// 背景音樂:純 Web Audio 合成的輕柔循環琶音(不用素材;一直有聲音也能讓「沒聲就斷線」的藍牙耳機保持連線)
-// 背景音樂清單:選單只列實體 mp3(放在 audio/);某首載入失敗才 fallback 合成琶音(startSynth)。合成只當保險,不再進選單。
+// 背景音樂:只播放實體 mp3(放在 audio/)。不再提供合成音 fallback,避免音樂意外自己響起。
 const BGM_TRACKS = [
   { file: 'audio/bgm1.mp3', name: '① 第 1 首' },
   { file: 'audio/bgm2.mp3', name: '② 第 2 首' },
@@ -54,47 +69,29 @@ const BGM_TRACKS = [
   { file: 'audio/bgm4.mp3', name: '④ 第 4 首' },
   { file: 'audio/bgm5.mp3', name: '⑤ 第 5 首' },
 ];
-const BOSS_TRACKS = ['audio/boss1.mp3', 'audio/boss2.mp3', 'audio/boss3.mp3'];   // 打王時隨機一首;沒放就 fallback 合成
+const BOSS_TRACKS = ['audio/boss1.mp3', 'audio/boss2.mp3', 'audio/boss3.mp3'];   // 打王時隨機一首;沒放就安靜
 const bgm = (() => {
-  let ctx, master, on = false, timer, i = 0, audio = null, panicMode = false;
-  const notes = [392.0, 523.3, 659.3, 523.3, 587.3, 440.0, 523.3, 659.3];
-  function synthTick() {
-    if (!on || audio) return;
-    const o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime;
-    o.type = 'triangle'; o.frequency.value = notes[i++ % notes.length] * (panicMode ? 1.5 : 1);   // 臨死:升調
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.045, t + 0.4);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
-    o.connect(g).connect(master); o.start(t); o.stop(t + 1.7);
-    timer = setTimeout(synthTick, panicMode ? 520 : 850);   // 臨死:加速
-  }
-  function startSynth() {
+  let on = false, audio = null;
+  function stopAudio() {
     if (audio) { audio.pause(); audio = null; }
-    ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
-    master = master || (() => { const m = ctx.createGain(); m.gain.value = 0.6; m.connect(ctx.destination); return m; })();
-    i = 0; synthTick();
+  }
+  function playPath(file) {
+    stopAudio();
+    if (!file) return;
+    audio = Object.assign(new Audio(file), { loop: true, volume: 0.1 });
+    audio.play().catch(() => { stopAudio(); on = false; });
   }
   function playTrack() {
-    clearTimeout(timer); panicMode = false; if (audio) { audio.pause(); audio = null; }
     const track = BGM_TRACKS[(meta.bgmTrack || 0) % BGM_TRACKS.length];
-    if (!track.file) return startSynth();                                    // 內建合成,不需檔案
-    audio = Object.assign(new Audio(track.file), { loop: true, volume: 0.1 });   // 一般 BGM,不蓋過學習語音,最大 10%
-    audio.play().catch(() => startSynth());                                  // 檔案沒放好 / 載失敗 → fallback 合成
-  }
-  function playFile(file) {
-    clearTimeout(timer); panicMode = false; if (audio) { audio.pause(); audio = null; }
-    if (!file) return startSynth();
-    audio = Object.assign(new Audio(file), { loop: true, volume: 0.1 });   // Boss 戰鬥曲(playFile 只給 boss),最大 10%
-    audio.play().catch(() => startSynth());
+    playPath(track && track.file);
   }
   return {
     isOn: () => on,
     setTrack(idx) { meta.bgmTrack = idx; saveMeta(); if (on) playTrack(); },  // 換歌(播放中即時換)
-    toggle() { on = !on; if (on) playTrack(); else { if (audio) audio.pause(); clearTimeout(timer); } return on; },
-    boss() { if (on) playFile(BOSS_TRACKS[Math.floor(Math.random() * BOSS_TRACKS.length)]); },   // 戰鬥:隨機一首 boss BGM
-    normal() { if (on) playTrack(); },                                                            // 回一般 BGM
-    panic() {                                                                                      // 臨死反撲:不換曲,把當下這首加速+升調(8-bit 越快越尖越燃)
-      panicMode = true;
+    toggle() { on = !on; if (on) playTrack(); else stopAudio(); return on; },
+    boss() { if (on) playPath(BOSS_TRACKS[Math.floor(Math.random() * BOSS_TRACKS.length)]); },   // 戰鬥:隨機一首 boss BGM
+    normal() { if (on) playTrack(); },                                                           // 回一般 BGM
+    panic() {
       if (audio) { audio.preservesPitch = false; audio.webkitPreservesPitch = false; audio.playbackRate = 1.3; }
     },
   };

@@ -2,6 +2,192 @@
 
 這份檔案給使用者、GPT、Codex 交接用。重點記「實際改了什麼、為什麼改、下一步要注意什麼」。
 
+## 2026-06-30
+
+### 本輪調整(Codex):工作英文改成獨立地圖
+- 使用者覺得工作英文值得做成另一個大地圖,同樣有階段/關卡感,但內容與主線分開。
+- `startWorkPractice()` 改為進入 `showWorkMap()`,側欄「💼 工作英文」不再直接開單一練習。
+- 新增工作英文地圖節點:目前 3 關「不懂就問」「回報狀態」「請求協作」,完成當前關後解鎖下一關。
+- 進度存到 `meta.workMaxLevel`,不影響主線地圖、挑戰關或單字熟練度。
+- 工作關卡內按叉叉改回工作地圖;完成頁新增「回工作地圖」,讓工作英文像一條獨立課程線。
+- 使用者回報工作英文還是太高壓:一次學 4 句再抽考像短期記憶測驗。`buildWorkQueue()` 改成「一句一句教 → 句塊確認 → 讀懂/聽懂 → 再下一句」。
+- 工作英文選項池改成只混入目前已教過的句子,不再用還沒看過的句子當選項。
+- 使用者進一步定位:工作英文不是附屬小工具,應該是成人真正想學、可幫助自己的主線分支。工作分支從 3 關擴到 13 關、52 句。
+- 新增職場主題:安排時間、會議參與、確認需求、進度回報、問題排查、客氣請求、邊界與拒絕、道歉修正、客戶溝通、遠端會議。
+- 主畫面入口文案改成「成人工作主線」;重置進度時同步清 `meta.workMaxLevel`。
+- 使用者修正設計意圖:不是要工作英文跳到另一個全頁地圖,而是要跟主線共用同一個首頁。`startWorkPractice()` 現改為重新渲染首頁並把右側 `.map` 換成工作分支內容。
+- 工作題目按 X、完成頁「回工作地圖」都回到共用首頁框架,並自動選中左側「工作英文」分類。
+- 再修正一次「共用頁面」的理解:右側不該塞工作英文標題與列表卡片,而要沿用主線地圖的圓形節點路線。工作分支現在改用 `workMapSVG()` 生成同樣的地圖路線視覺。
+- 左側「練習單字」改名「日常單字練習」;點擊只切回日常地圖,不再直接進入目前關。
+- 日常/工作分支切換移到右側地圖上方 `mapjump` 區,兩條主線都提供「📚 日常 / 💼 工作」切換鈕。
+- UI 收斂:日常/工作分支鈕放大並獨立一行,「目前第幾關」移到第二行,不再跟分支鈕擠在同一排。
+- 左側側欄移除重複的日常/工作入口,保留挑戰關、單字特訓、衍生等非主線工具入口。
+- BGM 移除 Web Audio 合成背景樂 fallback;音檔不存在就安靜,不再自動改播合成音。首頁也不再因 `meta.bgm` 自動恢復播放。
+- 修工作地圖第一關點擊:工作 SVG 節點從單一 circle 改成 `<g class="workmapnode">` 並加透明大圓 hit area,點數字或圓點周圍都能進關。
+- 「不懂就問」狀態鈕改成不可點的描述 pill,避免它看起來像另一個進關按鈕;目前關仍由「目前 · 第 X 關」按鈕負責。
+- 修嵌入式工作地圖進關只有語音、沒有題目畫面的 bug:`startWorkLevel()` 現在會先 `homeEl.hidden=true` 並 `screen.hidden=false`,再渲染工作題目。
+- 補上工作地圖桌機與手機版樣式。
+
+### 本輪調整(Codex):工作英文拆成小關 + 先教句塊
+- 使用者回報工作英文第一版太硬核:單字/句塊都沒學就直接猜整句,且看起來只有一關。
+- `js/10-work-mode.js` 重做為 3 個工作英文小關:「不懂就問」、「回報狀態」、「請求協作」。
+- 每關固定 4 句,先完整教學 4 張卡,每張卡顯示英文、中文、使用情境與句塊拆解;之後才進句塊確認、讀懂、聽懂、情境回應、跟讀。
+- 題目池不再一開始全隨機洗牌,避免玩家沒看過句子就被要求作答。
+- 完成頁新增「再練這關」與「選其他工作關」,讓工作英文不再只是單輪練習。
+- 補工作關卡選單與句塊卡片樣式。
+- 驗證:`node --check js/10-work-mode.js js/10-home-settings.js js/00-content.js js/01-engine.js js/08-lesson-flow.js`。
+
+### 本輪新增(Codex):工作英文聽說讀小課
+- 使用者覺得現有學習工具常在還沒學熟時要求默寫,但工作用英文短期更需要聽懂、讀懂、能開口回應。
+- 新增 `js/10-work-mode.js`:獨立「工作英文」練習,不寫入主線熟練度、不出默寫、不影響地圖進度。
+- 主畫面側欄新增「💼 工作英文」入口,點進去可跑一輪約 20 題小課。
+- 第一版題庫放入 12 句高頻工作句,例如 `Could you explain it again?`、`Let me check.`、`I fixed the bug.`、`Can you send me the file?`。
+- 題型只包含:短句教學、看英文選中文、聽英文選中文、工作情境選英文回應、跟讀自評。跟讀先不做硬語音辨識,避免瀏覽器麥克風誤判卡關。
+- 補上工作英文專用樣式與手機版單欄排版。
+- 驗證:`node --check js/10-work-mode.js js/10-home-settings.js js/11-main.js js/00-content.js js/01-engine.js js/08-lesson-flow.js`。瀏覽器煙測因本輪 shell 環境缺 `playwright-core` 未跑。
+
+### 本輪追加修正(Codex):挑戰九宮格答對後卡住
+- 使用者回報挑戰關九宮格選對後畫面停在 `命中` 狀態,倒數條繼續跑,時間結束仍不進下一題。
+- `renderBossQ()` 的 finish 現在會凍結倒數條 CSS transition,避免答題完成後視覺上還像倒數中。
+- 答題後切下一題等待從 750ms 縮短為 420ms,減少停在命中畫面的空窗。
+- 新增 `scheduleBossTurn()`:下一題生成包 try/catch,若未來遇到題目生成邊界錯誤,會顯示提示並返回地圖,不再卡死在原畫面。
+- 驗證:`node --check js/09-boss.js`;Chrome headless 模擬九宮格 `water` 答對後 0.9 秒已切到下一題,console 無錯。
+
+### 本輪追加修正(Codex):分類多選題 prototype
+- 新增分類題資料來源:沿用單字 `flags` 組出飲料、可加糖飲料、食物、感受、可介紹物、可擁有物等分類,避免先寫死一堆題庫。
+- 主線新增 `category` 題型:至少要有 2 個正解和 2 個誘答才會出,選完後會提示漏選/多選,用來練「哪些字同一類」。
+- 課程 recipe 加入 `category` 權重:新字導入低比例、認字/克漏字/句子應用逐步增加、王前整理更常混入。
+- 挑戰關新增 `category` mode:限時選出所有符合分類的英文;點到錯誤分類會立刻失敗扣血,答對造成分類題傷害。
+- 臨死反撲可少量混入分類題;如果分類題被去重擋掉,會退回一般題,避免空題或卡死。
+- 補上主線分類題與挑戰分類題樣式。
+- 驗證:`node --check js/01-engine.js js/03-feedback-choices.js js/05-modes-basic.js js/08-lesson-flow.js js/09-boss.js`;Node VM 模擬確認第一階段飲料字可組出 `sweetenable` / `drinkable` 分類題,挑戰關分類題可產生 answer key 與漏選補救 id。
+
+### 本輪追加修正(Codex):挑戰關臨死反撲改成句子混合驗收
+- 使用者回報挑戰關最後反撲仍像連續單字刷題,不太像階段驗收。
+- `bossCombo()` 改為優先抽句子題:有學過句型時,反撲會混入 `sentence_cloze` 句子克漏字或句子九宮格。
+- 保留少量單字題混合,避免反撲完全變成句子單一模式;一王 2 連段會傾向 1 題句子 + 1 題單字,後面階段連段越多句子比例越高。
+- 如果目前沒有可用句型,仍會自動退回原本單字反撲,避免卡死。
+- 驗證:`node --check js/09-boss.js`;Node VM 模擬一王反撲,確認 `hits=2` 時 `sentenceTarget=1`,樣本為 `sentence_cloze/grid + word` 混合。
+
+### 本輪追加修正(Codex):已會內容自動縮短關卡
+- 使用者回報第 2 關大量點「我已經會了」後,仍連續出現 `tea with sugar` 這種重複排句;根因是 `buildLessonQuota()` 仍硬補到 recipe 題數。
+- `buildLessonQuota()` 改成「最多題數」:還沒會、缺默寫、到期複習的字才會拉長關卡;已會且已寫過的字通常只回顧一次,不再拿來硬湊 8/10/14 題。
+- `sentenceWithWord()` 增加防呆:如果保證含某字的句子只剩上一題同一句,回傳 `null` 讓一般句子池改抽其他句,避免為了含指定字而連續重複。
+- 開始說明從「約 X 題」改成「最多約 X 題」,符合現在會依材料自動縮短。
+- 驗證:`node --check js/01-engine.js`;`node --check js/06-modes-sentence.js`;`node --check js/08-lesson-flow.js`;Node VM 模擬第 2 關四個飲料字都已會且寫過時,recipe 8 題會縮成實際 quota 4 題。
+
+### 本輪追加修正(Codex):排句題避免連續同一句
+- 使用者回報「看中文,排出英文」連續出現同一題,例如 `tea with sugar` 接連重複。
+- `sentenceVariants()` / `sentenceCandidates()` 會針對同一句型多抽幾次並去重,讓同一個句型也能產生 `tea with sugar` / `coffee with sugar` 這類變體。
+- `sentenceWithWord()` 改用展開後的候選句,強制複習某個字時也會避開上一題的 exact same sentence。
+- `pickTransformSentence()` 同步改用展開候選,避免轉換題也卡在單一句子。
+- 驗證:`node --check js/03-sentence-utils.js`;`node --check js/06-modes-sentence.js`;Node VM 確認上一題若是 `tea with sugar.`,強制練 `sugar` 會挑 `coffee with sugar.`。
+
+### 本輪追加修正(Codex):整句跟讀題型
+- 新增 `askSentenceSpeak()`:主線可出「聽整句,跟著念一次」,顯示英文句子與中文,並提供正常/慢速播放。
+- 新增 `sentenceSpeechMatches()`:整句辨識使用 token 覆蓋率判定,比單字辨識寬鬆;兩次抓不到會進入自評,玩家可選「念順了,過」或再試一次。
+- 整句跟讀接進 `FORMATS` 的 `sentence_speak`,屬於 `speak` 技能但不作為硬考核;跳過說題仍可沿用「只跳這題 / 以後都跳過說題」。
+- 課程 recipe 加入 `sentence_speak` 權重:新字導入低、句子應用與王前整理較高,避免一開始口說整句過量。
+- `css/05-teach-build.css`:新增整句跟讀卡片、成功/失敗狀態與瀏覽器聽到內容的顯示樣式。
+
+### 本輪追加修正(Codex):全點我會了不再跳過句型課
+- 使用者發現第一關單字全點「我會了」會直接開王;這在舊單字制合理,但現在第一階也有短語/句型,會把句子應用整段跳掉。
+- 新增 `stageSentencePatterns()` / `stageSentencesReady()`:提前開王除了本階實詞都 `taught + wrote + learned`,還要本階可組出的核心句型至少碰過一次(`patMastery > 0`)。
+- `stageReadyAt()` 改用傳入關卡換算 stage,並把「全會提前打王」改成 `allKnown && stageSentencesReady(stage)`;固定跑到本階最後一關後仍可照原本規則開王。
+- `normalizeBossGate()` 現在會重新計算 `meta.bossReady`,可收回舊規則誤開的王關狀態。
+
+### 本輪調整(Codex):王關改為可選挑戰關
+- 主線不再要求打王才能進下一階:階段完成後直接解鎖下一階,過關畫面顯示「下一階已解鎖」。
+- 原 Boss 戰保留為 `startChallenge(stage)` optional challenge。地圖完成的階段旁會出現「挑」節點,側欄新增「挑戰關」入口。
+- 挑戰關輸了不扣熟練度、不擋進度;第一次通過記到 `meta.challengeCleared[stage]` 並給金幣獎勵,之後重打是回顧練習。
+- `meta.bossReady` 改為不再作主線門檻;`normalizeBossGate()` 只負責收掉舊狀態與限制當前階段最大關卡。
+- 重置進度時同步清掉 `meta.challengeCleared`。
+
+### 本輪追加修正(Codex):關卡說明讀實際階段長度 + 排句字卡中文提示
+- 使用者:第一關原型後關卡數/題數變多,但點關卡的開始說明還寫死 `5` 關;並詢問是否要參考別人 hover 英文字顯示中文註解。
+- `showStart()`:開始說明從 `本階第 ${idx}/5 關` 改成讀 `stageMinLevels(stageOfLevel(level))`,避免未來階段長度調整後顯示錯誤。
+- `askBuildSentence` / `askTransform` / `teachPattern`:英文詞塊新增中文提示資料。排句卡片 hover/focus 會顯示中文,並同步 `title` / `aria-label`。
+- `css/05-teach-build.css`:新增 `.word-hint` 浮層樣式,提示不撐開卡片、不影響排句版面。
+
+### 本輪追加修正(Codex):題目英文提示位置修正 + 重玩舊關鎖內容池
+- 使用者指出 hover 註解放錯位置:參考 app 是「題目上的英文」可看中文,不是答案英文卡提示。
+- 移除排句答案卡上的中文提示;改為克漏字題的題目英文(`This/is/a...`)可 hover/focus 看中文。轉換題的題目直述句也使用同一套提示。
+- 新增 `currentSentenceSourceWords()`:句子來源依照玩家點的 `level` 換算 stage,只拿該關卡階段已解鎖的字。
+- `buildLevel()` 改用 `stageOfLevel(level)` 而不是 `meta.stage`,並限制 active/due/fallback 都不能拿到該關卡之後的字。修正「打完五關後回第一關,第一關直接教新詞」。
+- `askClozePick` / 主線 `sentence_build` / 過關後組句小練習都改吃 `currentSentenceSourceWords`,避免回頭重玩舊關時組出後面階段的句子。
+
+### 本輪追加修正(Codex):Boss 九宮格突襲 prototype
+- 新增 Boss 專屬 `grid` 題型,約 28% 機率出現,先做成小遊戲招式而不是新關卡系統。
+- 單字九宮格支援錯字陷阱,例如 `cat` 會混 `cot/cit/cut/crt/cet` 這類相近拼字。
+- 有圖單字可出「英文找圖」反向圖題,格子會混入近似圖示陷阱(如 cat 混虎/狗/獅、水混油/奶/飲料)。
+- 句子九宮格會把已會句子拆成詞塊,玩家要依序點出英文句子,等於打地鼠版排句;目前只作為 Boss 句子招式之一。
+- Boss 句子題不再使用教學式拖曳排列;現在以 `sentence_cloze` 克漏字為主,少量混九宮格句子連打。主線練習仍保留拖曳排列。
+- `book` 的正式視覺從 `📚` 改成較像單數書本的 `📓`;九宮格陷阱保留非書本類,避免出現兩個都像正解的圖。
+- 修正九宮格提示排版:提示內容改用 `.boss-grid-clue` 直向排列,並加上 `boss-grid-mode` 專用行距,避免英文和說明文字擠在一起。
+- 修正 Boss 倒數條可能一出現就跳到空條的問題:timebar 改成先渲染滿格,再用雙 `requestAnimationFrame` 啟動縮減動畫。
+- 修正 Boss 九宮格過度主導的問題:降低九宮格機率、句子題改成「克漏字優先,少量九宮格」,並加入 `lastMode` 防止九宮格連發。
+- 新增 Boss `sentence_cloze` 句子克漏字:顯示中文與英文空格句,玩家輸入缺字;答錯只記缺的那個字進惡補。
+- 修正第二階 Boss 過度集中 `home/house`:本階新實詞只有 1-2 個時,自動降低本階權重並提高舊字混入;句子題也不再每題強塞本階字。
+- 驗證:`node --check js/09-boss.js`;Node VM 確認可產生單字/句子九宮格,且 `cat` 錯字陷阱為相近拼字。
+- 追加驗證:Node VM 確認 Boss 句子題可產生九宮格句子連打,例如 `This is my house` 會要求依序點 `this/is/my/house` 並混入干擾詞。
+- 追加驗證:Node VM 模擬二王 150 題,模式分布包含 `grid/zh/listen/pic/sentence_cloze/choice/listen_choice`,且九宮格最大連發數為 1。
+- 追加驗證:Node VM 模擬二王 300 題,字詞分布以 `home/house` 為主但會混 `cat/book/friend/water/happy`,句子也會出 `This is a cat/book/friend` 等舊材料。
+
+## 2026-06-29
+
+### 本輪追加修正(Codex):Boss 題型與抽題權重
+- 一王血量從通用公式獨立出來,降為 35,避免只有五個單字時戰鬥拖戲;二王以後仍用逐階變肉公式。
+- Boss 單字題庫改成本階實詞大幅優先,舊字只少量混入;同一場已出過的字會降權,降低一直抽到 `cat/water/friend` 的機率。
+- Boss 句子題會優先把本階新字塞進句子,例如第二階更常出 `home/house` 句子,不是一直回第一階材料。
+- 新增 Boss `listen_choice` 題型:聽音後選英文,讓王關有語音元素但不使用不穩定的麥克風語音辨識。
+- 驗證:`node --check js/09-boss.js`;Node VM 模擬第二階單字抽題偏向 `home/house`,句子題可穩定產生 `This is my home/house`、`This is a house`。
+
+### 本輪追加修正(Codex):有圖單字優先看圖寫
+- `home/house` 本來已經有圖,也符合 `pictype`「看圖寫英文」題型,但它只是在默寫題池中隨機抽,所以可能整輪都沒遇到。
+- 現在有圖單字在第一次需要硬默寫(`wrote=false` 且進入寫作階)時,會優先出 `pictype`;通過後才回到一般默寫題型隨機。
+
+### 本輪調整(Codex):固定 5 關 + 王,每關題數變化
+- 課程骨架改成**每階固定 5 個主線關 + 王**:`stageMinLevels()` 固定回 5,王關位置回到 5/10/15/20… 旁邊。
+- 新增 `LESSON_RECIPES`:第 1 關新字導入(約 6 題)、第 2 關認字聽音(約 8 題)、第 3 關克漏字(約 10 題)、第 4 關句子應用(約 14 題)、第 5 關王前整理(約 10 題)。
+- `buildLevel()` 依照本關 recipe 控制新字導入量:前 1-3 關導入新字,第 4-5 關不再塞新字,改做句子/克漏字/默寫整理。
+- 舊 micro-batch 不再阻止本階剩餘新字開出;現在只把未穩字排前面多練,避免固定 5 關內只卡在前兩個字。
+- 題型抽選權重接上 recipe:句子應用關會更偏排句/轉換/克漏字,王前整理更偏寫作與整合。
+- 本關 quota 改由 recipe 題數分配,同一批字會依需求重複練到本關題數,不再每字只問一次就結束。
+- Boss 不再因為本階字提早全會就插進階段中間;固定等本階第 5 關後再開。未來「跳過」要做成整階驗收。
+- 將原本 10 個字的吃喝/感受批拆成兩個 5 字批,避免固定 5 關教不完而卡王。
+
+### 驗證
+- `node --check js/01-engine.js`
+- `node --check js/08-lesson-flow.js`
+- `node --check js/09-boss.js`
+- `node --check js/10-home-settings.js`
+- Node VM 確認 stage 長度為 5,起點為 1/6/11/16,王關位置為 5/10/15/20,recipe 題數為 6/8/10/14/10。
+- Node VM 模擬前兩階已通過後的第三階:第 11-13 關可導入 hungry/thirsty/tired/sad/eat,第 15 關後 `stageReadyAt(15)=true`。
+
+### 本輪追加修正(Codex):整階已會跳王 + 防說題連發
+- 修正固定 5 關後「整階都點我已經會了」不會開王的問題:`stageReadyAt` 現在允許本階所有字 `isLearned + wrote` 時提前開王,視為整階驗收。
+- 修正只剩少數弱字時可能連續抽到同一技能(尤其說題)的問題:主線題型抽選會優先避開同一個字連續同技能。
+- 驗證:`node --check js/01-engine.js`, `node --check js/08-lesson-flow.js`;VM 確認第一階五字全標會時第 3 關 `stageReadyAt(3)=true`。
+
+### 本輪追加修正(Codex):少量補完模式
+- 新增 `stagePendingWords()` / `completionRecipe()`:本階只剩 1-2 個字沒達標時,下一關會變成短補完關,只練這幾個字。
+- 補完關題數縮短:只剩 1 字約 3-4 題,只剩 2 字約 5-6 題;如果缺 `wrote`,會提高寫作題權重。
+- `buildLevel()` 在補完模式只回傳 pending 字,不再因題數太少塞已會舊字。
+- 驗證:四個字已會、cat 缺寫作時,VM 顯示 `words=[cat]`, `quota.word_cat=4`,不會把已會字加回關卡。
+
+### 本輪追加修正(Codex):配對題避免答案順序排好
+- `askMatch()` 的英中兩欄若洗牌後剛好同 index 全部對齊,會把中文欄旋轉一格,保證不是開場就排好答案。
+- 驗證:`node --check js/05-modes-basic.js`;小模擬確認對齊陣列旋轉後 `aligned=false`。
+
+### 本輪追加修正(Codex):關卡開場可返回地圖
+- `showStart()` 開始鈕下方新增「← 回地圖」,點到過去關卡或目前關卡後不會只能開始。
+- 驗證:`node --check js/08-lesson-flow.js`。
+
+### 本輪調整(Codex):第二階段加入 home/house
+- 判斷第 6-10 關原本只有功能詞,太容易變成同一批舊字的語句重排;將 `home/house` 加進批 2,讓第二階段除了 this/is/a/my/I/am 之外也有新實詞材料。
+- `completionRecipe()` 增加防呆:如果某階原本就只有 1-2 個實詞,不會一開始就被當成「少量補完」。
+- 驗證:`node --check js/01-engine.js`;VM 模擬第一階通過後進第 6 關,本階字為 `home/house`,配方為 `intro`,實際關卡會抓到 `home/house`。
+
 ## 2026-06-26
 
 > 注意: 本日誌前半段保留上一輪歷史紀錄；後面的「瘦資料與句型模板基礎」已取代 `near/confuse` 方向。
@@ -822,3 +1008,116 @@
 - 使用者:答完題後底部結算列(.why)出現,特訓「我學會了」鈕沒收掉、疊在上面。點破:現成就有「答完收掉送出鈕」的機制,該套同一個。
 - 抽 clearBottomActions()(收掉 submit/trainknown/skipspeak),finish 改用它;finishGroupSuccess / speakResult / offerSelfAssess / askSylType 結算也呼叫 → 所有結算路徑統一收掉底部動作鈕。
 - 驗(瀏覽器):選擇題(finish)、配對題(finishGroupSuccess)答完後 trainknown 收掉、.why 正常顯示不重疊;node --check OK;零 console error。
+
+### 本輪(Codex): 拆分句型工具、回饋選擇題、圖片 registry
+- 使用者同意做低風險結構拆分。保留傳統全域 script 與原函式名稱,只調整檔案責任,不改玩法。
+- 新增 `js/03-sentence-utils.js`:從 `03-ui-shell-feedback.js` 搬出 `asList/wordById/savedRec`、句型 slot 檢查、`buildSentenceFromPattern`、句型 mastery、`creditSentence`、`pickBuildSentence` 等。
+- 新增 `js/03-feedback-choices.js`:從 `03-ui-shell-feedback.js` 搬出 `CONFUSE_PAIRS`、`wrongHint`、`clearBottomActions`、`finish/finishGroupSuccess`、`mountChoices/fourOptions`。
+- 新增 `js/04-visuals.js`:從 `05-modes-basic.js` 搬出 `EMOJI/IMG`、`visualOf/visualKey/picHTML`。`index.html` 已補載入順序。
+- 效果:`js/03-ui-shell-feedback.js` 從 256 行降到 38 行,只剩 lesson shell / exit confirm / progress bar。`js/05-modes-basic.js` 移除圖片 registry,專注題型。
+- 驗(Node):全 `js/*.js` `node --check` OK。未跑瀏覽器 UI 測,此輪為純拆檔低風險變更。
+
+### 本輪(Codex): 第三階段 micro-batch + 克漏字門檻
+- 使用者:第三階段長字/句子應用開始變難,不要一關 2 個新字、下一關又 2 個;長字要廣用克漏字,至少成功填入不同格子兩次以上才觸發默寫。
+- `buildLevel`:新增進階 focus group(`batchOf>=2`):已教但未達標的進階字會優先塞回本關;focus 存在時 `NEW=0`,不再開下一組。一次新字仍最多 `MICRO_BATCH_SIZE=2`;focus 達標後才開下一組。
+- 新增 `clozeReadyForDictation(w)`:長字/第三階段字若能出句子克漏字,需 `clozeOk>=2` 且 `clozeSlots>=2` 才放出硬寫題(`type/pictype/flashtype`)。`sentence_cloze` 答對只記克漏字進度,不直接設 `wrote`。
+- `sentenceClozeForWord`:擴充到「w 是 pattern requires 的動詞」也能出克漏字,所以 `eat/drink` 可出 `I ___ rice/tea` 這類句子,不只名詞/形容詞 slot。
+- `ask` / `trainAsk`:克漏字門檻前會過濾硬寫題;主線仍可出句子克漏字、音節鷹架等支架題。`onCorrect` 只有 hard dictation 格式成功才標 `wrote`。
+- 驗(Node):全 `js/*.js` `node --check` OK,合併 script parse OK;VM 模擬 stage3 先開 `hungry/thirsty`,未達 `clozeOk>=2 + 2 slots` 不開下一組,達標後開 `tired/sad`;`eat/drink/rice/tea` 可產生句子克漏字。
+
+### 本輪(Codex): 主線排句錯題改回補考 + 第三階段章長跟 micro-batch
+- 使用者:轉換題答錯後變成一直重排到對,違反「答錯最後補考」;也擔心第三階段關卡一直推進,還沒練完就撞王。
+- `askBuildSentence`:新增 `onMiss` 參數。主線題傳 `onMiss` 時,答錯顯示正解後按「繼續」→ `onWrong` → 主回合結束補考;過關後額外「組句小練習」沒傳 `onMiss`,仍保留「重排一次」。
+- `askTransform`:主線轉換題答錯改成「看正解 → 繼續」並呼叫 `onWrong(w); nextQuestion();`,不再原地重排到對。
+- `stageMinLevels(stage>=3)`:改成 `max(5, ceil(stageWordCount/2)*2)`,第三階段 10 字 → 第 10~19 關,不會第 13 關就撞章末;第 4 階段若 5 字 → 至少 6 關。
+- `normalizeBossGate`:移除舊的「超過 deadline 自動把 taught 字標 wrote」遷移邏輯,避免繞過現在的克漏字/默寫門檻。
+- 驗(Node):全 `js/*.js` `node --check` OK,合併 script parse OK;VM 確認 stage3Min=10、stage3Deadline=19、stage4Min=6。
+
+### 本輪(Codex): 第一關飲料短語原型
+- 使用者拿參考 app 討論:第一關就應該進入日常短語/情境,不用每個功能詞都先單獨教完。先做第一關原型,不整套大改。
+- `BANK`:新增 `coffee/sugar/with/please`,並把 `tea/milk` 補上 `sweetenable`;`or` 文案改成飲料二選一脈絡。`EMOJI` 補 `coffee/sugar`。
+- `PATTERNS`:新增 `pat_drink_or_drink`、`pat_drink_please`、`pat_drink_with_sugar`,接進 `BUILD_SENTENCE_PATTERN_IDS`。
+- `BATCHES`:第一階改成 `water/tea/coffee/sugar + or/with/please`,第二階接回 `cat/book/friend/happy + this/is/a/my/I/am/home/house`。
+- `FIRST_LESSON_RECIPE`:第 1 關獨立拉長到 18 題,一次導入 4 個飲料材料,提高句子應用權重。
+- `askClozePick`:改用 `buildSentenceFromPattern` 生成完整句,多 slot 句型也只挖目標 slot,不再把其他 slot 清空成怪句;選項不足時退回認字題。
+- `FORMATS`:句子排詞與克漏字允許第 1 關出現,但克漏字需至少有干擾選項。
+
+## 2026-07-02（Claude Opus 4.8):工作英文改成浮動熟練度引擎(大改)
+
+> 使用者實玩工作英文逐點逼出來的:固定關卡 + 一次砸整句 + 選項能用「一個醒目字」猜 → 沒真學到、也不能重組。這輪把工作模式從固定 13 關腳本換成**浮動 + 熟練度% + SRS** 的自帶引擎(對齊主線精神,自成一套、**不碰主線**)。相關:`js/10-work-mode.js`、`js/10-home-settings.js`、`css/06-home-map.css`。
+
+### 過程(依使用者回饋逐步)
+- 先修一關內難度斷崖:句子流程改「**拆**(逐塊教)→ **認**(句塊意思)→ **組**(排句 `workBuild`)→ **用**(listen/reply)」,拿掉太送分的 read;reply 固定考本句 + 開頭提示。
+- `finishWorkChoice` 改吃 item:顯示「這句/字 = 中文 + `why` 眉角(沒填退回 `scene` 使用時機)」,拿掉被硬塞成玩家文案的內部設計方針(對等主線 `w.why`)。`WORK_WORDS`/句子加 `why` 欄位 + 眉角樣本。
+- 使用者點破更根本:應**先學單字再組合**,且選項能靠一個字猜 = 沒學到。先加「單字先學層」→ 使用者再點破:**不該綁死關卡數/一關學多少**,要浮動、循序、確實會了才進、每天一點或衝刺皆可 = 主線引擎的行為。
+- **改成浮動引擎**:每字/每句一個 unit(`w_xxx`/`s_xxx`),各有熟練度%+SRS,存獨立 localStorage(`work_progress_v1`/`work_clock_v1`),不碰 `eng_progress_v2`。
+  - `buildWorkSession`:到期複習 → 在學中 →(在學 `<3` 才)引新 2;新只教、下段才考;句 unit 前置 = 同關 `wordIds` 都教過;cap 7 題。
+  - 題型跟 `workTier`(34/67)爬:字 認→產出;句 認塊→組句→應用。`workCredit`(+25/−20/100%=會)、SRS `ivl×2` 封頂 30、`workClock` 每段 +1。
+  - 首頁改成**進度面板 + 進度儀表地圖**(13 主題節點依「學會幾/共幾」上色、學滿 ✓,不再是關卡鎖;`workThemeProgress`/`workMapSVG` 改寫)。`startWorkSession` 進場、`startWorkLevel` 留相容 shim、`buildWorkQueue` 刪除。
+- zh→en 單字題中文提示從靠左小字改置中放大(`.work-quiz-cue`);順手 `.work-scene` 一律置中。
+- **修真 bug:🔄 重置對工作無效** —— 工作進度在獨立 localStorage + 記憶體 `workRec`,重置只清了主線。加 `resetWorkProgress()`(清 `workRec`+`workClock`+兩個 localStorage key)接進 reset handler。(重置是 `showHome()` 不 reload → 記憶體也要清。)
+- 驗(瀏覽器 8183):模擬 8 段確認起步只 2 字、在學滿 3 停引新、熟練度 認→組→應用 爬、學會進 SRS 回來複習、句子在字教過後才解鎖;真實點擊單字題答對 mastery 0→25;真實 🔄 清乾淨日常+工作;`node --check` OK;零 console error。**過程踩到瀏覽器快取舊 JS(reset handler 沒更新)→ 需 `fetch(...,{cache:'reload'})` 再 reload 才驗到**(自己在 8182 測也要硬重新整理)。
+
+### 方向決策(別走回頭路)
+- 工作模式定調**用引擎、非固定關卡**;舊「工作模式內加固定單字關」方向否決。
+- **AI API 陪練**:結論 = 只做本機自己用(自帶 key)、**可拆選用模組**,核心維持零 AI 依賴(才保純靜態可分享);分享版 = 要後端 + 計費,延後。**現在不動 AI。**
+- 死碼待清:`showWorkStart`/`workWordIntro`/`workMaxLevel`/`workLevelScenarios` 不再用;`WORK_LEVELS` 現只當「解鎖順序 + 誘答分組」。
+
+## 2026-07-02（Claude Opus 4.8):工作英文改成主線引擎的第二條「軌」(多軌重構,最終定案)
+
+> 承上:上面那套「工作浮動小引擎」是在旁邊重造主線,一直缺主線早有的功能(補考/音節/句子複習)。使用者點破「主題不同而已,應該通用」。→ 把主線引擎改成**多軌**,工作變第二條軌,直接繼承主線全部。**上面那套工作浮動引擎整段刪除。**
+
+### 引擎多軌化(`js/01-engine.js` 為主,低風險 swap 手法)
+- 內容全域改 `const`→`let`,可整組換:`BANK`(js/00)、`PATTERNS`(js/00)、`BATCHES`(js/01)、`BUILD_SENTENCE_PATTERN_IDS`(js/03)、`TRANSFORM_PATTERN_IDS`(js/06)。上百處讀 `BANK`/`meta.stage` 的舊碼**一行不改**。
+- 新增 `TRACKS` 登錄 + `currentTrack` + `registerTrack/applyTrackContent/snapshotTrackMeta/loadTrackMeta/setTrack` + `rebuildCurriculum()`。切軌 = 換內容全域 + 把 `level`/`meta.{stage,clock,maxLevel,stageStartLevel,boss旗標}` 存進 `meta.tracks[軌]` / 載回。
+- 共用:`store`(id 不撞:`word_*`/`work_*`)、`meta.coins`、`meta.skills`。每軌獨立:內容 + level/stage/clock/maxLevel/王。
+- `js/11-main.js` 註冊 `daily` + `work` 兩軌後 `showHome()`。
+
+### 工作內容改成引擎格式(`js/10-work-mode.js` 只剩內容)
+- 舊 `WORK_WORDS`/`WORK_ITEMS`/`WORK_LEVELS`/所有 `workXxx` 函式(600+ 行)**整段刪除**(確認零外部引用)。
+- 新增 `WORK_BANK`/`WORK_BATCHES`/`WORK_PATTERNS`/`WORK_BUILD_IDS`/`WORK_TRANSFORM_IDS`,格式同主線。功能詞 `pos:"function"`;句型 slot 空 `{}` = 固定句。
+- 目前內容 = 主題 1、2(不懂就問 / 回報狀態),8 句、29 字。**主題 3~13 待補(純資料)。**
+
+### 首頁(`js/10-home-settings.js`)
+- 分頁鈕改成 `setTrack + showHome`;標題/高亮/地圖隨 `currentTrack`(同一個 `showHome`/`mapSVG` 自動渲染當前軌,因為讀的是 swap 後的 meta)。
+- 🔄 重置改成清 `store` + `meta.tracks={}` + 回 daily 軌 → 兩軌一起歸零。
+
+### 驗(瀏覽器 8183,每步驗日常沒壞)
+- 地基:`const`→`let` + `rebuildCurriculum` 後日常 `startLevel` 正常出題、BANK/LEARN_ORDER 51、`batchOf(cat)=1`。
+- 多軌:`setTrack('work')` → BANK 換 29 工作字、`buildLevel` 用主線浮動選字吐工作字(帶音節)、`buildSentenceFromPattern` 生「I fixed the bug.」;兩軌進度隔離(日常 stage2/關7、工作 stage1/關3);切回日常完整復原。
+- 首頁:分頁切換標題/BANK/地圖隨軌換,工作關進得去、音節教學 un·der·stand 出來、重置清兩軌。
+- 刪舊引擎後全檔 `node --check` OK、整個 app 重載日常+工作都正常、零 console error。
+- ⚠ 驗證途中踩到瀏覽器快取舊 JS → 需 `fetch(...,{cache:'reload'})` 再 reload(自己在 8182 測也要 Ctrl+F5)。
+
+## 2026-07-03（Claude Opus 4.8):工作內容補完 3~13 + 工作不練默寫 + 補考卡死修復 + 極簡線條圖示
+
+> 承多軌重構。這輪鋪完工作 13 主題內容;依「工作原始意圖=不默寫」把工作軌整條改成聽讀說(關卡 + 王都不打字);順手修掉一個補考卡死的潛伏 bug 與時態不一致;最後做 UI 極簡線條圖示。相關:`js/10-work-mode`、`js/01-engine`、`js/08-lesson-flow`、`js/09-boss`、`js/03/06/07`、`js/02`、`js/11`、`css/02/06`。
+
+### 工作內容補完(主題 3~13)
+- `WORK_BANK` 補到 **123 字**、`WORK_PATTERNS` **52 句**、`WORK_BATCHES` 13 批(每主題一批 + 該主題新膠水詞)。功能詞 `pos:function`、句型 slot 空 `{}` = 固定句。
+- 加了驗證腳本:每個句子的每個字面 token 都要對得到一個 `WORK_BANK.en`(抓時態不一致)。
+
+### fix/fixed 時態一致(內容 bug)
+- 練的字要跟句子形態一致:新增 `work_fixed`(fixed);`work_work/report/find` 的 `en` 改成句子用的 **works/reported/found**(這些字只以該形態出現)。`work_fix`(基本形)移到主題 11(I'll fix it now)。
+- 效果:`creditSentence` 連帶加分現在對得到字(「I fixed the bug」加到 `work_fixed`)。
+
+### 工作軌 = 不練默寫(承接「先求聽懂能回應、不用默寫」)
+- `js/11` 工作軌註冊加 `skills:{write:false}`。
+- `js/08` 新增 `trackSkillOn(s)`(該軌是否練此技能)、`wroteOk(w)`(不練默寫的軌視同會寫)。`ask`/`trainAsk` 改用 `trackSkillOn` 濾題型;`!wrote` 強制補寫加 `&& trackSkillOn('write')`。
+- `js/01`:`buildLevel` 的 `needsWrite` 在不練寫的軌為空;`stageReadyAt` 的 `allWrote`、`wordReadyForBoss` 改用 `wroteOk`(不卡階段/王門檻)。
+- `js/09` 王:不練默寫的軌,句子 → `bossGridSentenceQuestion`(點序排句)、單字 → `bossGridWordQuestion`(挑正確拼法)、`pickBossMode` 只留 `choice/listen_choice`;`bossTurn`/`bossCombo` 都改。→ 王不再考打字默寫,改辨識。
+- 驗:工作關卡 100% 熟練度也不出寫題;工作王 60 題全辨識、零打字。
+
+### ★ 補考重問卡死修復(潛伏 bug,日常也中)
+- 根因:`ask` 的「句子複習」路徑把 `lastAsked` 存成**原始 `askBuildSentence`**;補考用 `run(w)` 呼叫 → `askBuildSentence(w)` 把單一字當 `sourceWords` → `sourceWords.map is not a function` → 複習卡「回去答題」點了**卡死**。
+- 修:句子複習路徑改存「吃單一字」的包裝 `runSentence(ww)`,補考/複習卡 `run(w)` 就能正確重出含該字的句子。工作學會的字更常走句子複習才把這雷踩出來;日常一直也有。
+
+### 遊玩手感
+- 選項/排詞加發音:`mountChoices` 選了念 `o.en`、`mountArrange` 放塊念那個字。
+- 第一關太長:`FIRST_LESSON_RECIPE`(18 題)改成只給 daily;其他軌第 1 關用一般 intro(6 題)。
+- 狂重播同一句:新增 `hasFreshBuildSentence`,`sentence_build`/`sentence_speak` 只在「有沒出過的新句子」時 `ok`;句子複習路徑也加 fresh 守衛。順手修好日常「一關出 3 次 I am happy」。
+
+### 極簡線條圖示(UI,純玩法層)
+- `js/02` 新增 `ICON`(內嵌 SVG 線條集:play/mute/gear/refresh/coin/close/lock/target/flag/book/briefcase)+ `.ico` CSS(跟 `currentColor` 與 `em` 走、`flex-shrink:0` 防在 flex 鈕被壓扁)。
+- 換掉 emoji:課程音訊鈕(🔊→線條喇叭、🐢慢速→純文字)、首頁上排(設定/靜音/重來/金幣)、側欄(挑戰/特訓/衍生)、分頁(日常=書 / 工作=公事包)、狀態鈕/複習鈕/王音訊鈕。
+- 保留:慶祝時刻大 emoji、題庫看圖題的圖(IMG/EMOJI)、音樂鈕(本就 SVG)、✕、⋯。加圖示 = `${ICON.x}`;純文字夠清楚的鈕就不放圖示。

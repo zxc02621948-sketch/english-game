@@ -1,10 +1,12 @@
 /* ============================================================================
    單字庫
    ============================================================================ */
-const BANK = [
+let BANK = [
   { id:"word_cat",        en:"cat",        zh:"貓",     pos:"noun", flags:["countable","ownable","presentable","visible","buyable"], syl:["cat"], why:"短字先暖身:cat 就是貓。" },
   { id:"word_happy",      en:"happy",      zh:"開心",   pos:"adj",  flags:["emotion"], syl:["hap","py"], why:"happy 是心情好、覺得開心。" },
   { id:"word_water",      en:"water",      zh:"水",     pos:"noun", flags:["drinkable"], syl:["wa","ter"], why:"water 當名詞是水;也能當動詞,表示澆水。" },
+  { id:"word_coffee",     en:"coffee",     zh:"咖啡",   pos:"noun", flags:["drinkable","sweetenable"], syl:["cof","fee"], why:"coffee 是咖啡,日常點飲料很常用。" },
+  { id:"word_sugar",      en:"sugar",      zh:"糖",     pos:"noun", flags:["sweetener"], syl:["su","gar"], why:"sugar 是糖,常用在飲料或甜食裡。" },
   { id:"word_friend",     en:"friend",     zh:"朋友",   pos:"noun", flags:["countable","ownable","presentable","visible"], syl:["friend"], why:"friend 是你認識、信任、會來往的人。" },
   { id:"word_book",       en:"book",       zh:"書",     pos:"noun", flags:["countable","ownable","readable","presentable","visible","buyable"], syl:["book"], why:"book 是書;生活裡也能當動詞,表示預訂。" },
   { id:"word_beautiful",  en:"beautiful",  zh:"美麗的", pos:"adj",  flags:["descriptive"], syl:["beau","ti","ful"], why:"beauty 是美;-ful 有『充滿』的味道,beautiful 就是充滿美。" },
@@ -39,7 +41,9 @@ const BANK = [
   { id:"word_a",          en:"a",          zh:"一個",   pos:"function", flags:[], syl:["a"], why:"a 放在單數可數名詞前面,表示一個。" },
   { id:"word_my",         en:"my",         zh:"我的",   pos:"function", flags:[], syl:["my"], why:"my 表示我的,後面接名詞:my book。" },
   { id:"word_and",        en:"and",        zh:"和",     pos:"function", flags:[], syl:["and"], why:"and 把兩個東西接在一起,意思是和、而且。" },
-  { id:"word_or",         en:"or",         zh:"或",     pos:"function", flags:[], syl:["or"], why:"or 表示選一個:cat or dog。" },
+  { id:"word_or",         en:"or",         zh:"或",     pos:"function", flags:[], syl:["or"], why:"or 表示二選一:water or tea 是水還是茶。" },
+  { id:"word_with",       en:"with",       zh:"加",     pos:"function", flags:[], syl:["with"], why:"with 表示和某個東西一起;coffee with sugar 是咖啡加糖。" },
+  { id:"word_please",     en:"please",     zh:"請",     pos:"function", flags:[], syl:["please"], why:"please 放在請求裡,讓語氣更有禮貌。" },
   { id:"word_read",       en:"read",       zh:"讀",     pos:"verb", flags:[], syl:["read"], why:"read 是讀文字、書或訊息,重點是看懂內容。" },
   // 批3「吃喝與感受」:感受形容詞(I am ___)+ 吃喝動詞與食物飲料(I eat/drink ___)
   { id:"word_hungry",     en:"hungry",     zh:"餓",     pos:"adj",  flags:["emotion"], syl:["hun","gry"], why:"hungry 是肚子餓,想吃東西。" },
@@ -48,11 +52,11 @@ const BANK = [
   { id:"word_sad",        en:"sad",        zh:"難過",   pos:"adj",  flags:["emotion"], syl:["sad"], why:"sad 是難過、不開心,跟 happy 相反。" },
   { id:"word_rice",       en:"rice",       zh:"飯",     pos:"noun", flags:["eatable"], syl:["rice"], why:"rice 是米飯,亞洲的主食。" },
   { id:"word_bread",      en:"bread",      zh:"麵包",   pos:"noun", flags:["eatable"], syl:["bread"], why:"bread 是麵包。" },
-  { id:"word_tea",        en:"tea",        zh:"茶",     pos:"noun", flags:["drinkable"], syl:["tea"], why:"tea 是茶。" },
-  { id:"word_milk",       en:"milk",       zh:"牛奶",   pos:"noun", flags:["drinkable"], syl:["milk"], why:"milk 是牛奶。" },
+  { id:"word_tea",        en:"tea",        zh:"茶",     pos:"noun", flags:["drinkable","sweetenable"], syl:["tea"], why:"tea 是茶。" },
+  { id:"word_milk",       en:"milk",       zh:"牛奶",   pos:"noun", flags:["drinkable","sweetenable"], syl:["milk"], why:"milk 是牛奶。" },
 ];
 
-const PATTERNS = [
+let PATTERNS = [
   {
     id: "pat_this_is_a_noun",
     text: "This is a {x}.",
@@ -70,6 +74,27 @@ const PATTERNS = [
     qzh: "這是我的{x}嗎?",
     requires: ["word_this", "word_is", "word_my"],
     slots: { x: { pos: "noun", flags: ["ownable"] } }
+  },
+  {
+    id: "pat_drink_or_drink",
+    text: "{x} or {y}?",
+    zh: "{x}還是{y}?",
+    requires: ["word_or"],
+    slots: { x: { pos: "noun", flags: ["drinkable"] }, y: { pos: "noun", flags: ["drinkable"] } }
+  },
+  {
+    id: "pat_drink_please",
+    text: "{x}, please.",
+    zh: "{x},請。",
+    requires: ["word_please"],
+    slots: { x: { pos: "noun", flags: ["drinkable"] } }
+  },
+  {
+    id: "pat_drink_with_sugar",
+    text: "{x} with {y}.",
+    zh: "{x}加{y}。",
+    requires: ["word_with"],
+    slots: { x: { pos: "noun", flags: ["sweetenable"] }, y: { pos: "noun", flags: ["sweetener"] } }
   },
   {
     id: "pat_i_drink_noun",

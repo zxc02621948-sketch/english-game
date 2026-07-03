@@ -12,6 +12,10 @@
   .prompt { text-align:left; font-size:clamp(28px,4vw,44px); font-weight:800; color:#f1f6fa; margin:0; min-height:0; line-height:1.18; }
   .prompt.center { text-align:center; }
   .replay { display:inline-block; margin:6px auto 16px; padding:14px 22px; font-size:20px; cursor:pointer; background:#1d2c3a; border:2px solid #354b58; border-bottom-width:4px; border-radius:14px; color:#e8eef5; font-weight:700; }
+  /* 極簡線條圖示:跟著文字顏色(currentColor)與字級(em)走,垂直微調對齊文字 */
+  .ico { width:1.05em; height:1.05em; flex-shrink:0; display:inline-block; vertical-align:-0.16em; margin-right:.4em; }
+  .ico:last-child { margin-right:0; }
+  button:has(> .ico:only-child) .ico, .replay > .ico:only-child { margin-right:0; }
   #screen #replay { display:block; font-size:30px; padding:16px 28px; }   /* 聽力題那顆主要「🔊」播放鈕大一點(只圖示) */
   .replay:hover { background:#243a4d; }
   .opts { display:grid; gap:10px; }
