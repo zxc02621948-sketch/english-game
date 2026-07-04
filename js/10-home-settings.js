@@ -142,7 +142,7 @@ function showHome() {
     </div>
     <div class="homebody">
       <div class="side">
-        <div class="cat" id="catChallenge"><div class="cati">${ICON.flag}</div><div class="cat-title">挑戰關</div><div class="catcoin">${challengeText}</div><div class="catnote">本階整理與獎勵</div></div>
+        <div class="cat" id="catChallenge"><div class="cati">${ICON.flag}</div><div class="cat-title">小遊戲</div><div class="catcoin">${challengeText}</div><div class="catnote">⚔ 王戰挑戰 · 純娛樂</div></div>
         <div class="cat" id="catTrain"><div class="cati">${ICON.target}</div><div class="cat-title">單字特訓</div><div class="catcoin">${trainText}</div><div class="catnote">${homeInfo.learned}/${homeInfo.wordTotal} 字穩了</div></div>
         <div class="cat" id="catDeriv"><div class="cati">${ICON.lock}</div><div class="cat-title">衍生</div><div class="catcoin">${derivText}</div><div class="catnote">需 30 ${ICON.coin}</div></div>
         <div class="cat ph"><div class="cati">⋯</div><div class="cat-title">之後</div><div class="catnote">新模式預留</div></div>
@@ -188,12 +188,7 @@ function showHome() {
       saveMeta(); level = 1; showHome();
     }
   };
-  document.getElementById('catChallenge').onclick = () => {
-    const st = latestChallengeStage();
-    const jump = document.getElementById('mapjump');
-    if (!st) { if (jump) jump.classList.add('nudge'); return; }
-    scrollToLv(bossLevelForStage(st), true);
-  };
+  document.getElementById('catChallenge').onclick = showMinigames;   // 側欄「小遊戲」→ 開小遊戲 hub(王戰挑戰);原本捲地圖到王節點的行為由 hub 取代
   document.getElementById('catTrain').onclick = showTrainPicker;
   document.getElementById('catDeriv').onclick = () => { homeEl.querySelector('#catDeriv .catcoin').textContent = '金幣不夠,之後開放'; };
   homeEl.querySelectorAll('.mapnode').forEach(c => { const lv = +c.dataset.lv; if (lv <= meta.maxLevel) c.onclick = () => enterLevel(lv); });
@@ -310,6 +305,32 @@ function showTrainPicker() {
   });
   $('tstart').onclick = () => { if (sel.size) startTraining([...sel], trainMode); };
   $('tback').onclick = showHome;
+}
+
+// 🎮 小遊戲:用學過的字玩的可選挑戰(不影響學習進度)。第一款=王戰(挑完成過的任一階);之後可再加別的遊戲。
+function showMinigames() {
+  inTraining = false;
+  homeEl.hidden = true; screen.hidden = false;
+  screen.className = 'card'; screen.innerHTML = '';
+  const maxStage = latestChallengeStage();
+  const stages = []; for (let s = 1; s <= maxStage; s++) stages.push(s);
+  const bossList = stages.length
+    ? stages.map(s => `<button class="mgstage" data-stage="${s}" style="width:100%;text-align:left;padding:12px 16px;border-radius:12px;border:1px solid #3a2c1d;background:#1d1710;color:#e8eef5;font-size:17px;font-weight:600">⚔ 第 ${s} 階王戰${challengeCleared(s) ? ' <span style="color:#6ee7a8;font-weight:400">✓ 已通關</span>' : ''}</button>`).join('')
+    : `<div class="sub2" style="text-align:center;color:#9fb4c8;padding:10px">先完成第 1 階(把那批字學會)→ 王戰就會開放。</div>`;
+  screen.innerHTML = `<main class="train-pick">
+    <div style="text-align:center;font-size:40px">🎮</div>
+    <h2 style="text-align:center">小遊戲</h2>
+    <div class="sub" style="text-align:center">用學過的字玩的挑戰 —— 純娛樂 + 賺金幣,不影響學習進度。</div>
+    <div style="background:#14202e;border:1px solid #26384a;border-radius:14px;padding:14px 16px;margin-top:6px">
+      <div style="font-weight:800;font-size:18px">⚔ 王戰挑戰</div>
+      <div class="sub2" style="margin:2px 0 12px">限時答題打倒關主,挑你完成過的任一階。</div>
+      <div id="mgstages" style="display:grid;gap:8px">${bossList}</div>
+    </div>
+    <div style="text-align:center;color:#5f7488;margin-top:14px;font-size:15px">更多小遊戲開發中…</div>
+    <button class="btn" id="mgback" style="margin-top:14px;background:#1d2c3a;border-color:#2c3e52">← 回主畫面</button>
+  </main>`;
+  screen.querySelectorAll('.mgstage').forEach(b => b.onclick = () => startChallenge(+b.dataset.stage));
+  $('mgback').onclick = showHome;
 }
 function showSettings() {
   screen.classList.remove('lesson-screen', 'boss-screen', 'done-screen', 'start-screen');
