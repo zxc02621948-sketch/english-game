@@ -31,8 +31,7 @@ const PHONICS = [
   // magic e:字尾 e 不發音 + 讓前面母音念本音;排除常見例外
   { id:'magic_e', re:/(?<=[aeiou][bcdfghjklmnpqrstvwxz])e$/i, exclude:['come','house','have','give','live','some','done','gone','none','one','are','were'],
     label:'結尾 e 不發音(magic e)', note:'字尾這個 e 不發音,而且讓前面的母音念「字母本音」:make 的 a 念 A、rice 的 i 念 I、home 的 o 念 O。' },
-  // 逐字例外
-  { id:'friend_ie', re:/ie/i, only:['friend'], label:'friend 的 ie 是例外', note:'ie 通常念長音 i(field / piece),但 friend 例外 → 念短音 e,整個字唸「frend」。' },
+  // 逐字發音例外(如 friend 的 ie=frend)先不放進標註 —— 會跟拼字記法 SPELL_HINT 打架、也不是通用規則。之後若要做,再想怎麼跟拼字記法共存。
 ];
 function phonicsMarks(en) {
   const low = en.toLowerCase(), out = [];
