@@ -45,8 +45,6 @@
   .map-float-jump { position:absolute; right:38px; bottom:38px; z-index:4; width:48px; height:48px; display:grid; place-items:center; border-radius:999px; border:1px solid #5aa9ff; background:#13324a; color:#cfe6ff; cursor:pointer; box-shadow:0 14px 30px rgba(0,0,0,.28), 0 0 0 4px rgba(19,32,46,.58); transition:transform .12s ease, filter .12s ease, opacity .12s ease; }
   .map-float-jump:hover { filter:brightness(1.1); transform:translateY(-1px); }
   .map-float-jump .ico { width:24px; height:24px; margin:0; stroke-width:2.2; }
-  .mapboss { transition:.12s; }
-  .mapboss:hover { filter:brightness(1.18); }
   .mapjump { display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:10px; align-items:center; justify-items:stretch; margin-bottom:12px; }
   .mapjump.nudge { animation:mapNudge .34s ease; }
   @keyframes mapNudge { 0%,100%{ transform:translateX(0); } 30%{ transform:translateX(-5px); } 65%{ transform:translateX(5px); } }
@@ -60,7 +58,6 @@
   .map-lesson-meta span { min-height:26px; display:inline-flex; align-items:center; border:1px solid #243343; background:#16202c; border-radius:99px; padding:4px 10px; }
   .map-status-row { align-items:center; }
   .mapjump .map-status-row .map-primary-start, #workmapcurrent { background:#8ee000; border-color:#8ee000; border-bottom:4px solid #5fa900; color:#102016; font-weight:900; font-size:16px; padding:10px 24px; min-width:172px; box-shadow:0 10px 24px rgba(142,224,0,.12); }
-  .map-status-row #jumpboss { background:transparent; border-color:#e35b6a; color:#ffd0d6; font-weight:800; font-size:13px; padding:8px 14px; min-width:0; box-shadow:none; }
   .map-info-pill { display:inline-flex; align-items:center; max-width:min(520px, 90%); min-height:34px; border-radius:99px; padding:6px 14px; background:#16202c; border:1px solid #2c3e52; color:#9fb4c8; font-size:13px; line-height:1.35; }
 
   /* 💼 工作英文:獨立聽說讀小課,不走主線默寫 */

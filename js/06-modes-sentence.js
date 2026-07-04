@@ -9,7 +9,8 @@ function attrText(text) {
 function hintedEnglish(text) {
   return String(text || '').replace(/[A-Za-z]+/g, word => {
     const hint = tokenHint(word);
-    return hint ? `<span class="word-hint" data-hint="${attrText(hint)}" title="${attrText(hint)}" tabindex="0">${word}</span>` : word;
+    const shown = typeof annotatedTokenHTML === 'function' ? annotatedTokenHTML(word) : attrText(word);
+    return hint ? `<span class="word-hint" data-hint="${attrText(hint)}" title="${attrText(hint)}" tabindex="0">${shown}</span>` : shown;
   });
 }
 
@@ -19,7 +20,7 @@ function teachPattern(sentence, then, onKnown) {
     <div class="buildzh">${sentence.zh}</div>
     <div class="buildline">${chunks.map(c => {
       const hint = tokenHint(c);
-      return `<div class="opt chunk${hint ? ' word-hint' : ''}"${hint ? ` data-hint="${attrText(hint)}"` : ''}>${c}</div>`;
+      return `<div class="opt chunk${hint ? ' word-hint' : ''}"${hint ? ` data-hint="${attrText(hint)}"` : ''}>${typeof annotatedTokenHTML === 'function' ? annotatedTokenHTML(c) : attrText(c)}</div>`;
     }).join('')}</div>
     <div class="sub2" style="margin-top:12px">英文照這個順序:<b style="color:#9bd2ff">${sentence.text}</b></div>
     <button class="btn act" id="gotit" style="margin-top:16px">懂了,我來排 →</button>
@@ -83,7 +84,8 @@ function mountArrange({ promptText, zh, introHTML = '', cards, targetTokens, cas
     const el = document.createElement('button');
     el.type = 'button';
     el.className = 'opt chunk sentence-card';
-    el.textContent = card.text;
+    if (typeof annotatedTokenHTML === 'function') el.innerHTML = annotatedTokenHTML(card.text);
+    else el.textContent = card.text;
     el.dataset.id = card.id;
     el.draggable = true;
     el.addEventListener('dragstart', e => dragStart(e, card.id));
@@ -585,9 +587,13 @@ function askSentenceCloze(w) {
   if (!q) return askType(w);
   shell('看句子,補完整英文', `
     <div class="buildzh">${q.zh}</div>
+    <div class="speakrow"><button class="replay" id="hearfull">${ICON.play}聽整句</button><button class="replay" id="slowfull">慢聽</button></div>
     <div class="sentence-cloze-line">${q.shown}</div>
     <button class="btn act" id="submit">送出</button>
     <div class="letters" id="letters"></div>`);
+  speakSentence({ text: q.full }, 0.9);
+  $('hearfull').onclick = () => speakSentence({ text: q.full }, 0.9);
+  $('slowfull').onclick = () => speakSentence({ text: q.full }, 0.65);
   const inputs = [...document.querySelectorAll('.clozeinp')];
   if (inputs[0]) inputs[0].focus();
   const go = () => {
@@ -600,6 +606,10 @@ function askSentenceCloze(w) {
     });
     if (!right) $('letters').textContent = `正解: ${q.full}`;
     else if (slot.some(r => r === 'typo')) $('letters').textContent = `差一點!正解: ${q.full}`;
+    if (!right && typeof rememberAnnotationError === 'function') {
+      const targetInput = inputs[q.answers.findIndex(ans => ans.toLowerCase() === w.en.toLowerCase())];
+      rememberAnnotationError(w, targetInput ? targetInput.value.trim() : '');
+    } else if (typeof clearAnnotationErrorHTML === 'function') clearAnnotationErrorHTML();
     $('submit').disabled = true;
     recordSentenceClozeResult(w, q, right);
     bumpPat(q.patternId, right ? 20 : -15);

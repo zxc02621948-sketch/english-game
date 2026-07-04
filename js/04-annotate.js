@@ -11,21 +11,37 @@
  * 本檔目前「不接進正式流程」(沒被任何題型呼叫)→ 不影響現在的遊戲;等 Codex 接視覺 + 插進顯示單字的地方。
  * ============================================================ */
 
-/* ── 拼讀規則(phonics):用拼法自動偵測,reusable,不必逐字建 ── */
+/* ── 拼讀規則(phonics):用正則自動偵測字裡任何位置,reusable,不必逐字建。
+   規則:{ id, re(對到要標的那段,含^/$錨點), label, note, say?, exclude?(這些字不套), only?(只套這些字) } ── */
 const PHONICS = [
-  { id:'dr',   at:'start', re:/^dr/i,   len:2, label:'dr → 念「j」音',   note:'d 黏著 r 會發成 juice 的 j 音。drink 聽起來像「jrink」;dream / drive / drop 都是。', say:'jr' },
-  { id:'tr',   at:'start', re:/^tr/i,   len:2, label:'tr → 念「ch」音',  note:'t 黏著 r 會發成 ch 音。tree 像「chree」、truck 像「chruck」、train 像「chrain」。', say:'chr' },
-  { id:'kn',   at:'start', re:/^kn/i,   len:2, label:'kn → k 不發音',    note:'字首 kn 的 k 靜音,只念 n。know / knee / knife / knock。', say:'n' },
-  { id:'wr',   at:'start', re:/^wr/i,   len:2, label:'wr → w 不發音',    note:'字首 wr 的 w 靜音,只念 r。write / wrong / wrist。', say:'r' },
-  { id:'tion', at:'end',   re:/tion$/i, len:4, label:'-tion → 念「shun」', note:'字尾 tion 念「shun」。nation / action / station / question 一次全解鎖。', say:'shun' },
-  { id:'ck',   at:'end',   re:/ck$/i,   len:2, label:'ck → 念一個「k」',  note:'ck 就是一個 k 音。back / duck / rock。', say:'k' },
+  // 子音串(字首)
+  { id:'dr',   re:/^dr/i,   label:'dr → 念「j」音',   note:'d 黏著 r 會發成 juice 的 j 音。drink 聽起來像「jrink」;dream / drive / drop 都是。', say:'jr' },
+  { id:'tr',   re:/^tr/i,   label:'tr → 念「ch」音',  note:'t 黏著 r 會發成 ch 音。tree 像「chree」、truck 像「chruck」、train 像「chrain」。', say:'chr' },
+  { id:'kn',   re:/^kn/i,   label:'kn → k 不發音',    note:'字首 kn 的 k 靜音,只念 n。know / knee / knife / knock。', say:'n' },
+  { id:'wr',   re:/^wr/i,   label:'wr → w 不發音',    note:'字首 wr 的 w 靜音,只念 r。write / wrong / wrist。', say:'r' },
+  // 字尾
+  { id:'tion', re:/tion$/i, label:'-tion → 念「shun」', note:'字尾 tion 念「shun」。nation / action / station / question 一次全解鎖。', say:'shun' },
+  { id:'ck',   re:/ck$/i,   label:'ck → 念一個「k」',  note:'ck 就是一個 k 音。back / duck / rock。', say:'k' },
+  // 母音組合(字中任何位置)
+  { id:'ee',   re:/ee/i,    label:'ee → 長音「i」',    note:'兩個 e 疊在一起念長音 i(像「衣」)。see / coffee / tree / meet。' },
+  { id:'ea',   re:/ea/i,    label:'ea → 多念長音「i」', note:'ea 常念長音 i:eat / read / tea / speak;少數念短音 e:bread / head。' },
+  { id:'oo',   re:/oo/i,    label:'oo → 兩種音',       note:'oo 有兩種音:短音(book / good / look)、長音(moon / food)。' },
+  // 字尾 -y(子音後)念 i;用 lookbehind 只標那個 y,避開 my / buy / say(母音+y)
+  { id:'y_i',  re:/(?<=[bcdfghjklmnpqrstvwxz])y$/i, label:'字尾 -y → 念「i」音', note:'子音後面的字尾 y 念 i:happy / hungry / thirsty / baby。(不是 my / buy 那種母音+y)' },
+  // magic e:字尾 e 不發音 + 讓前面母音念本音;排除常見例外
+  { id:'magic_e', re:/(?<=[aeiou][bcdfghjklmnpqrstvwxz])e$/i, exclude:['come','house','have','give','live','some','done','gone','none','one','are','were'],
+    label:'結尾 e 不發音(magic e)', note:'字尾這個 e 不發音,而且讓前面的母音念「字母本音」:make 的 a 念 A、rice 的 i 念 I、home 的 o 念 O。' },
+  // 逐字例外
+  { id:'friend_ie', re:/ie/i, only:['friend'], label:'friend 的 ie 是例外', note:'ie 通常念長音 i(field / piece),但 friend 例外 → 念短音 e,整個字唸「frend」。' },
 ];
 function phonicsMarks(en) {
-  const out = [];
+  const low = en.toLowerCase(), out = [];
   for (const p of PHONICS) {
-    if (!p.re.test(en)) continue;
-    const start = p.at === 'end' ? en.length - p.len : 0;
-    out.push({ start, end: start + p.len, kind:'phonics', label:p.label, note:p.note, say:p.say });
+    if (p.only && !p.only.includes(low)) continue;
+    if (p.exclude && p.exclude.includes(low)) continue;
+    const m = en.match(p.re);
+    if (!m) continue;
+    out.push({ start: m.index, end: m.index + m[0].length, kind:'phonics', label:p.label, note:p.note, say:p.say });
   }
   return out;
 }
@@ -94,45 +110,110 @@ function marksForError(word, typed) {
   // 只回「錯在標記段落上」那幾條;錯在沒標記的地方 → 回空(那個錯跟拼讀/字根無關,不亂跳)。整個拼錯時各標記段落自然也會命中。
 }
 
-/* ── 陽春 placeholder 渲染(★ Codex 之後換成真的染色/色帶 + 樣式,別用螢光色)── */
+/* ── 渲染層:低調色帶 + hover note + 答錯提示(資料/邏輯層不動)── */
+function _annotEscape(v) {
+  return String(v ?? '').replace(/[&<>"']/g, ch => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[ch]));
+}
+function _annotWordText(word) { return (word && word.en) || ''; }
+function _annotWordForText(text) {
+  const raw = String(text || '');
+  const key = raw.replace(/[^a-z]/gi, '').toLowerCase();
+  if (!key || typeof BANK === 'undefined') return null;
+  const w = BANK.find(x => x && x.en && x.en.toLowerCase() === key);
+  return w ? { ...w, en: raw.replace(/[^a-z]/gi, '') || w.en } : null;  // 保留句首 This 這類大小寫顯示
+}
+function annotatedWordHTML(word, opts = {}) {
+  const en = _annotWordText(word);
+  const wordAttr = _annotEscape(en);
+  const on = showAnnotations(word, !!opts.force);
+  const segs = on ? annotateSegments(word) : [{ text: en, mark: null }];
+  const body = segs.map(seg => {
+    if (!seg.mark) return _annotEscape(seg.text);
+    const m = seg.mark;
+    return `<span class="annot-mark annot-${_annotEscape(m.kind)}" tabindex="0" data-kind="${_annotEscape(m.kind)}" data-label="${_annotEscape(m.label)}" data-note="${_annotEscape(m.note)}" data-say="${_annotEscape(m.say || en)}" data-word="${wordAttr}">${_annotEscape(seg.text)}</span>`;
+  }).join('');
+  return `<span class="annot-word" data-word="${wordAttr}">${body}</span>`;
+}
+function annotatedTokenHTML(text, opts = {}) {
+  const raw = String(text || '');
+  const m = raw.match(/^([^A-Za-z]*)([A-Za-z]+)([^A-Za-z]*)$/);
+  if (!m) return _annotEscape(raw);
+  const w = _annotWordForText(m[2]);
+  return `${_annotEscape(m[1])}${w ? annotatedWordHTML(w, opts) : _annotEscape(m[2])}${_annotEscape(m[3])}`;
+}
+
 let _annotTip;
 function _annotTipEl() {
   if (!_annotTip) {
     _annotTip = document.createElement('div');
     _annotTip.id = 'annottip';
-    _annotTip.style.cssText = 'position:fixed;z-index:9999;max-width:280px;background:#0f1a26;border:1px solid #35506b;border-radius:10px;padding:8px 12px;font-size:14px;color:#e8f1fb;box-shadow:0 8px 24px rgba(0,0,0,.5);pointer-events:none;display:none';
+    _annotTip.innerHTML = '<b></b><div></div>';
     document.body.appendChild(_annotTip);
   }
   return _annotTip;
 }
-function _annotShowTip(el, mark) {
+function _annotShowTip(el) {
   const t = _annotTipEl();
-  t.innerHTML = `<b>${mark.label}</b><div style="margin-top:4px;color:#cfe0f0;line-height:1.4">${mark.note}</div>`;
+  t.querySelector('b').textContent = el.dataset.label || '';
+  t.querySelector('div').textContent = el.dataset.note || '';
   t.style.display = 'block';
   const r = el.getBoundingClientRect(), tr = t.getBoundingClientRect();
   t.style.left = Math.max(6, Math.min(r.left, window.innerWidth - tr.width - 6)) + 'px';
   t.style.top = (r.bottom + 6) + 'px';
 }
 function _annotHideTip() { if (_annotTip) _annotTip.style.display = 'none'; }
+function _annotSpeak(el) {
+  const text = el.dataset.say || el.dataset.word || el.textContent;
+  if (typeof speakWordText === 'function') speakWordText(text);
+  else if (typeof speak === 'function') speak(text);
+}
 
-// 回傳一個 <span class="annot-word">:單字切段,有標記的段落=底線+hover看註解+點擊念整個字。
+// 回傳一個 <span class="annot-word">:單字切段,有標記的段落=色帶+hover看註解+點擊念標記音。
 function renderAnnotatedWord(word, opts = {}) {
-  const wrap = document.createElement('span');
-  wrap.className = 'annot-word';
-  const on = showAnnotations(word, opts.force);
-  const segs = on ? annotateSegments(word) : [{ text: (word && word.en) || '', mark: null }];
-  segs.forEach(seg => {
-    const s = document.createElement('span');
-    s.textContent = seg.text;
-    if (seg.mark) {
-      s.className = 'annot-mark annot-' + seg.mark.kind;   // Codex 用這 class 上色(annot-phonics / annot-root)
-      s.dataset.kind = seg.mark.kind;
-      s.style.cssText = 'text-decoration:underline dotted;text-underline-offset:3px;cursor:help';   // 陽春,待 Codex 換色帶
-      s.onmouseenter = () => _annotShowTip(s, seg.mark);
-      s.onmouseleave = _annotHideTip;
-      s.onclick = () => { if (typeof speakWordText === 'function') speakWordText(word.en); else if (typeof speak === 'function') speak(word.en); };
-    }
-    wrap.appendChild(s);
+  const t = document.createElement('template');
+  t.innerHTML = annotatedWordHTML(word, opts).trim();
+  return t.content.firstElementChild || document.createTextNode(_annotWordText(word));
+}
+
+function annotationErrorHTML(word, typed) {
+  if (!word || !(typeof isLearned === 'function' && isLearned(word))) return '';
+  const marks = marksForError(word, typed);
+  if (!marks.length) return '';
+  const m = marks[0];
+  return `<div class="annot-error-note"><b>${_annotEscape(m.label)}</b><span>${_annotEscape(m.note)}</span></div>`;
+}
+let _annotLastErrorHTML = '';
+function rememberAnnotationError(word, typed) {
+  _annotLastErrorHTML = annotationErrorHTML(word, typed);
+  return _annotLastErrorHTML;
+}
+function takeAnnotationErrorHTML() {
+  const html = _annotLastErrorHTML;
+  _annotLastErrorHTML = '';
+  return html;
+}
+function clearAnnotationErrorHTML() { _annotLastErrorHTML = ''; }
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('mouseover', e => {
+    const el = e.target.closest && e.target.closest('.annot-mark');
+    if (el) _annotShowTip(el);
   });
-  return wrap;
+  document.addEventListener('mouseout', e => {
+    if (e.target.closest && e.target.closest('.annot-mark')) _annotHideTip();
+  });
+  document.addEventListener('focusin', e => {
+    const el = e.target.closest && e.target.closest('.annot-mark');
+    if (el) _annotShowTip(el);
+  });
+  document.addEventListener('focusout', e => {
+    if (e.target.closest && e.target.closest('.annot-mark')) _annotHideTip();
+  });
+  document.addEventListener('click', e => {
+    const el = e.target.closest && e.target.closest('.annot-mark');
+    if (!el || el.closest('button, .opt')) return;  // 選項本身已有點擊/念字行為,避免同時觸發兩次聲音
+    _annotSpeak(el);
+  });
 }

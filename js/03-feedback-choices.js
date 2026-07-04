@@ -79,14 +79,17 @@ function clearBottomActions() {
 function finish(right, w, picked = null, note = '') {
   clearBottomActions();   // 收掉送出 / 特訓學會鈕,別跟底部結算列重疊
   const why = $('why');
+  const wordHTML = typeof annotatedWordHTML === 'function' ? annotatedWordHTML(w) : w.en;
+  const forcedWordHTML = typeof annotatedWordHTML === 'function' ? annotatedWordHTML(w, { force:true }) : w.en;
   if (right) {
+    if (typeof clearAnnotationErrorHTML === 'function') clearAnnotationErrorHTML();
     sfx.correct();
     onCorrect(w); updateBar();
     why.classList.remove('bad');                   // 對 = 綠框
     why.innerHTML = `<div class="result-head">
       <div class="result-mark">✓</div>
       <div class="result-main">
-        <div class="result-word">${w.en}<span class="result-eq"> = ${w.zh}</span></div>
+        <div class="result-word">${wordHTML}<span class="result-eq"> = ${w.zh}</span></div>
         <div class="result-copy">${note ? `<b>${note}</b><br>` : ''}${w.why || '很好,下一題繼續。'}</div>
       </div>
       <button class="replay" id="rehear">${ICON.play}再聽</button>
@@ -98,12 +101,13 @@ function finish(right, w, picked = null, note = '') {
   } else {
     sfx.wrong();
     speak(w.en);                                   // 答錯 → 自動補念一次正確發音(這字之後再出現,也是答錯時才重教)
+    const annotNote = typeof takeAnnotationErrorHTML === 'function' ? takeAnnotationErrorHTML() : '';
     why.classList.add('bad');                      // 錯 = 紅框
     why.innerHTML = `<div class="result-head">
       <div class="result-mark">!</div>
       <div class="result-main">
-        <div class="result-word">${w.en}<span class="result-eq"> = ${w.zh}</span></div>
-        <div class="result-copy">${wrongHint(w, picked)}</div>
+        <div class="result-word">${forcedWordHTML}<span class="result-eq"> = ${w.zh}</span></div>
+        <div class="result-copy">${wrongHint(w, picked)}${annotNote}</div>
       </div>
       <button class="replay" id="rehear">${ICON.play}再聽</button>
     </div>
@@ -145,7 +149,10 @@ function pickAnswer(box, el, right, w, correctText, picked = null) {
 function mountChoices(box, opts, getText, w, correctText) {
   let sel = null;
   opts.forEach(o => {
-    const el = document.createElement('div'); el.className = 'opt'; el.textContent = getText(o);
+    const el = document.createElement('div'); el.className = 'opt';
+    const text = getText(o);
+    if (o && text === o.en && typeof renderAnnotatedWord === 'function') el.appendChild(renderAnnotatedWord(o));
+    else el.textContent = text;
     el.onclick = () => {
       if (box.classList.contains('locked')) return;
       [...box.children].forEach(c => c.classList.remove('sel'));

@@ -27,7 +27,6 @@
     .map-lesson-meta span { min-width:0; justify-content:center; border-radius:12px; padding:5px 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .map-status-row { width:100%; }
     .map-status-row .map-primary-start, #workmapcurrent { width:100%; min-width:0; padding:12px 18px; font-size:18px; }
-    .map-status-row #jumpboss { flex:0 0 auto; width:auto; margin-top:2px; padding:8px 14px; font-size:13px; }
     .map-info-pill { max-width:100%; border-radius:14px; text-align:center; justify-content:center; }
     .mapscroll { height:clamp(280px, calc(var(--map-levels, 6) * 22px + 170px), 410px); max-height:54vh; }
     .map-float-jump { right:24px; bottom:24px; width:44px; height:44px; }

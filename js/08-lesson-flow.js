@@ -105,22 +105,24 @@ function ask(w) {
 
 /* ---- 🎯 單字特訓:自選字、聽說讀寫混合、各題可「我學會了」移除(玩法層) ---- */
 function startTraining(words, mode = 'weak') {
-  inTraining = true; trainMode = mode; trainPool = words.slice(); trainTotal = trainPool.length;
+  inTraining = true; trainMode = mode; trainPool = words.slice(); trainTotal = trainPool.length; lastTrainWordKey = '';
   homeEl.hidden = true; screen.hidden = false;
   trainNext();
 }
 function trainNext() {
   if (trainMode !== 'review') trainPool = trainPool.filter(w => !isLearned(w));   // 練會模式:滿100%自動畢業;複習模式:已學會的字留著隨你刷,靠「移除」鈕退出(下面 injectTrainKnown)
   if (!trainPool.length) return trainingDone();
-  const w = shuffle(trainPool)[0];
+  const candidates = trainPool.length > 1 ? trainPool.filter(w => wordKey(w) !== lastTrainWordKey) : trainPool;   // 多字特訓先輪替,避免 2 個字卻一直抽到同一個
+  const w = shuffle(candidates.length ? candidates : trainPool)[0];
+  lastTrainWordKey = wordKey(w);
   current = w; currentRung = 1; inReview = false;   // 特訓不是補考 → 答對正常加熟練度
   trainAsk(w);
 }
-// 特訓出題:該字適用的「聽說讀寫」題型混出(忽略關卡 lv、排除句子題=特訓練單字),避開連續同題型。
+// 特訓出題:該字適用的「聽說讀寫」題型混出(忽略關卡 lv、排除排句/回應等句型題;保留句子克漏字,它仍是針對單字的寫題),避開連續同題型。
 function trainAsk(w) {
   const k = wordKey(w);
-  let pool = FORMATS.filter(f => !/^sentence/.test(f.id) && trackSkillOn(f.skill) && f.ok(w) && (f.tier || (f.skill === 'write' ? 3 : f.skill === 'speak' ? 2 : 1)) <= maxRungOf(w));
-  if (!clozeReadyForDictation(w)) pool = pool.filter(f => !isHardDictationFormatId(f.id));   // 特訓也尊重長字/第三階段字的克漏字門檻,先不硬默寫
+  let pool = FORMATS.filter(f => (!/^sentence/.test(f.id) || f.id === 'sentence_cloze') && trackSkillOn(f.skill) && f.ok(w) && (f.tier || (f.skill === 'write' ? 3 : f.skill === 'speak' ? 2 : 1)) <= maxRungOf(w));
+  if (!trainSkills.has('write') && !clozeReadyForDictation(w)) pool = pool.filter(f => !isHardDictationFormatId(f.id));   // 主線/混合特訓尊重克漏字門檻;但使用者明選「寫」時,就直接給整字默寫
   if (trainSkills.size) {   // 🎯 自選技能(可複選):只練選到的聽/讀/說/寫
     let only = pool.filter(f => trainSkills.has(f.skill));
     if (!only.length && !trainSkills.has('speak')) only = pool.filter(f => f.skill !== 'speak');   // 選了技能卻沒該字的題型 → 退而求其次,但沒選「說」就絕不塞說題(治「選寫卻跑出說題」;讀題 readpick 永遠在,退得掉)
@@ -150,7 +152,7 @@ function injectTrainKnown(w) {
   screen.appendChild(b);   // .sideact 是 fixed,接到 #screen 即可;下一題 shell 重繪會清掉
 }
 function trainingDone() {
-  inTraining = false; trainPool = [];
+  inTraining = false; trainPool = []; lastTrainWordKey = '';
   screen.classList.remove('lesson-screen', 'boss-screen', 'start-screen');
   screen.classList.add('done-screen');
   screen.innerHTML = `<main class="done-panel"><div style="text-align:center;font-size:40px">🎯</div>
@@ -202,7 +204,7 @@ function showDone() {
   const ready = playStage === (meta.stage || 1) && stageReady();
   const blocked = !ready && playStage === (meta.stage || 1) && stageDeadlineReached();
   let completedStage = null, nextLevel = null;
-  if (ready) {                                                                  // 主線不再被王關卡住:階段學完就直接解鎖下一階,挑戰關變成可選獎勵。
+  if (ready) {                                                                  // 主線不再被王關卡住:階段學完就直接解鎖下一階,王戰收進小遊戲 hub。
     completedStage = meta.stage || playStage;
     nextLevel = stageDeadlineLevel(completedStage) + 1;
     meta.stage = completedStage + 1;
@@ -222,14 +224,14 @@ function showDone() {
     <div class="sub" style="text-align:center">這關練的字,熟練度都疊上去了:</div>
     ${levelProgressHTML()}
     ${newly.length ? `<div class="sub" style="margin-top:12px">★ <b style="color:#9bd2ff">${newly.map(w=>w.en).join(', ')}</b> 已 100% 學會,存起來——之後關卡會隨機回鍋。</div>` : ''}
-    ${ready ? `<div class="sub" style="margin-top:12px;color:#6ee7a8">下一階已解鎖。旁邊的挑戰關是可選獎勵,不會擋主線。</div>` : ''}
+    ${ready ? `<div class="sub" style="margin-top:12px;color:#6ee7a8">下一階已解鎖。王戰已放進小遊戲,想賺金幣再去玩。</div>` : ''}
     ${blocked ? `<div class="sub" style="margin-top:12px;color:#ffd0d6">還有字沒默寫成功過,先補完這階才會進下一階。</div>` : ''}
     ${canBuildSentence ? `<button class="btn" id="build" style="margin-top:14px;background:#0e2a1f;border-color:#1f5c3f">組句小練習 →</button>` : ''}
-    ${ready ? `<button class="btn" id="challenge" style="margin-top:14px;background:#2a0e12;border-color:#e35b6a">🎮 玩第 ${completedStage} 階挑戰關</button>` : ''}
+    ${ready ? `<button class="btn" id="challenge" style="margin-top:14px;background:#2a0e12;border-color:#e35b6a">🎮 去小遊戲</button>` : ''}
     <button class="btn" id="next" style="margin-top:${ready ? 10 : 14}px${ready ? ';background:#1d2c3a;border-color:#2c3e52' : ''}">${ready ? `前往第 ${nextLevel} 關 →` : blocked ? '補默寫 →' : '下一關 →'}</button>
     <button class="btn" id="tomap" style="margin-top:10px;background:#1d2c3a;border-color:#2c3e52">← 回地圖</button></main>`;
   if (canBuildSentence) $('build').onclick = () => askBuildSentence(sentenceWords, showDone);
-  if ($('challenge')) $('challenge').onclick = () => startChallenge(completedStage);
+  if ($('challenge')) $('challenge').onclick = showMinigames;
   $('next').onclick = () => {
     if (ready) { level = nextLevel; return showStart(); }
     if (blocked) return showStart();

@@ -33,6 +33,17 @@
   .syllables.bad .syl { color:#e35b6a; }   /* 說題判不出 = 整排音節紅 */
   .sub2 { text-align:center; color:#9fb4c8; margin-bottom:22px; font-size:20px; }
   .fullword { text-align:center; font-size:54px; font-weight:800; letter-spacing:1px; margin:8px 0 0; }
+  .annot-word { display:inline; letter-spacing:inherit; white-space:nowrap; }
+  .annot-mark { position:relative; border-radius:.22em; padding:0 .04em; margin:0 -.01em; cursor:help; box-decoration-break:clone; -webkit-box-decoration-break:clone; transition:background .12s, box-shadow .12s, color .12s; }
+  .annot-mark:hover, .annot-mark:focus-visible { color:#f6fbff; outline:none; }
+  .annot-phonics { background:rgba(94,160,203,.17); box-shadow:inset 0 -.26em rgba(94,160,203,.30); }
+  .annot-root { background:rgba(220,166,99,.16); box-shadow:inset 0 -.26em rgba(220,166,99,.27); }
+  #annottip { position:fixed; z-index:9999; max-width:300px; display:none; pointer-events:none; background:#101c28; border:1px solid #36506a; border-radius:10px; padding:9px 12px; color:#e8f1fb; font-size:14px; line-height:1.45; box-shadow:0 12px 30px rgba(0,0,0,.45); }
+  #annottip b { color:#f1f6fa; font-size:14px; }
+  #annottip div { margin-top:4px; color:#cfe0f0; }
+  .annot-error-note { margin-top:8px; padding:8px 10px; border-radius:9px; background:rgba(94,160,203,.12); border:1px solid rgba(94,160,203,.32); color:#d8e9f7; }
+  .annot-error-note b { display:block; color:#9bd2ff; margin-bottom:3px; }
+  .annot-error-note span { display:block; color:#d8e9f7; }
   .syllables { text-align:center; font-size:46px; font-weight:800; margin:0 0 6px; line-height:1.25; }
   .syltip { text-align:center; font-size:15px; color:#6f8398; margin-bottom:10px; }
   .syl { display:inline-block; padding:2px 8px; border-radius:9px; color:#cdd9e5; transition:transform .12s, background .12s, color .12s; }
@@ -68,6 +79,7 @@
   .result-eq { color:#c8efd9; font-weight:700; }
   .why.bad .result-eq { color:#f0cdd2; }
   .result-copy { margin-top:4px; color:#c8efd9; line-height:1.45; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .result-copy:has(.annot-error-note) { display:block; overflow:visible; -webkit-line-clamp:unset; }
   .result-head.compact .result-copy { margin-top:0; display:block; overflow:visible; -webkit-line-clamp:unset; }
   .why.bad .result-copy { color:#f0cdd2; }
   .wordrow { display:flex; align-items:center; gap:10px; margin:9px 0; font-size:14px; }

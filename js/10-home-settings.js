@@ -52,7 +52,7 @@ function mapSVG() {
     }
     return d;
   };
-  let path = '', circles = '', bossLines = '', bossNodes = '';
+  let path = '', circles = '';
   path = curvePath(pts);
   const donePath = curvePath(pts.slice(0, Math.max(1, Math.min(meta.maxLevel, total))));
   const H = pad + (total-1)*gap + pad;
@@ -92,20 +92,6 @@ function mapSVG() {
     circles += `<circle class="mapnode" data-lv="${lv}" cx="${p.x}" cy="${p.y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="3.5" style="cursor:${cur}"/>`
       + `<text x="${p.x}" y="${p.y+10}" text-anchor="middle" font-size="27" font-weight="700" fill="${tc}" style="pointer-events:none">${lv}</text>`;
   }
-  for (let stage = 1; stage <= latestChallengeStage(); stage++) {
-    const cleared = challengeCleared(stage);
-    const lv = bossLevelForStage(stage);
-    if (lv > total) continue;
-    const p = pts[lv - 1];
-    const bx = p.x < W / 2 ? p.x + 92 : p.x - 92;
-    const by = p.y;
-    const fill = cleared ? '#172713' : '#2a0e12';
-    const stroke = cleared ? '#f7c948' : '#e35b6a';
-    const tc = cleared ? '#ffe08a' : '#ffd0d6';
-    bossLines += `<line x1="${p.x}" y1="${p.y}" x2="${bx}" y2="${by}" stroke="${stroke}" stroke-width="3" stroke-dasharray="3 8" stroke-linecap="round" opacity=".75"/>`;
-    bossNodes += `<circle class="mapboss" data-boss-stage="${stage}" data-cleared="${cleared ? 1 : 0}" cx="${bx}" cy="${by}" r="28" fill="${fill}" stroke="${stroke}" stroke-width="3.5" style="cursor:pointer"/>`
-      + `<text x="${bx}" y="${by+9}" text-anchor="middle" font-size="${cleared ? 22 : 18}" font-weight="800" fill="${tc}" style="pointer-events:none">${cleared ? '✓' : '挑'}</text>`;
-  }
   const mapBgId = `mapgrid-${total}-${meta.maxLevel}`;
   const trail = `<defs>
       <pattern id="${mapBgId}" width="64" height="64" patternUnits="userSpaceOnUse">
@@ -117,13 +103,13 @@ function mapSVG() {
     <path d="${path}" fill="none" stroke="#23384d" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/>
     ${meta.maxLevel > 1 ? `<path d="${donePath}" fill="none" stroke="#155946" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" opacity=".68"/>` : ''}
     <path d="${path}" fill="none" stroke="#48637e" stroke-width="4" stroke-dasharray="3 16" stroke-linecap="round" opacity=".72"/>`;
-  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto">${trail}${bossLines}${circles}${bossNodes}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto">${trail}${circles}</svg>`;
 }
 function showHome() {
   inTraining = false;                    // 從任何地方回主畫面都結束特訓
   normalizeBossGate();
   const homeInfo = homeStageSummary();
-  const challengeText = latestChallengeStage() ? `第 ${latestChallengeStage()} 階可回看` : '本階完成後開放';
+  const challengeText = latestChallengeStage() ? `第 ${latestChallengeStage()} 階可遊玩` : '完成第 1 階開放';
   const trainText = homeInfo.weak ? `${homeInfo.weak} 個字待加強` : (homeInfo.touched ? '目前沒有弱字' : (homeInfo.lv > 1 ? '可自選複習' : '先開始第一關'));
   const derivText = meta.coins >= 30 ? '金幣足夠' : `還差 ${Math.max(0, 30 - (meta.coins || 0))} 枚`;
   screen.classList.remove('lesson-screen', 'boss-screen', 'done-screen', 'start-screen');
@@ -192,12 +178,7 @@ function showHome() {
   document.getElementById('catTrain').onclick = showTrainPicker;
   document.getElementById('catDeriv').onclick = () => { homeEl.querySelector('#catDeriv .catcoin').textContent = '金幣不夠,之後開放'; };
   homeEl.querySelectorAll('.mapnode').forEach(c => { const lv = +c.dataset.lv; if (lv <= meta.maxLevel) c.onclick = () => enterLevel(lv); });
-  homeEl.querySelectorAll('.mapboss').forEach(c => {
-    const stage = +c.dataset.bossStage;
-    const cleared = c.dataset.cleared === '1';
-    c.onclick = () => startChallenge(stage);
-  });
-  // 關卡鏡頭:固定視窗 + 進場置中在目前關 + 滑鼠/觸控捲動 + 王快捷
+  // 關卡鏡頭:固定視窗 + 進場置中在目前關 + 滑鼠/觸控捲動 + 回目前關定位鈕
   const mapscroll = document.getElementById('mapscroll'), mapsvg = mapscroll && mapscroll.querySelector('svg');
   const mapFloatJump = document.getElementById('mapfloatjump');
   const currentMapY = () => {
@@ -235,14 +216,10 @@ function showHome() {
   const jump = document.getElementById('mapjump');
   if (jump) {
     const status = $('mapstatus');
-    let h = `<button class="cur map-primary-start" data-start="${meta.maxLevel}">開始 · 第 ${meta.maxLevel} 關</button>`;
-    if (latestChallengeStage()) h += `<button id="jumpboss">挑戰關 · 第 ${latestChallengeStage()} 階</button>`;
-    if (status) status.innerHTML = h;
+    if (status) status.innerHTML = `<button class="cur map-primary-start" data-start="${meta.maxLevel}">開始 · 第 ${meta.maxLevel} 關</button>`;
     $('dailybranch').onclick = () => { setTrack('daily'); showHome(); };
     $('workbranch').onclick = () => { setTrack('work'); showHome(); };
     jump.querySelectorAll('button[data-start]').forEach(btn => btn.onclick = () => enterLevel(+btn.dataset.start));
-    jump.querySelectorAll('button[data-jump]').forEach(btn => btn.onclick = () => scrollToLv(+btn.dataset.jump, true));
-    if ($('jumpboss')) $('jumpboss').onclick = () => scrollToLv(bossLevelForStage(latestChallengeStage()), true);
   }
 }
 function enterLevel(lv) {
@@ -293,7 +270,7 @@ function showTrainPicker() {
   words.forEach(w => {
     const el = document.createElement('button');
     el.className = 'twordchip'; el.dataset.id = w.id;
-    el.innerHTML = `<b>${w.en}</b> <span class="tzh">${w.zh}</span> ${review ? '<span class="tpct">會</span>' : `<span class="tpct">${pOf(w)}%</span>`}`;
+    el.innerHTML = `<b>${typeof annotatedWordHTML === 'function' ? annotatedWordHTML(w) : w.en}</b> <span class="tzh">${w.zh}</span> ${review ? '<span class="tpct">會</span>' : `<span class="tpct">${pOf(w)}%</span>`}`;
     el.onclick = () => {
       if (sel.has(w)) { sel.delete(w); el.classList.remove('sel'); }
       else { sel.add(w); el.classList.add('sel'); }
@@ -336,10 +313,22 @@ function showSettings() {
   screen.classList.remove('lesson-screen', 'boss-screen', 'done-screen', 'start-screen');
   homeEl.hidden = true; screen.hidden = false;
   const sk = meta.skills || {};
+  const amode = typeof annotMode === 'function' ? annotMode() : (meta.annotMode || 'learned-hide');
+  const annotLabels = {
+    'learned-hide': { label:'學會後隱藏', desc:'新字顯示重點,學會後收掉' },
+    always: { label:'永遠顯示', desc:'複習時也保留拼讀 / 字根提示' },
+    off: { label:'關閉', desc:'完全不顯示劃重點提示' },
+  };
+  const annot = annotLabels[amode] || annotLabels['learned-hide'];
   const row = (key, label, desc) => `
     <div class="cat" style="display:flex;justify-content:space-between;align-items:center;margin:0" data-skill="${key}">
       <div><div style="font-weight:500;font-size:16px">${label}</div><div style="font-size:12px;color:#9fb4c8;margin-top:2px">${desc}</div></div>
       <div style="font-size:24px">${sk[key] === false ? '⬜' : '✅'}</div>
+    </div>`;
+  const annotRow = `
+    <div class="cat" style="display:flex;justify-content:space-between;align-items:center;margin:0" data-annot-mode>
+      <div><div style="font-weight:500;font-size:16px">劃重點單字</div><div style="font-size:12px;color:#9fb4c8;margin-top:2px">${annot.desc}</div></div>
+      <div style="font-size:15px;font-weight:800;color:#9bd2ff">${annot.label}</div>
     </div>`;
   screen.innerHTML = `<h2>設定</h2>
     <div class="sub">要練哪些(關掉的技能對應題型就不出現,預設全開)</div>
@@ -348,11 +337,19 @@ function showSettings() {
       ${row('read','讀','看字 / 圖 → 選')}
       ${row('speak','說','開口念(要麥克風)')}
       ${row('write','寫','聽寫 / 默寫 / 音節填空')}
+      ${annotRow}
     </div>
     <button class="btn" id="setback" style="margin-top:16px">← 回主畫面</button>`;
   screen.querySelectorAll('[data-skill]').forEach(el => {
     el.onclick = () => { const k = el.dataset.skill; meta.skills = meta.skills || {}; meta.skills[k] = meta.skills[k] === false; saveMeta(); showSettings(); };
   });
+  const annotToggle = screen.querySelector('[data-annot-mode]');
+  if (annotToggle) annotToggle.onclick = () => {
+    const modes = ['learned-hide', 'always', 'off'];
+    const cur = modes.indexOf(meta.annotMode || 'learned-hide');
+    meta.annotMode = modes[(cur + 1) % modes.length];
+    saveMeta(); showSettings();
+  };
   $('setback').onclick = showHome;
 }
 // 背景音樂選曲(從設定獨立出來,主畫面那顆音符按鈕進來)
@@ -375,4 +372,4 @@ function showMusic() {
 }
 
 // 點任何按鈕 / 選項都來個輕「嗒」聲(UI 回饋;事件委派,不用每個按鈕手動接)
-document.addEventListener('click', e => { if (e.target.closest('button, .opt, .cat, .mapnode, .mapboss')) sfx.tap(); }, true);
+document.addEventListener('click', e => { if (e.target.closest('button, .opt, .cat, .mapnode')) sfx.tap(); }, true);

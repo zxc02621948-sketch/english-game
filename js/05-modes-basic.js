@@ -54,7 +54,14 @@ function askMatch(w) {
   $('body').classList.add('match-answer');
   const ensBox = $('ens'), zhsBox = $('zhs');
   let pickedEn = null, matched = 0;
-  const mk = (box, o, text, on) => { const el = document.createElement('div'); el.className = 'opt'; el.textContent = text; el.onclick = () => on(el, o); box.appendChild(el); };
+  const mk = (box, o, text, on) => {
+    const el = document.createElement('div');
+    el.className = 'opt';
+    if (o && text === o.en && typeof renderAnnotatedWord === 'function') el.appendChild(renderAnnotatedWord(o));
+    else el.textContent = text;
+    el.onclick = () => on(el, o);
+    box.appendChild(el);
+  };
   ens.forEach(o => mk(ensBox, o, o.en, selEn));
   zhs.forEach(o => mk(zhsBox, o, o.zh, selZh));
   function selEn(el, o) {
@@ -93,7 +100,8 @@ function askCategoryPick(w) {
   q.options.forEach(o => {
     const el = document.createElement('div');
     el.className = 'opt';
-    el.textContent = o.en;
+    if (typeof renderAnnotatedWord === 'function') el.appendChild(renderAnnotatedWord(o));
+    else el.textContent = o.en;
     el.onclick = () => {
       if (box.classList.contains('locked')) return;
       if (selected.has(o.id)) { selected.delete(o.id); el.classList.remove('sel'); }
@@ -316,10 +324,15 @@ function askType(w) {
 
 // 5. 看 2 秒 → 默寫
 function askFlashType(w) {
-  shell('記住它…', `<div class="bigen" id="flash">${w.en}</div>`);
+  shell('記住它…', `<div class="bigen" id="flash">${typeof annotatedWordHTML === 'function' ? annotatedWordHTML(w) : w.en}</div><div class="speakrow"><button class="replay" id="flashhear">${ICON.play}念</button><button class="replay" id="flashslow">慢念</button></div>`);
+  speakSyllables(w, 0.9);
+  $('flashhear').onclick = () => speakSyllables(w, 0.9);
+  $('flashslow').onclick = () => speakSyllables(w, 0.55);
   setTimeout(() => {
     if (!$('flash')) return;  // 已換頁就不動作
-    shell('剛剛那個字,拼出來', `<input class="inp" id="inp" autocomplete="off" autocapitalize="off" placeholder="默寫…"><button class="btn act" id="submit">送出</button><div class="letters" id="letters"></div>`);
+    shell('剛剛那個字,拼出來', `<div class="speakrow"><button class="replay" id="hear">${ICON.play}再聽</button><button class="replay" id="slow">慢念</button></div><input class="inp" id="inp" autocomplete="off" autocapitalize="off" placeholder="默寫…"><button class="btn act" id="submit">送出</button><div class="letters" id="letters"></div>`);
+    $('hear').onclick = () => speakSyllables(w, 0.9);
+    $('slow').onclick = () => speakSyllables(w, 0.55);
     const inp = $('inp'); inp.focus();
     const go = () => {
       if (inp.disabled) return;
@@ -335,9 +348,12 @@ function askFlashType(w) {
   }, 2000);
 }
 
-// 看圖 → 打出英文(寫階變化:不靠聽,靠圖回想拼字)
+// 看圖 → 打出英文(寫階變化:圖像 + 發音一起拉回拼字)
 function askPicType(w) {
-  shell('看圖,打出這個英文字', `<div style="text-align:center;margin:6px 0 22px">${picHTML(w, 150)}</div><input class="inp" id="inp" autocomplete="off" autocapitalize="off" placeholder="打出這個字…"><button class="btn act" id="submit">送出</button><div class="letters" id="letters"></div>`);
+  shell('看圖,打出這個英文字', `<div style="text-align:center;margin:6px 0 18px">${picHTML(w, 150)}</div><div class="speakrow"><button class="replay" id="hear">${ICON.play}念</button><button class="replay" id="slow">慢念</button></div><input class="inp" id="inp" autocomplete="off" autocapitalize="off" placeholder="打出這個字…"><button class="btn act" id="submit">送出</button><div class="letters" id="letters"></div>`);
+  speakSyllables(w, 0.9);
+  $('hear').onclick = () => speakSyllables(w, 0.9);
+  $('slow').onclick = () => speakSyllables(w, 0.55);
   const inp = $('inp'); inp.focus();
   const go = () => {
     if (inp.disabled) return;

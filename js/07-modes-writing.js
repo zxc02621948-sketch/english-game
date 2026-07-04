@@ -76,7 +76,7 @@ function askSylType(w) {
       ? `<div class="result-head compact">
           <div class="result-mark">✓</div>
           <div class="result-main">
-            <div class="result-word">${w.en}</div>
+            <div class="result-word">${typeof annotatedWordHTML === 'function' ? annotatedWordHTML(w) : w.en}</div>
             <div class="result-copy">整段拼對了。</div>
           </div>
         </div>
@@ -84,7 +84,7 @@ function askSylType(w) {
       : `<div class="result-head">
           <div class="result-mark">!</div>
           <div class="result-main">
-            <div class="result-word">${w.en}<span class="result-eq"> = ${w.zh}</span></div>
+            <div class="result-word">${typeof annotatedWordHTML === 'function' ? annotatedWordHTML(w, { force:true }) : w.en}<span class="result-eq"> = ${w.zh}</span></div>
             <div class="result-copy">差一點: ${syls.join(' · ')}${hi ? ` · ${hi}: ${SYL_HINT[hi]}` : ''}</div>
           </div>
         </div>
@@ -116,6 +116,8 @@ function markLetters(target, typed) {
   }
   const w = BANK.find(x => x.en.toLowerCase() === (target || '').toLowerCase());
   if (w && SPELL_HINT[w.id]) html += `<div class="spell-hint" style="margin-top:8px;font-size:15px;color:#9bd2ff">記法:${SPELL_HINT[w.id]}</div>`;
+  if (typeof rememberAnnotationError === 'function') rememberAnnotationError(w, typed);
+  else if (typeof clearAnnotationErrorHTML === 'function') clearAnnotationErrorHTML();
   $('letters').innerHTML = html;
 }
 
@@ -156,7 +158,7 @@ function teach(w) {
   shell('先認識這個字 👀', `
     <div class="teach-layout">
       <div class="teach-main">
-        <div class="fullword teach-word">${w.en}</div>
+        <div class="fullword teach-word">${typeof annotatedWordHTML === 'function' ? annotatedWordHTML(w) : w.en}</div>
         ${sylBlock}
         <div class="sub2 teach-zh">${w.zh}</div>
       </div>
