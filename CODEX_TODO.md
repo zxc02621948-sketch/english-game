@@ -34,4 +34,19 @@
 
 ---
 
+## 6.（新，資料層已備好）劃重點單字標註系統 —— 接 rendering
+- **狀態**:Claude 已做好**資料/邏輯層**並 console 驗過(`js/04-annotate.js`;目前 **inert、沒接進正式流程 → 不影響現在遊戲**)。契約都定好:
+  - `annotateSegments(word)` → `[{text, mark|null}]`(mark 有 `kind:'phonics'|'root'`、`label`、`note`、`say`)
+  - `showAnnotations(word, force?)` → 淡出式鷹架(吃 `meta.annotMode`:`learned-hide`(預設)/`always`/`off` + `isLearned`;`force`=答錯回饋強制顯示)
+  - `marksForError(word, typed)` → 答錯時「你錯的那個點」那條(給 `.why`)
+  - `renderAnnotatedWord(word,{force})` → **陽春 placeholder**(底線+hover看註解+點念)
+- **要什麼(Codex)**:
+  1. 把 `renderAnnotatedWord` 的陽春樣式**換成真的染色/色帶**(phonics 一色、root 一色;★ **別用螢光**,螢幕上會刺眼)+ 定 `.annot-mark` / `.annot-phonics` / `.annot-root` 的 CSS。
+  2. **插進所有顯示單字的地方**(教卡、題目、排詞塊…):本來直接印 `w.en` 的地方改用 `renderAnnotatedWord(w)`。
+  3. **設定頁三態開關**(寫 `meta.annotMode`),跟聽說讀寫技能開關同排。
+  4. **答錯回饋**:`.why` 面板把 `marksForError(w, 輸入)` 那條註解顯示出來(學會的字答錯才跳)。
+- 完整設計見 [`HANDOFF.md`](HANDOFF.md)「★ 設計規格:劃重點單字標註系統」。
+
+---
+
 *寫於 2026-07-04(Claude Opus 4.8)。做完可刪本檔。*
