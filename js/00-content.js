@@ -180,6 +180,21 @@ let PATTERNS = [
     zh: "我會說{x}。",
     requires: ["word_i", "word_speak"],
     slots: { x: { pos: "noun", flags: ["language"] } }
+  },
+  // 複合句(兩子句)—— 給「你呢?」回應題(sentence_respond)用。用現有的 感受+喝/吃 就組得出,不必加新字。
+  {
+    id: "pat_resp_feel_drink",
+    text: "I am {e}. I drink {d}.",
+    zh: "我很{e},我喝{d}。",
+    requires: ["word_i", "word_am", "word_drink"],
+    slots: { e: { pos: "adj", flags: ["emotion"] }, d: { pos: "noun", flags: ["drinkable"] } }
+  },
+  {
+    id: "pat_resp_feel_eat",
+    text: "I am {e}. I eat {f}.",
+    zh: "我很{e},我吃{f}。",
+    requires: ["word_i", "word_am", "word_eat"],
+    slots: { e: { pos: "adj", flags: ["emotion"] }, f: { pos: "noun", flags: ["eatable"] } }
   }
 ];
 

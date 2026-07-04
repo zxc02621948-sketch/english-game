@@ -278,6 +278,57 @@ function askBuildSentence(sourceWords = sentenceSourceWords(), done = showDone, 
   }
 }
 
+// ★ 複合句「你呢?」回應題:朋友先說一句複合自述(I am happy. I drink coffee.)→ 你排出你自己的版本。
+//   把 build 的排句流程 + creditSentence 直接重用(走 mountArrange = 真的關卡 UI),差別在複合板模 + 情境 intro。
+function askRespond(sourceWords = sentenceSourceWords(), done = showDone, onMiss = null) {
+  const mine = pickRespondSentence(sourceWords);
+  if (!mine) {
+    shell('你呢?', `<div class="sub2">這批字還組不出回應句,先繼續練。</div><button class="btn act" id="cont">繼續 →</button>`);
+    $('cont').onclick = done;
+    return;
+  }
+  const friend = pickRespondSentence(sourceWords, mine.text) || mine;
+  rememberSentence(mine.text);
+  const target = mine.text.replace(/[.?!,]/g, '').split(/\s+/).filter(Boolean);
+  const intro = `<div class="respond-scenario" style="background:#14202e;border:1px solid #26384a;border-radius:12px;padding:12px 16px;margin-bottom:14px;text-align:center">
+    <div style="font-size:19px;font-weight:700">${friend.text}</div>
+    <div style="font-size:15px;color:#9fb4c8;margin-top:2px">${friend.zh}</div>
+    <div style="margin-top:8px;font-size:17px">👉 <b>And you? 你呢?</b></div>
+  </div>`;
+  const arrange = () => mountArrange({
+    promptText: '你呢?看中文,排出你的回答',
+    zh: mine.zh,
+    introHTML: intro,
+    cards: target.map((text, i) => ({ id: `r${i}`, text })),
+    targetTokens: target,
+    onCheck: (right, { retry }) => {
+      const why = $('why');
+      speakSentence(mine);
+      if (right) {
+        sfx.correct(); bumpPat(mine.patternId, 25); creditSentence(mine);
+        why.className = 'why';
+        why.innerHTML = `<div class="result-head"><div class="result-mark">✓</div><div class="result-main"><div class="result-word">${mine.text}</div><div class="result-copy">${mine.zh}</div></div><button class="replay" id="sayit">${ICON.play}再聽整句</button></div><button class="btn act" id="cont">繼續 →</button>`;
+        why.hidden = false;
+        $('sayit').onclick = () => speakSentence(mine);
+        $('cont').onclick = done;
+      } else {
+        sfx.wrong(); bumpPat(mine.patternId, -20);
+        why.className = 'why bad';
+        why.innerHTML = `<div class="result-head"><div class="result-mark">!</div><div class="result-main"><div class="result-word">正解: ${mine.text}</div><div class="result-copy">${mine.zh}</div></div><button class="replay" id="sayit">${ICON.play}聽正解</button></div><button class="btn act" id="${onMiss ? 'cont' : 'retry'}">${onMiss ? '繼續 →' : '重排一次'}</button>`;
+        why.hidden = false;
+        $('sayit').onclick = () => speakSentence(mine);
+        if (onMiss) $('cont').onclick = onMiss; else $('retry').onclick = retry;
+      }
+    }
+  });
+  if (patMastery(mine.patternId) === 0) {
+    bumpPat(mine.patternId, 10);
+    teachPattern(mine, arrange, () => { bumpPat(mine.patternId, LEARNED); done(); });
+  } else {
+    arrange();
+  }
+}
+
 // 整句跟讀:Web Speech 對整句仍可能飄,所以這題是低壓練習。兩次抓不到就自評通過,不作為硬考核。
 function askSentenceSpeak(sourceWords = sentenceSourceWords(), done = showDone, forced = null) {
   const sentence = forced || pickBuildSentence(sourceWords);

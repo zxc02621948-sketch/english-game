@@ -149,3 +149,12 @@ function pickBuildSentence(sourceWords = sentenceSourceWords()) {
 // 有沒有「新的」可組句子(避開最近出過的)→ 給 FORMATS.ok 判斷:只剩剛出過的同一句時就別再 offer 句子題,交給單字題換口味(治「一關狂重播同一句」)。
 const hasFreshBuildSentence = (sourceWords = sentenceSourceWords()) =>
   sentenceCandidates(buildSentencePatterns(), sourceWords).some(s => !recentSentences.includes(s.text));
+
+// ── 複合句「你呢?」回應題(sentence_respond)── 用複合板模(兩子句),不進 build 池;工作軌沒這些板模 → 自然不出。
+let RESPOND_PATTERN_IDS = ["pat_resp_feel_drink", "pat_resp_feel_eat"];
+const respondPatterns = () => PATTERNS.filter(p => RESPOND_PATTERN_IDS.includes(p.id));
+function pickRespondSentence(sourceWords = sentenceSourceWords(), avoidText) {
+  // 用 pickSentenceByPattern:先均勻挑板模(drink/eat)再挑句 → 兩種都會出,不被變化多的 drink 稀釋掉 eat。
+  return pickSentenceByPattern(respondPatterns(), sourceWords, avoidText ? (s => s.text !== avoidText) : undefined);
+}
+const canRespond = (sourceWords = sentenceSourceWords()) => !!pickRespondSentence(sourceWords);

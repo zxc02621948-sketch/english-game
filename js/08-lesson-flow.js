@@ -19,6 +19,7 @@ const FORMATS = [
   { id:'flashtype',    lv:5, skill:'write',  ok: w => w.en.length > 1,               run: askFlashType },        // 默寫(單字母不練寫)
   { id:'sentence_cloze', lv:6, skill:'write', tier:3, ok: w => (meta.stage || 1) >= 3 && canSentenceCloze(w), run: askSentenceCloze }, // 二王後:句子克漏字打字(先練缺字,不整句默寫)
   { id:'sentence_build', lv:1, skill:'read', tier:1, ok: () => hasFreshBuildSentence(currentSentenceSourceWords()), run: w => askBuildSentence(currentSentenceSourceWords(), () => { onCorrect(w); updateBar(); nextQuestion(); }, null, () => { onWrong(w); nextQuestion(); }) },  // 排詞造句(句型軌;只在有「新句子」時出 → 不狂重播同一句)
+  { id:'sentence_respond', lv:3, skill:'read', tier:2, ok: () => canRespond(currentSentenceSourceWords()), run: w => askRespond(currentSentenceSourceWords(), () => { onCorrect(w); updateBar(); nextQuestion(); }, () => { onWrong(w); nextQuestion(); }) },  // ★「你呢?」複合回應題:朋友說一句複合自述→你排你的版本(複合句、串現有題型;stage3+ 感受+喝/吃 教過才出)
   { id:'sentence_transform', lv:3, skill:'read', tier:3, ok: () => canTransform(), run: w => askTransform(w) },  // ★ 轉換題:把練過的直述句重排成問句(this is ↔ is this);直述句練過(patMastery>0)才出
   { id:'sentence_meaning', lv:2, skill:'read', tier:1, ok: canSentenceMeaning, run: w => askSentenceMeaning(w) },  // 整段英文→選意思(理解/辨識;誘答含逐字直翻);非排句家族 → 兼補前期變化
 ];
@@ -43,7 +44,7 @@ const wroteOk = w => !!rec(w).wrote || !trackSkillOn('write');     // 不練默�
 function passRung(w) { onCorrect(w); updateBar(); nextQuestion(); } // 該技能關了 → 該階自動帶過
 let lastAsked = {}, lastAskedSkill = {}, lastAskedFormatId = {}, lastFormat = null, currentSkill = null, currentFormatId = null;   // 每字上次題型 + 技能 + 全域上一題格式 → 避免連續同題型(破單調)
 let transformsThisLevel = 0;                                        // 轉換題(位置互換)每關至多 1 次 → 當稀有「aha」不當常客(治前期一直重排同批字很沒誠意)
-const ARRANGE_FAMILY = new Set(['sentence_build', 'sentence_speak']);   // 排句/整句跟讀視為同家族、不連續出(破單調)。★ 轉換題不放進來:它已被「每關上限 1」擋掉連發,再被家族壓抑就變成 12 關都遇不到(治「is this 消失」)
+const ARRANGE_FAMILY = new Set(['sentence_build', 'sentence_speak', 'sentence_respond']);   // 排句/整句跟讀/複合回應視為同家族、不連續出(破單調)。★ 轉換題不放進來:它已被「每關上限 1」擋掉連發,再被家族壓抑就變成 12 關都遇不到(治「is this 消失」)
 const formatFamilyOf = id => ARRANGE_FAMILY.has(id) ? 'arrange' : id;
 function ask(w) {
   if (isFresh(w)) { currentRung = 0; currentSkill = null; currentFormatId = 'teach'; lastFormat = teach; return teach(w); }       // 新字一律先教(認識)
