@@ -50,3 +50,4 @@
   .boss-result { flex:1; width:100%; max-width:960px; margin:0 auto; display:grid; place-items:center; padding-bottom:clamp(24px,7vh,90px); text-align:center; }
   .boss-result-inner { width:min(620px,100%); display:grid; gap:14px; }
   .boss-result-icon { font-size:52px; line-height:1; }
+  #screen > .boss-music-toggle { position:fixed; top:clamp(18px,3vh,32px); right:max(18px, calc((100vw - 960px) / 2)); z-index:70; width:42px; max-width:42px; margin:0; }

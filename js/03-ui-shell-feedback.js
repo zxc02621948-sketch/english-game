@@ -17,8 +17,8 @@ function shell(promptText, bodyHTML) {
   bindLessonBgmToggle();
   updateBar();
 }
-function bindLessonBgmToggle() {
-  const btn = $('lessonbgmtoggle');
+function bindBgmToggleButton(id, mode = 'normal') {
+  const btn = $(id);
   if (!btn) return;
   const sync = () => {
     btn.innerHTML = bgm.isOn() ? ICON.play : ICON.mute;
@@ -26,12 +26,13 @@ function bindLessonBgmToggle() {
   };
   sync();
   btn.onclick = () => {
-    const playing = bgm.toggle();
+    const playing = bgm.toggle(mode);
     meta.bgm = playing;
     saveMeta();
     sync();
   };
 }
+function bindLessonBgmToggle() { bindBgmToggleButton('lessonbgmtoggle'); }
 // 中途按 X:確認後回主畫面(本關沒完成 → 不過關、不解王;已答對的字熟練度本來就即時存,不動)
 function confirmExit() {
   const ov = document.createElement('div');

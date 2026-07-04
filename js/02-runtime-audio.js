@@ -78,18 +78,22 @@ const bgm = (() => {
   function playPath(file) {
     stopAudio();
     if (!file) return;
-    audio = Object.assign(new Audio(file), { loop: true, volume: 0.1 });
-    audio.play().catch(() => { stopAudio(); on = false; });
+    const next = Object.assign(new Audio(file), { loop: true, volume: 0.1 });
+    audio = next;
+    next.play().catch(() => { if (audio === next) { stopAudio(); on = false; } });
   }
   function playTrack() {
     const track = BGM_TRACKS[(meta.bgmTrack || 0) % BGM_TRACKS.length];
     playPath(track && track.file);
   }
+  function playBossTrack() {
+    playPath(BOSS_TRACKS[Math.floor(Math.random() * BOSS_TRACKS.length)]);
+  }
   return {
     isOn: () => on,
     setTrack(idx) { meta.bgmTrack = idx; saveMeta(); if (on) playTrack(); },  // 換歌(播放中即時換)
-    toggle() { on = !on; if (on) playTrack(); else stopAudio(); return on; },
-    boss() { if (on) playPath(BOSS_TRACKS[Math.floor(Math.random() * BOSS_TRACKS.length)]); },   // 戰鬥:隨機一首 boss BGM
+    toggle(mode = 'normal') { on = !on; if (on) (mode === 'boss' ? playBossTrack() : playTrack()); else stopAudio(); return on; },
+    boss() { if (on) playBossTrack(); },   // 戰鬥:隨機一首 boss BGM
     normal() { if (on) playTrack(); },                                                           // 回一般 BGM
     panic() {
       if (audio) { audio.preservesPitch = false; audio.webkitPreservesPitch = false; audio.playbackRate = 1.3; }
