@@ -102,13 +102,20 @@ function askWrite(w) {
   return pool[Math.floor(Math.random() * pool.length)](w);
 }
 
-// 拼錯 → 把正解逐字母標出來(綠=對 紅=錯/漏)
+// 拼字記法(寫錯時秀,跟 SYL_HINT 同精神但針對「整個字」)。跟 why 分開:why=意思(答對秀)、SPELL_HINT=拆字/記法(寫錯秀)。
+// 只給「有好拆法」的字,沒有就不出;拆法可以是「巧合的」記憶鉤子(fri+end),不必是真字源 —— 只拿來記、別當真規則推別的字。
+const SPELL_HINT = {
+  word_friend: "fri + end —— 朋友陪你到最後(end);結尾是 -end,別漏掉中間的 e(不是 frend)。",
+};
+// 拼錯 → 把正解逐字母標出來(綠=對 紅=錯/漏),有記法就一起上
 function markLetters(target, typed) {
   let html = '正解:';
   for (let i = 0; i < target.length; i++) {
     const ok = typed[i] && typed[i].toLowerCase() === target[i].toLowerCase();
     html += `<span class="${ok ? 'ok' : 'bad'}">${target[i]}</span>`;
   }
+  const w = BANK.find(x => x.en.toLowerCase() === (target || '').toLowerCase());
+  if (w && SPELL_HINT[w.id]) html += `<div class="spell-hint" style="margin-top:8px;font-size:15px;color:#9bd2ff">記法:${SPELL_HINT[w.id]}</div>`;
   $('letters').innerHTML = html;
 }
 

@@ -9,12 +9,13 @@
   .teach-tip { margin-bottom:0; }
   .teach-zh { margin:12px 0 0; font-size:22px; }
   .teach-why { grid-area:why; align-self:end; width:100%; min-height:clamp(92px,14vh,132px); display:flex; align-items:center; background:#0e2a1f; border:1px solid #1f5c3f; border-radius:14px; padding:22px 24px; font-size:clamp(17px,2vh,20px); line-height:1.6; color:#d9f7e5; }
+  .lesson-answer.build-answer { justify-content:flex-start; overflow-y:auto; }   /* 排詞/轉換題:從上往下排、溢出可捲 → 內容多時不往上溢出蓋標題 */
   .buildzh { text-align:center; font-size:26px; font-weight:700; margin:6px 0 14px; }
   /* 轉換題:上面顯示已會的直述句,下面重排成問句 */
-  .transform-intro { text-align:center; margin:2px 0 14px; padding:12px 16px; background:#11202c; border:1px solid #243343; border-radius:14px; }
-  .transform-stmt { font-size:clamp(22px,3.2vh,30px); font-weight:800; letter-spacing:.5px; color:#cfe6ff; }
-  .transform-stmt-zh { font-size:15px; color:#9fb4c8; margin-top:4px; }
-  .transform-arrow { font-size:14px; color:#6ee7a8; margin-top:8px; font-weight:700; }
+  .transform-intro { text-align:center; margin:0 auto; }   /* 不放卡片 box:原句直接寫在題目帶,不用一整塊框佔高度(治轉換題還要捲) */
+  .transform-stmt { font-size:clamp(20px,2.6vh,26px); font-weight:800; letter-spacing:.5px; color:#cfe6ff; }
+  .transform-stmt-zh { font-size:14px; color:#9fb4c8; margin-top:1px; }
+  .transform-arrow { font-size:13px; color:#6ee7a8; margin-top:3px; font-weight:700; }
   .sentence-speak-card { width:min(920px,100%); margin:0 auto 18px; padding:18px 20px; border:1px solid #243343; border-radius:14px; background:#11202c; text-align:center; }
   .sentence-speak-line { display:inline-flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:.25em; max-width:100%; color:#e8f1f8; font-size:clamp(28px,5vh,48px); line-height:1.18; font-weight:900; }
   .sentence-speak-line.ok { color:#6ee7a8; text-shadow:0 0 18px rgba(110,231,168,.18); }

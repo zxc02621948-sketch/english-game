@@ -14,6 +14,13 @@
   .boss-grid-clue { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; line-height:1.1; }
   .boss-grid-clue .sub2 { display:block; margin:0; line-height:1.25; color:#9bd2ff; }
   #screen.boss-grid-mode .boss-timer { margin-top:2px; height:8px !important; background:#203142; border:1px solid #2e4155; }
+  /* 分類題:選項最多 8 個 → 跟九宮格一樣把 arena 壓成自然高度、答題區吃 1fr,免得中間被擠爆、prompt/clue/倒數疊在一起(修:選項多時標題疊字 + 倒數消失) */
+  #screen.boss-category-mode .boss-layout { grid-template-rows:auto auto minmax(0,1fr); gap:clamp(10px,2vh,18px); padding-top:clamp(4px,1vh,10px); }
+  #screen.boss-category-mode .boss-arena { justify-content:flex-start; gap:8px; }
+  #screen.boss-category-mode .boss-arena .prompt { font-size:clamp(24px,3.6vh,38px); line-height:1.1; margin:0; }
+  #screen.boss-category-mode .boss-clue { min-height:auto; gap:2px; }
+  #screen.boss-category-mode .boss-timer { margin-top:2px; height:8px !important; background:#203142; border:1px solid #2e4155; }
+  #screen.boss-category-mode .boss-answer { min-height:0; overflow-y:auto; }
   .boss-answer { width:100%; max-width:760px; margin:0 auto; }
   .boss-answer .inp { margin-bottom:12px; }
   .boss-answer .btn { min-height:62px; }

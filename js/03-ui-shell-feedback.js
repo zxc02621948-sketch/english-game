@@ -2,7 +2,11 @@ function shell(promptText, bodyHTML) {
   screen.classList.remove('boss-screen', 'done-screen', 'start-screen');
   screen.classList.add('lesson-screen');
   screen.innerHTML = `
-    <div class="toprow"><button class="xexit" id="xexit" aria-label="離開">✕</button><div class="bar"><i id="bar"></i></div></div>
+    <div class="toprow">
+      <button class="xexit" id="xexit" aria-label="離開">✕</button>
+      <div class="bar"><i id="bar"></i></div>
+      <button class="lesson-music-toggle" id="lessonbgmtoggle" aria-label="背景音樂開關" title="背景音樂">${bgm.isOn() ? ICON.play : ICON.mute}</button>
+    </div>
     <div class="count" id="count"></div>
     <main class="lesson">
       <section class="lesson-stage"><div class="prompt" id="prompt">${promptText}</div></section>
@@ -10,7 +14,23 @@ function shell(promptText, bodyHTML) {
     </main>
     <div class="why" id="why" hidden></div>`;
   $('xexit').onclick = confirmExit;
+  bindLessonBgmToggle();
   updateBar();
+}
+function bindLessonBgmToggle() {
+  const btn = $('lessonbgmtoggle');
+  if (!btn) return;
+  const sync = () => {
+    btn.innerHTML = bgm.isOn() ? ICON.play : ICON.mute;
+    btn.setAttribute('aria-pressed', bgm.isOn() ? 'true' : 'false');
+  };
+  sync();
+  btn.onclick = () => {
+    const playing = bgm.toggle();
+    meta.bgm = playing;
+    saveMeta();
+    sync();
+  };
 }
 // 中途按 X:確認後回主畫面(本關沒完成 → 不過關、不解王;已答對的字熟練度本來就即時存,不動)
 function confirmExit() {
@@ -28,6 +48,12 @@ function confirmExit() {
   $('ovlquit').onclick = () => { ov.remove(); speechSynthesis && speechSynthesis.cancel(); showHome(); };
 }
 function updateBar() {
+  if (inTraining) {   // 🎯 特訓進度 = 已清掉的字 / 原本選的字(練到 100% 自動畢業 或 按「我學會了」都算清掉)→ 不再借用主回合 quota 而凍在 40%
+    const pct = trainTotal ? Math.round((trainTotal - trainPool.length) / trainTotal * 100) : 0;
+    const bar = $('bar'); if (bar) bar.style.width = pct + '%';
+    const c = $('count'); if (c) c.textContent = `${pct}%`;
+    return;
+  }
   // 上方進度條 = 這關「已答對題數 / 總共要答的題數」,每答對一題就前進一格;答完整關 = 100%(不再等整個字練完才跳一大格)
   const need = levelWords.reduce((s, w) => s + (quota[wordKey(w)] || 0), 0);
   const got  = levelWords.reduce((s, w) => s + Math.min(lgot[wordKey(w)] || 0, quota[wordKey(w)] || 0), 0);

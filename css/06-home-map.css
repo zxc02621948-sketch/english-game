@@ -1,7 +1,11 @@
   /* 主畫面外殼:左分類 / 中圓形地圖 / 右上金幣 */
-  .wrap { width:min(1040px,94vw); }
+  .wrap { width:min(1180px,94vw); }
   /* 🎯 單字特訓選字頁 */
   .train-pick { width:100%; max-width:760px; margin:0 auto; padding:24px 4px; }
+  .train-skills { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin:16px 0 4px; }
+  .tskill { padding:8px 22px; font-size:16px; background:#1d2c3a; border:1px solid #2c3e52; border-radius:99px; color:#cfe6ff; cursor:pointer; }
+  .tskill:hover { border-color:#3a5170; }
+  .tskill.sel { background:#173a2a; border-color:#2ecc8f; color:#6ee7a8; font-weight:700; }
   .train-words { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin:20px 0 24px; }
   .twordchip { background:#16202c; border:1px solid #2c3e52; border-radius:14px; padding:12px 16px; cursor:pointer; color:#e8eef5; font-size:16px; }
   .twordchip:hover { border-color:#3a5170; }
@@ -10,33 +14,50 @@
   .twordchip .tpct { color:#6f8398; font-size:13px; }
   .train-start:not(:disabled) { background:#8ee000; border-color:#8ee000; border-bottom:4px solid #5fa900; color:#102016; font-weight:800; }
   .train-start:disabled { opacity:.5; cursor:default; }
-  .topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:26px; }
+  .topbar { display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:22px; }
   .logo { font-size:26px; font-weight:700; }
   .coin { display:flex; align-items:center; gap:8px; background:#1d2c3a; border:1px solid #2c3e52; border-radius:99px; padding:9px 20px; font-size:20px; color:#f0b86e; font-weight:700; }
   .coin .ico { margin-right:0; }                    /* 金幣用 flex gap 就好,別再加圖示自己的右間距 */
   .cat .cati { display:flex; }
   .cat .cati .ico { width:30px; height:30px; margin-right:0; }   /* 側欄分類圖示放大到原 emoji 尺寸 */
   .catcoin .ico { width:1em; height:1em; }          /* 小字裡的金幣圖示縮回字級 */
-  .homebody { display:flex; gap:22px; align-items:stretch; }
-  .side { width:220px; flex-shrink:0; display:flex; flex-direction:column; gap:14px; }
-  .cat { background:#16202c; border:1px solid #243343; border-radius:16px; padding:18px; cursor:pointer; font-size:17px; transition:.12s; }
+  .homebody { display:grid; grid-template-columns:minmax(0,1fr) 230px; gap:20px; align-items:start; }
+  .side { order:2; min-width:0; display:grid; align-content:start; gap:12px; }
+  .cat { min-height:138px; background:#16202c; border:1px solid #243343; border-radius:14px; padding:16px; cursor:pointer; font-size:16px; transition:.12s; display:grid; align-content:start; gap:6px; }
   .cat:hover { border-color:#3a5170; }
-  .cat .cati { font-size:30px; margin-bottom:10px; }
+  .cat .cati { font-size:28px; margin-bottom:2px; }
+  .cat-title { color:#f1f6fa; font-weight:900; line-height:1.25; }
   .cat.active { background:#13324a; border-color:#2563eb; }
-  .cat .catcoin { font-size:14px; color:#f0b86e; margin-top:7px; }
+  .cat .catcoin { font-size:14px; color:#f0b86e; margin-top:0; font-weight:800; }
+  .catnote { color:#8fa5b9; font-size:13px; line-height:1.35; }
   .cat.ph { border-style:dashed; color:#5f7488; opacity:.55; cursor:default; }
   .cat.ph:hover { border-color:#2c3e52; }
-  .map { flex:1; background:#13202e; border:1px solid #243343; border-radius:16px; padding:22px 14px; min-height:460px; }
-  .maptitle { font-size:15px; color:#6f8398; text-align:center; margin-bottom:14px; }
-  .mapscroll { height: min(60vh, 520px); overflow-y:auto; overflow-x:hidden; scrollbar-width:thin; scrollbar-color:#2c3e52 transparent; }
+  .map { order:1; min-width:0; background:#13202e; border:1px solid #243343; border-radius:16px; padding:22px; min-height:0; }
+  .map-brief { display:grid; grid-template-columns:minmax(0,1fr) minmax(220px,300px); gap:18px; align-items:end; margin-bottom:16px; }
+  .maptitle { font-size:14px; color:#7f96ad; margin-bottom:6px; }
+  .maptopic { color:#f1f6fa; font-size:24px; font-weight:900; line-height:1.18; }
+  .map-progress { display:grid; gap:8px; }
+  .map-progress-row { display:flex; align-items:center; justify-content:space-between; gap:12px; color:#9fb4c8; font-size:13px; font-weight:800; }
+  .map-progress-row b { color:#8ee000; font-size:18px; }
+  .map-progress-bar { height:10px; border-radius:99px; background:#16202c; border:1px solid #2c3e52; overflow:hidden; }
+  .map-progress-bar i { display:block; height:100%; border-radius:99px; background:linear-gradient(90deg,#2ecc8f,#8ee000); }
+  .mapscroll { height:clamp(300px, calc(var(--map-levels, 6) * 24px + 170px), 580px); max-height:56vh; overflow-y:auto; overflow-x:hidden; scrollbar-width:thin; scrollbar-color:#2c3e52 transparent; border-radius:14px; background:linear-gradient(180deg, rgba(15,31,43,.88), rgba(14,26,34,.7)); border:1px solid rgba(44,62,82,.62); }
   .mapboss { transition:.12s; }
   .mapboss:hover { filter:brightness(1.18); }
   .mapjump { display:grid; gap:10px; justify-items:center; margin-bottom:14px; }
+  .mapjump.nudge { animation:mapNudge .34s ease; }
+  @keyframes mapNudge { 0%,100%{ transform:translateX(0); } 30%{ transform:translateX(-5px); } 65%{ transform:translateX(5px); } }
   .branch-tabs, .map-status-row { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+  .branch-tabs { background:#16202c; border:1px solid #243343; border-radius:99px; padding:4px; }
   .mapjump button { background:#1d2c3a; border:1px solid #2c3e52; color:#9fb4c8; border-radius:99px; padding:6px 12px; cursor:pointer; font-size:13px; }
   .mapjump button.cur { border-color:#5aa9ff; color:#cfe6ff; }
-  .mapjump .branch-tab { color:#cdd9e5; font-weight:800; font-size:16px; padding:11px 22px; min-width:136px; display:inline-flex; align-items:center; justify-content:center; }
+  .mapjump .branch-tab { border-color:transparent; background:transparent; color:#cdd9e5; font-weight:800; font-size:15px; padding:10px 20px; min-width:134px; display:inline-flex; align-items:center; justify-content:center; }
   .mapjump .branch-tab.cur { background:#13324a; border-color:#5aa9ff; color:#fff; }
+  .map-lesson-meta { display:flex; justify-content:center; flex-wrap:wrap; gap:8px; color:#9fb4c8; font-size:13px; line-height:1.25; }
+  .map-lesson-meta span { min-height:28px; display:inline-flex; align-items:center; border:1px solid #243343; background:#16202c; border-radius:99px; padding:5px 11px; }
+  .map-status-row { align-items:center; }
+  .mapjump .map-status-row .map-primary-start, #workmapcurrent { background:#8ee000; border-color:#8ee000; border-bottom:4px solid #5fa900; color:#102016; font-weight:900; font-size:18px; padding:12px 30px; min-width:190px; box-shadow:0 10px 24px rgba(142,224,0,.12); }
+  .map-status-row #jumpboss { background:transparent; border-color:#e35b6a; color:#ffd0d6; font-weight:800; font-size:13px; padding:8px 14px; min-width:0; box-shadow:none; }
   .map-info-pill { display:inline-flex; align-items:center; max-width:min(520px, 90%); min-height:34px; border-radius:99px; padding:6px 14px; background:#16202c; border:1px solid #2c3e52; color:#9fb4c8; font-size:13px; line-height:1.35; }
 
   /* 💼 工作英文:獨立聽說讀小課,不走主線默寫 */

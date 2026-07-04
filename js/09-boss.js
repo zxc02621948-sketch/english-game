@@ -174,7 +174,16 @@ function bossGridWordQuestion(avoidKeys = new Set()) {
     cells = shuffle([bossGridVisualCell(picHTML(w, 58), w.en), ...learnedVisuals, ...trapVisuals]).slice(0, 9);
     clueHtml = `<div class="boss-grid-clue"><div class="boss-grid-clue-word">${w.en}</div><div class="sub2">點出對應圖示</div></div>`;
     prompt = '英文找圖!';
+  } else if (!trackSkillOn('write')) {
+    // 不練寫的軌(工作):王不考「從錯字堆挑對的拼法」—— 那是拼寫辨識,你刻意沒練,送分或靠猜。
+    // 改考「意義辨識」:誘答是別的真字(不是同一字的錯字),要真的知道哪個對應這個中文才選得出。
+    const distract = shuffle(bossPool().filter(x => x.id !== w.id && x.zh !== w.zh)).slice(0, 8).map(x => bossGridTextCell(x.en));
+    cells = shuffle([bossGridTextCell(w.en), ...distract]).slice(0, 9);
+    const pic = visualOf(w) && Math.random() < 0.35 ? picHTML(w, 66) : '';
+    clueHtml = `<div class="boss-grid-clue">${pic}<div class="bigzh" style="font-size:25px;margin:4px 0">${w.zh}</div><div class="sub2">選出對應的英文</div></div>`;
+    prompt = '哪個是這個意思?';
   } else {
+    // 練寫的軌(日常):挑正確拼法、避開相似錯字 —— 對它才是合理的辨識驗收。
     const typo = bossTypoTraps(w, 5).map(t => bossGridTextCell(t));
     const old = shuffle(bossPool().filter(x => x.id !== w.id)).slice(0, 3).map(x => bossGridTextCell(x.en));
     cells = shuffle([bossGridTextCell(w.en), ...typo, ...old]).slice(0, 9);
@@ -220,7 +229,7 @@ function bossWrongIds(q, input) {
   const typed = (input || '').trim().toLowerCase().split(/\s+/);
   const exp = q.en.toLowerCase().split(' ');
   const wrong = [];
-  exp.forEach((w, i) => { if ((typed[i] || '') !== w) wrong.push(q.ids[i]); });
+  exp.forEach((w, i) => { if (!isCloseEnough(typed[i] || '', w)) wrong.push(q.ids[i]); });   // 在容錯範圍內的詞不算「拼錯」,別冤枉進惡補
   return wrong;
 }
 function startChallenge(stage) {
@@ -437,12 +446,17 @@ function renderBossQ(q, combo, mode, cb) {
     setupBossCategory(q, finish);
   } else if (mode === 'sentence_cloze') {
     $('binp').focus();
-    const go = () => finish(bossGridNorm($('binp').value) === bossGridNorm(q.clozeAnswer), $('binp').value);
+    const go = () => finish(isCloseEnough($('binp').value, q.clozeAnswer), $('binp').value);
     $('bsubmit').onclick = go;
     $('binp').onkeydown = e => { if (e.key === 'Enter') go(); };
   } else {
     $('binp').focus();
-    const go = () => finish($('binp').value.trim().toLowerCase() === q.en.toLowerCase(), $('binp').value);
+    const go = () => {
+      const typed = $('binp').value.trim().toLowerCase().split(/\s+/);
+      const exp = q.en.toLowerCase().split(/\s+/);
+      const ok = typed.length === exp.length && exp.every((t, i) => isCloseEnough(typed[i], t));   // 逐詞容錯:手滑一兩字母不扣血
+      finish(ok, $('binp').value);
+    };
     $('bsubmit').onclick = go;
     $('binp').onkeydown = e => { if (e.key === 'Enter') go(); };
   }

@@ -43,7 +43,7 @@ function askPicture(w) {
 function askMatch(w) {
   const seen = new Set([w.zh]), uniq = x => !seen.has(x.zh) && (seen.add(x.zh), true);   // 中文不重複 → 避免「兩個是」這種無法配對
   let others = shuffle(BANK.filter(x => x.id !== w.id && !isFresh(x) && x.pos === w.pos)).filter(uniq);
-  if (others.length < 3) { seen.clear(); seen.add(w.zh); others = shuffle(BANK.filter(x => x.id !== w.id && !isFresh(x))).filter(uniq); }   // 只用教過的、中文不重複;不夠就少幾組
+  if (others.length < 3) { seen.clear(); seen.add(w.zh); others = shuffle(BANK.filter(x => x.id !== w.id && !isFresh(x) && x.pos !== 'function')).filter(uniq); }   // 只用教過的「實詞」、中文不重複;不夠就少幾組。功能詞(with/is/a…)只在句子裡學,不進配對 → 免得「with ↔ 加」這種脫離語境的錯對照(1 with 1 ≠ 1+1)
   let pool = [w, ...others.slice(0, 3)];   // 4 組(原 5 組在固定不捲版面 + 特訓那顆鈕會被切到底部)
   const ens = shuffle(pool);
   let zhs = shuffle(pool);
@@ -85,9 +85,9 @@ function askCategoryPick(w) {
   const q = categoryQuestionForWord(w);
   if (!q) return askReadPick(w);
   shell(q.category.prompt, `
-    <div class="category-title">${q.category.label}</div>
-    <div class="sub2 category-note">把符合這個分類的英文都選起來。</div>
+    <div class="sub2 category-note">把符合這個分類的英文都選起來(可多選)。</div>
     <div class="opts category-options" id="catopts"></div>`);
+  // 拿掉原本的 .category-title(「可以說我的…的東西」)—— 跟上面題目「選出所有可以說成 my ___ 的東西」根本重複,省一行高度
   $('body').classList.add('choice-answer', 'category-answer');
   const box = $('catopts'), selected = new Set();
   q.options.forEach(o => {
@@ -304,10 +304,11 @@ function askType(w) {
   const go = () => {
     if (inp.disabled) return;
     const typed = inp.value.trim();
-    const right = typed.toLowerCase() === w.en.toLowerCase();
-    if (!right) markLetters(w.en, typed);
+    const res = spellCheck(typed, w.en, wordKey(w));
+    const right = res !== false;
+    if (res !== 'exact') markLetters(w.en, typed);   // 沒一字不差(含容錯過的 typo)都秀正解字母 + 記法,別讓容錯把常見錯拼吞掉、學不到正確寫法
     inp.disabled = true; $('submit').disabled = true;
-    finish(right, w);
+    finish(right, w, null, res === 'typo' ? `差一點!正確拼法是 ${w.en}` : '');
   };
   $('submit').onclick = go;
   inp.onkeydown = e => { if (e.key === 'Enter') go(); };
@@ -323,10 +324,11 @@ function askFlashType(w) {
     const go = () => {
       if (inp.disabled) return;
       const typed = inp.value.trim();
-      const right = typed.toLowerCase() === w.en.toLowerCase();
-      if (!right) markLetters(w.en, typed);
+      const res = spellCheck(typed, w.en, wordKey(w));
+      const right = res !== false;
+      if (res !== 'exact') markLetters(w.en, typed);   // 沒一字不差(含容錯過的 typo)都秀正解字母 + 記法
       inp.disabled = true; $('submit').disabled = true;
-      finish(right, w);
+      finish(right, w, null, res === 'typo' ? `差一點!正確拼法是 ${w.en}` : '');
     };
     $('submit').onclick = go;
     inp.onkeydown = e => { if (e.key === 'Enter') go(); };
@@ -340,10 +342,11 @@ function askPicType(w) {
   const go = () => {
     if (inp.disabled) return;
     const typed = inp.value.trim();
-    const right = typed.toLowerCase() === w.en.toLowerCase();
-    if (!right) markLetters(w.en, typed);
+    const res = spellCheck(typed, w.en, wordKey(w));
+    const right = res !== false;
+    if (res !== 'exact') markLetters(w.en, typed);   // 沒一字不差(含容錯過的 typo)都秀正解字母 + 記法,別讓容錯把常見錯拼吞掉、學不到正確寫法
     inp.disabled = true; $('submit').disabled = true;
-    finish(right, w);
+    finish(right, w, null, res === 'typo' ? `差一點!正確拼法是 ${w.en}` : '');
   };
   $('submit').onclick = go;
   inp.onkeydown = e => { if (e.key === 'Enter') go(); };

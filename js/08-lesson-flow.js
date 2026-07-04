@@ -1,7 +1,7 @@
 const sp = (w, mode) => renderSpeak(w, mode);
 const FORMATS = [
   { id:'readpick',     lv:1, skill:'read',   ok:() => true,                          run: askReadPick },         // 看中選英
-  { id:'match',        lv:1, skill:'read',   ok: w => BANK.filter(x => !isFresh(x) && x.id !== w.id).length >= 2, run: askMatch },  // 配對(≥3 個教過的字就出,組數浮動 3~5、只用教過的)
+  { id:'match',        lv:1, skill:'read',   ok: w => BANK.filter(x => !isFresh(x) && x.id !== w.id && x.pos !== 'function').length >= 2, run: askMatch },  // 配對(要有 ≥2 個教過的「實詞」才出;功能詞不進配對,跟 askMatch 的過濾一致 → 免得只剩功能詞湊出退化的單組配對)
   { id:'speak_shadow', lv:1, skill:'speak',  ok:() => true,                          run: w => sp(w,'shadow') }, // 跟讀說(聽過再說很簡單 → L1 就有)
   { id:'listenpick',   lv:2, skill:'listen', ok: w => w.pos !== 'function',          run: askListenPick },       // 聽選意思(功能詞單獨聽沒意義 → 不出)
   { id:'picture',      lv:2, skill:'read',   ok: w => !!visualOf(w),                 run: askPicture },          // 看圖選
@@ -20,6 +20,7 @@ const FORMATS = [
   { id:'sentence_cloze', lv:6, skill:'write', tier:3, ok: w => (meta.stage || 1) >= 3 && canSentenceCloze(w), run: askSentenceCloze }, // 二王後:句子克漏字打字(先練缺字,不整句默寫)
   { id:'sentence_build', lv:1, skill:'read', tier:1, ok: () => hasFreshBuildSentence(currentSentenceSourceWords()), run: w => askBuildSentence(currentSentenceSourceWords(), () => { onCorrect(w); updateBar(); nextQuestion(); }, null, () => { onWrong(w); nextQuestion(); }) },  // 排詞造句(句型軌;只在有「新句子」時出 → 不狂重播同一句)
   { id:'sentence_transform', lv:3, skill:'read', tier:3, ok: () => canTransform(), run: w => askTransform(w) },  // ★ 轉換題:把練過的直述句重排成問句(this is ↔ is this);直述句練過(patMastery>0)才出
+  { id:'sentence_meaning', lv:2, skill:'read', tier:1, ok: canSentenceMeaning, run: w => askSentenceMeaning(w) },  // 整段英文→選意思(理解/辨識;誘答含逐字直翻);非排句家族 → 兼補前期變化
 ];
 const READPICK = FORMATS[0];
 // 這一題出第幾階:沒教→教;學會的字回鍋→隨機產出階複習;否則攻「當前最低未過階」,封頂關卡 topRung。
@@ -41,32 +42,26 @@ const trackSkillOn = s => skillOn(s) && !(TRACKS[currentTrack] && TRACKS[current
 const wroteOk = w => !!rec(w).wrote || !trackSkillOn('write');     // 不練默寫的軌:視同已「會寫」,別卡階段完成 / 句子複習門檻
 function passRung(w) { onCorrect(w); updateBar(); nextQuestion(); } // 該技能關了 → 該階自動帶過
 let lastAsked = {}, lastAskedSkill = {}, lastAskedFormatId = {}, lastFormat = null, currentSkill = null, currentFormatId = null;   // 每字上次題型 + 技能 + 全域上一題格式 → 避免連續同題型(破單調)
+let transformsThisLevel = 0;                                        // 轉換題(位置互換)每關至多 1 次 → 當稀有「aha」不當常客(治前期一直重排同批字很沒誠意)
+const ARRANGE_FAMILY = new Set(['sentence_build', 'sentence_speak']);   // 排句/整句跟讀視為同家族、不連續出(破單調)。★ 轉換題不放進來:它已被「每關上限 1」擋掉連發,再被家族壓抑就變成 12 關都遇不到(治「is this 消失」)
+const formatFamilyOf = id => ARRANGE_FAMILY.has(id) ? 'arrange' : id;
 function ask(w) {
   if (isFresh(w)) { currentRung = 0; currentSkill = null; currentFormatId = 'teach'; lastFormat = teach; return teach(w); }       // 新字一律先教(認識)
   currentRung = 1;                                                                // 非教 → 算有產出,onCorrect 會 +mastery
-  // ★ 複習主軸 = 句子:學會又默寫過的字不再單獨刷,改用「含這個字的句子」複習(creditSentence 會幫它加分 + 排 SRS)。
-  //   湊不出含它的句子(還沒句型的動詞、或句型字還沒解鎖)才退回單字題。還沒學會 / 還沒默寫過的字照常走單字題(要靠單字題學起來)。
-  if (isLearned(w) && wroteOk(w)) {
-    const source = currentSentenceSourceWords();
-    const s = sentenceWithWord(w, source) || pickBuildSentence(source);   // 優先「含這個字」的句子;還沒句型的動詞(orphan)退而求其次給一般句子(仍是句子複習、onCorrect 照樣推 SRS,不再單獨刷)。完全沒句子可組(如 stage1 功能詞還沒解鎖)才退單字題。
-    if (s && !recentSentences.includes(s.text)) {   // 只在「有新句子」時走句子複習,避免連續重播剛出過的同一句
-      currentSkill = 'read';
-      // ★ 補考重問是用 run(ww) 呼叫 → 這裡必須存「吃單一個字」的包裝;直接存原始 askBuildSentence 會被當 sourceWords(陣列)傳進去 → sourceWords.map is not a function → 複習卡「回去答題」點了卡死。
-      const runSentence = ww => {
-        const src2 = currentSentenceSourceWords();
-        const s2 = sentenceWithWord(ww, src2) || pickBuildSentence(src2);
-        return askBuildSentence(src2, () => { onCorrect(ww); updateBar(); nextQuestion(); }, s2, () => { onWrong(ww); nextQuestion(); });
-      };
-      lastAsked[wordKey(w)] = runSentence; lastAskedSkill[wordKey(w)] = 'read'; lastAskedFormatId[wordKey(w)] = 'sentence_build'; currentFormatId = 'sentence_build'; lastFormat = runSentence;
-      return askBuildSentence(source, () => { onCorrect(w); updateBar(); nextQuestion(); }, s, () => { onWrong(w); nextQuestion(); });
-    }
-  }
+  // ★ 複習主軸仍是句子,但改由「題型池的權重」決定,不再對學會的字硬走 askBuildSentence。
+  //   舊做法:isLearned && wroteOk → 一律 askBuildSentence(排字)、完全跳過題型池 → 整階(字都學會了)只出排字、轉換題/辨識/聽 永遠 0 出現。
+  //   現在:學會的字也走下面的題型池;說/寫階把 sentence_build/transform/speak 權重拉高 → 句子仍是複習重點,但會混入轉換題、選意思、偶爾辨識 → 有變化。
+  //   creditSentence 的 SRS 由 onCorrect(對學會的字照樣推 due/ivl)維持;補考重問用 FORMATS 各自的 run(是吃單一字的正確包裝),不會再踩「sourceWords.map」的雷。
   let pool = FORMATS.filter(f => f.lv <= level && trackSkillOn(f.skill) && f.ok(w) && (f.tier || (f.skill === 'write' ? 3 : f.skill === 'speak' ? 2 : 1)) <= maxRungOf(w));  // 向下取 + 不超過該字上限(功能詞 maxRungOf=1 → 只認題);trackSkillOn:工作軌不出寫題
   if (!clozeReadyForDictation(w)) pool = pool.filter(f => !isHardDictationFormatId(f.id));   // 長字/第三階段字:先通過句子克漏字門檻,再出整字聽寫/默寫/看圖寫
+  if (transformsThisLevel >= 1 && pool.some(f => f.id !== 'sentence_transform')) pool = pool.filter(f => f.id !== 'sentence_transform');   // 這關已出過轉換題 → 不再出(稀有化)
   if (!pool.length) pool = [READPICK];                                            // 保險:至少出看中選英
   const k = wordKey(w);
   if (pool.length > 1) {                                                          // 避免連續同形式 / 同字同題型
-    let alt = pool.filter(f => f.skill !== lastAskedSkill[k] && f.run !== lastAsked[k] && f.run !== lastFormat);
+    const lastFam = formatFamilyOf(currentFormatId);                             // 上一題的家族(排句/轉換/跟讀都算 'arrange')
+    let alt = pool.filter(f => formatFamilyOf(f.id) !== lastFam && f.skill !== lastAskedSkill[k] && f.run !== lastFormat);   // 先求「別連續同家族」→ 打散一堆位置互換
+    if (!alt.length) alt = pool.filter(f => formatFamilyOf(f.id) !== lastFam && f.run !== lastFormat);
+    if (!alt.length) alt = pool.filter(f => f.skill !== lastAskedSkill[k] && f.run !== lastAsked[k] && f.run !== lastFormat);
     if (!alt.length) alt = pool.filter(f => f.skill !== lastAskedSkill[k] && f.run !== lastFormat);
     if (!alt.length) alt = pool.filter(f => f.skill !== lastAskedSkill[k] && f.run !== lastAsked[k]);
     if (!alt.length) alt = pool.filter(f => f.run !== lastFormat);
@@ -85,12 +80,12 @@ function ask(w) {
   const wt = f => {
     // 句子題的權重也跟該字難度階走:剛學的字(認階)先練認/聽/說,別一上來就主打句子;到說階才主打排句、寫階才出句子默寫。
     let base;
-    if (f.id === 'sentence_build') base = !stageHasRealWords(meta.stage || 1) ? 90 : (target >= 2 ? 40 : 7);   // 純句型階段一律主打;有實詞的階段:該字到說階才主打句子,認階先少出
-    else if (f.id === 'sentence_speak') base = ((meta.stage || 1) >= 1 && target >= 2) ? 18 : 3;   // 整句跟讀是練口感,不硬卡;說階以上較常出
-    else if (f.id === 'sentence_transform') base = ((meta.stage || 1) >= 2 && target >= 2) ? 20 : 4;   // 轉換題同理(說階以上才常出)
-    else if (f.id === 'sentence_cloze') base = ((meta.stage || 1) >= 3 && target >= 3) ? 18 : 0;   // 句子默寫(打字補字)= 寫階才出,別對剛學的字默寫
+    if (f.id === 'sentence_build') base = !stageHasRealWords(meta.stage || 1) ? 60 : (target >= 2 ? 16 : 7);   // 純句型階段主打(但 60 不 90);有實詞的階段:說階排句是主軸之一但別霸屏(40→16,騰空間給辨識/聽/看圖/轉換)
+    else if (f.id === 'sentence_speak') base = ((meta.stage || 1) >= 1 && target >= 2) ? 12 : 3;   // 整句跟讀是練口感;要麥克風 → 別過重
+    else if (f.id === 'sentence_transform') base = ((meta.stage || 1) >= 2 && target >= 2) ? 18 : 4;   // 轉換題:每關上限 1 次已防霸屏 → 權重 18,可靠地每關出現一次
+    else if (f.id === 'sentence_cloze') base = ((meta.stage || 1) >= 3 && target >= 3) ? 8 : 0;   // 句子默寫(打字補字)= 寫階才出;18→8,別讓學會的字整階都句子默寫+排句
     else if (f.id === 'category') base = target >= 2 ? 8 : 3;   // 分類題偏驗收概念,認階少量出、說階後較常混入
-    else { const d = Math.abs(fmtTier(f) - target); base = d === 0 ? 3 : d === 1 ? 1 : 0.3; }
+    else { const d = Math.abs(fmtTier(f) - target); base = d === 0 ? 3 : d === 1 ? 2.2 : 1.5; }   // 辨識/聽/看圖等:差一/兩階都別壓太低(1→2.2、0.4→1.5)→ 學會的字(寫階)也還看得到辨識/聽,不被句子霸屏
     const recipe = currentRecipe || lessonRecipeForLevel(level);
     const mul = (recipe.weights && (recipe.weights[f.id] ?? recipe.weights[f.skill])) || 1;
     return base * mul;
@@ -103,16 +98,18 @@ function ask(w) {
   }
   currentSkill = f.skill; currentFormatId = f.id;
   lastAsked[k] = f.run; lastAskedSkill[k] = f.skill; lastAskedFormatId[k] = f.id; lastFormat = f.run;
+  if (f.id === 'sentence_transform') transformsThisLevel++;                       // 記這關已出過轉換題 → 不再出
   f.run(w);
 }
 
 /* ---- 🎯 單字特訓:自選字、聽說讀寫混合、各題可「我學會了」移除(玩法層) ---- */
 function startTraining(words) {
-  inTraining = true; trainPool = words.slice();
+  inTraining = true; trainPool = words.slice(); trainTotal = trainPool.length;
   homeEl.hidden = true; screen.hidden = false;
   trainNext();
 }
 function trainNext() {
+  trainPool = trainPool.filter(w => !isLearned(w));   // ★ 練到 100% 的字自動畢業(特訓本來就是挑「沒滿 100%」的字)→ 清空就結束,不再無限循環卡進度
   if (!trainPool.length) return trainingDone();
   const w = shuffle(trainPool)[0];
   current = w; currentRung = 1; inReview = false;   // 特訓不是補考 → 答對正常加熟練度
@@ -123,12 +120,14 @@ function trainAsk(w) {
   const k = wordKey(w);
   let pool = FORMATS.filter(f => !/^sentence/.test(f.id) && trackSkillOn(f.skill) && f.ok(w) && (f.tier || (f.skill === 'write' ? 3 : f.skill === 'speak' ? 2 : 1)) <= maxRungOf(w));
   if (!clozeReadyForDictation(w)) pool = pool.filter(f => !isHardDictationFormatId(f.id));   // 特訓也尊重長字/第三階段字的克漏字門檻,先不硬默寫
+  if (trainSkill !== 'all') { const only = pool.filter(f => f.skill === trainSkill); if (only.length) pool = only; }   // 🎯 自選技能:只練聽/說/讀/寫;該字沒有這技能的題型才退回混合
   if (!pool.length) pool = [READPICK];
   if (pool.length > 1) { const alt = pool.filter(f => f.run !== lastFormat); if (alt.length) pool = alt; }
   const f = shuffle(pool)[0];
   currentSkill = f.skill; currentFormatId = f.id; lastAsked[k] = f.run; lastAskedSkill[k] = f.skill; lastAskedFormatId[k] = f.id; lastFormat = f.run;
   f.run(w);
   injectTrainKnown(w);
+  updateBar();   // 特訓進度條:已清掉的字 / 原本選的字(每題更新)
 }
 // 每題塞「✓ 我學會了」鈕 → markWordKnown + 移出特訓題庫 + 下一題。
 // 跟教卡「我已經會了」一致:左下固定 .sideact 大鈕(顯眼)。說題左下已有「跳過說題」→ 疊在它上面避免重疊。
@@ -138,8 +137,12 @@ function injectTrainKnown(w) {
   b.id = 'trainknown'; b.className = 'btn sideact';
   b.textContent = '✓ 我學會了,移除';
   b.onclick = () => { markWordKnown(w); trainPool = trainPool.filter(x => x.id !== w.id); trainNext(); };
-  if (document.getElementById('skipspeak')) b.style.bottom = 'calc(34px + 76px)';   // 說題左下已有「跳過說題」→ 往上疊
-  screen.appendChild(b);   // .sideact 是 fixed,接到 #screen 即可(下一題 shell 重繪會清掉)
+  const skip = document.getElementById('skipspeak');   // ★ 說題左下已有「跳過說題」(給沒麥克風的人用,不能拿掉)→ 兩顆都壓矮、貼底,讓兩顆都塞進操作列不出框
+  if (skip) {
+    skip.style.minHeight = '46px'; skip.style.bottom = '22px';        // 下面那顆:22~68
+    b.style.minHeight = '46px'; b.style.bottom = 'calc(22px + 54px)';  // 上面那顆:76~122(< 操作列 150,不出框)
+  }
+  screen.appendChild(b);   // .sideact 是 fixed,接到 #screen 即可;下一題 shell 重繪會清掉
 }
 function trainingDone() {
   inTraining = false; trainPool = [];

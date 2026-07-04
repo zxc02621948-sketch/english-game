@@ -2,14 +2,88 @@ const homeEl = document.getElementById('home');
 const bossLevelForStage = stage => defaultStageStartLevel(stage) + stageMinLevels(stage) - 1;
 const challengeCleared = stage => !!(meta.challengeCleared && meta.challengeCleared[stage]);
 const latestChallengeStage = () => Math.max(0, (meta.stage || 1) - 1);
+function homeStageSummary() {
+  const lv = Math.max(1, meta.maxLevel || 1);
+  const stage = typeof stageOfLevel === 'function' ? stageOfLevel(lv) : (meta.stage || 1);
+  const stageStart = defaultStageStartLevel(stage);
+  const stageSize = Math.max(1, stageMinLevels(stage) || 5);
+  const stageEnd = stageStart + stageSize - 1;
+  const step = Math.max(1, Math.min(stageSize, lv - stageStart + 1));
+  const pct = Math.round(step / stageSize * 100);
+  const recipe = typeof lessonRecipeForLevel === 'function' ? lessonRecipeForLevel(lv) : null;
+  const orderedStageWords = (Array.isArray(LEARN_ORDER) && typeof batchOf === 'function')
+    ? LEARN_ORDER.filter(w => w && w.pos !== 'function' && batchOf(w) === stage - 1)
+    : [];
+  const words = (orderedStageWords.length ? orderedStageWords : (typeof stageWordsFor === 'function' ? stageWordsFor(stage) : BANK))
+    .filter(w => w && w.pos !== 'function');
+  const topic = words.slice(0, 4).map(w => w.zh || w.en).join('・') || (currentTrack === 'work' ? '職場高頻' : '高頻日常');
+  const keyOf = typeof wordKey === 'function' ? wordKey : w => w.id || w.en;
+  const learnedAt = typeof LEARNED === 'number' ? LEARNED : 100;
+  const stat = w => store[keyOf(w)] || {};
+  const allWords = BANK.filter(w => w && w.pos !== 'function');
+  const touched = allWords.filter(w => stat(w).taught).length;
+  const learned = allWords.filter(w => (stat(w).mastery || 0) >= learnedAt).length;
+  const weak = allWords.filter(w => stat(w).taught && (stat(w).mastery || 0) < learnedAt).length;
+  return {
+    lv, stage, stageStart, stageEnd, stageSize, step, pct, topic,
+    nextLabel: recipe && recipe.label ? recipe.label : '下一關',
+    trackLabel: currentTrack === 'work' ? '工作英文' : '日常單字',
+    trackSub: currentTrack === 'work' ? '工作英文・職場高頻' : '日常單字・高頻日常',
+    touched, learned, weak, wordTotal: allWords.length
+  };
+}
 function mapSVG() {
   const total = meta.maxLevel + 2;                       // 已解鎖 + 下一關 + 2 個鎖著
-  const W = 720, pad = 58, gap = 98;                     // 大畫布 + 大間距,節點沿正弦蜿蜒散開
-  const pt = i => ({ x: i % 2 === 0 ? Math.round(W * 0.28) : Math.round(W * 0.72), y: pad + i * gap });
+  const W = 720, compact = total <= 8, mid = total <= 14;
+  const pad = compact ? 38 : mid ? 52 : 70;
+  const gap = compact ? 66 : mid ? 78 : 96;
+  const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
+  const pt = i => {
+    const drift = Math.sin(i * 0.94 - 1.05) * (compact ? 94 : 126) + Math.sin(i * 0.41 + 0.55) * (compact ? 42 : 62) + (Math.floor(i / 5) % 2 ? -30 : 30);
+    return { x: Math.round(clamp(W / 2 + drift, W * 0.2, W * 0.8)), y: pad + i * gap };
+  };
+  const pts = Array.from({ length: total }, (_, i) => pt(i));
+  const curvePath = points => {
+    if (!points.length) return '';
+    let d = `M${points[0].x} ${points[0].y}`;
+    for (let i = 1; i < points.length; i++) {
+      const a = points[i - 1], b = points[i], dy = (b.y - a.y) * 0.46;
+      d += ` C${a.x} ${Math.round(a.y + dy)} ${b.x} ${Math.round(b.y - dy)} ${b.x} ${b.y}`;
+    }
+    return d;
+  };
   let path = '', circles = '', bossLines = '', bossNodes = '';
-  for (let i = 0; i < total; i++) { const p = pt(i); path += (i ? ` L${p.x} ${p.y}` : `M${p.x} ${p.y}`); }
+  path = curvePath(pts);
+  const donePath = curvePath(pts.slice(0, Math.max(1, Math.min(meta.maxLevel, total))));
+  const H = pad + (total-1)*gap + pad;
+  let stageBackdrops = '';
+  for (let stg = 1, guard = 0; guard < 30; stg++, guard++) {
+    const start = defaultStageStartLevel(stg);
+    if (start > total) break;
+    const len = Math.max(1, stageMinLevels(stg) || 5);
+    const end = Math.min(total, start + len - 1);
+    const seg = pts.slice(start - 1, end);
+    if (!seg.length) continue;
+    const y1 = Math.max(10, seg[0].y - (compact ? 34 : 48));
+    const y2 = Math.min(H - 10, seg[seg.length - 1].y + (compact ? 34 : 48));
+    const isActive = meta.maxLevel >= start && meta.maxLevel <= end;
+    const isDone = meta.maxLevel > end;
+    const fill = stg % 2 ? '#0f2230' : '#10251f';
+    const stroke = isActive ? '#31516a' : isDone ? '#1d4b3e' : '#26384a';
+    const opacity = isActive ? .68 : isDone ? .54 : .38;
+    const labelX = stg % 2 ? W - 116 : 116;
+    const contourX = stg % 2 ? 88 : W - 246;
+    stageBackdrops += `<g opacity="${opacity}">
+      <rect x="76" y="${Math.round(y1)}" width="${W - 152}" height="${Math.round(y2 - y1)}" rx="30" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>
+      <path d="M${contourX} ${Math.round(y1 + 34)} C${contourX + 54} ${Math.round(y1 + 16)} ${contourX + 132} ${Math.round(y1 + 22)} ${contourX + 184} ${Math.round(y1 + 4)}" fill="none" stroke="#6f8398" stroke-width="2" opacity=".22"/>
+      <path d="M${contourX - 24} ${Math.round(y2 - 34)} C${contourX + 44} ${Math.round(y2 - 66)} ${contourX + 116} ${Math.round(y2 - 42)} ${contourX + 194} ${Math.round(y2 - 72)}" fill="none" stroke="#6f8398" stroke-width="2" opacity=".18"/>
+      <circle cx="${labelX}" cy="${Math.round(y1 + 42)}" r="14" fill="#6f8398" opacity=".12"/>
+      <path d="M${labelX - 18} ${Math.round(y1 + 60)}h36" stroke="#6f8398" stroke-width="3" stroke-linecap="round" opacity=".18"/>
+      <path d="M108 ${Math.round(y2)}H612" stroke="#6f8398" stroke-width="1.5" stroke-dasharray="2 12" stroke-linecap="round" opacity=".16"/>
+    </g>`;
+  }
   for (let i = 0; i < total; i++) {
-    const lv = i + 1, p = pt(i);
+    const lv = i + 1, p = pts[i];
     const st = lv < meta.maxLevel ? 'done' : lv === meta.maxLevel ? 'cur' : 'lock';
     const fill = st==='done'?'#0e2a1f':st==='cur'?'#2563eb':'#16202c';
     const stroke = st==='done'?'#2ecc8f':st==='cur'?'#5aa9ff':'#2c3e52';
@@ -22,7 +96,7 @@ function mapSVG() {
     const cleared = challengeCleared(stage);
     const lv = bossLevelForStage(stage);
     if (lv > total) continue;
-    const p = pt(lv - 1);
+    const p = pts[lv - 1];
     const bx = p.x < W / 2 ? p.x + 92 : p.x - 92;
     const by = p.y;
     const fill = cleared ? '#172713' : '#2a0e12';
@@ -32,12 +106,26 @@ function mapSVG() {
     bossNodes += `<circle class="mapboss" data-boss-stage="${stage}" data-cleared="${cleared ? 1 : 0}" cx="${bx}" cy="${by}" r="28" fill="${fill}" stroke="${stroke}" stroke-width="3.5" style="cursor:pointer"/>`
       + `<text x="${bx}" y="${by+9}" text-anchor="middle" font-size="${cleared ? 22 : 18}" font-weight="800" fill="${tc}" style="pointer-events:none">${cleared ? '✓' : '挑'}</text>`;
   }
-  const H = pad + (total-1)*gap + pad;
-  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto"><path d="${path}" fill="none" stroke="#2c3e52" stroke-width="4" stroke-dasharray="2 13" stroke-linecap="round"/>${bossLines}${circles}${bossNodes}</svg>`;
+  const mapBgId = `mapgrid-${total}-${meta.maxLevel}`;
+  const trail = `<defs>
+      <pattern id="${mapBgId}" width="64" height="64" patternUnits="userSpaceOnUse">
+        <path d="M64 0H0V64" fill="none" stroke="#243343" stroke-width="1" opacity=".42"/>
+      </pattern>
+    </defs>
+    <rect x="34" y="18" width="${W - 68}" height="${H - 36}" rx="34" fill="url(#${mapBgId})" opacity=".08"/>
+    ${stageBackdrops}
+    <path d="${path}" fill="none" stroke="#23384d" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/>
+    ${meta.maxLevel > 1 ? `<path d="${donePath}" fill="none" stroke="#155946" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" opacity=".68"/>` : ''}
+    <path d="${path}" fill="none" stroke="#48637e" stroke-width="4" stroke-dasharray="3 16" stroke-linecap="round" opacity=".72"/>`;
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto">${trail}${bossLines}${circles}${bossNodes}</svg>`;
 }
 function showHome() {
   inTraining = false;                    // 從任何地方回主畫面都結束特訓
   normalizeBossGate();
+  const homeInfo = homeStageSummary();
+  const challengeText = latestChallengeStage() ? `第 ${latestChallengeStage()} 階可回看` : '本階完成後開放';
+  const trainText = homeInfo.weak ? `${homeInfo.weak} 個字待加強` : (homeInfo.touched ? '目前沒有弱字' : (homeInfo.lv > 1 ? '可自選複習' : '先開始第一關'));
+  const derivText = meta.coins >= 30 ? '金幣足夠' : `還差 ${Math.max(0, 30 - (meta.coins || 0))} 枚`;
   screen.classList.remove('lesson-screen', 'boss-screen', 'done-screen', 'start-screen');
   screen.hidden = true; homeEl.hidden = false;
   screen.innerHTML = '';
@@ -54,21 +142,35 @@ function showHome() {
     </div>
     <div class="homebody">
       <div class="side">
-        <div class="cat" id="catChallenge"><div class="cati">${ICON.flag}</div>挑戰關<div class="catcoin">${latestChallengeStage() ? '可選獎勵' : '完成一階解鎖'}</div></div>
-        <div class="cat" id="catTrain"><div class="cati">${ICON.target}</div>單字特訓<div class="catcoin">自選字加強</div></div>
-        <div class="cat" id="catDeriv"><div class="cati">${ICON.lock}</div>衍生<div class="catcoin">需 30 ${ICON.coin}</div></div>
-        <div class="cat ph"><div class="cati">⋯</div>之後</div>
+        <div class="cat" id="catChallenge"><div class="cati">${ICON.flag}</div><div class="cat-title">挑戰關</div><div class="catcoin">${challengeText}</div><div class="catnote">本階整理與獎勵</div></div>
+        <div class="cat" id="catTrain"><div class="cati">${ICON.target}</div><div class="cat-title">單字特訓</div><div class="catcoin">${trainText}</div><div class="catnote">${homeInfo.learned}/${homeInfo.wordTotal} 字穩了</div></div>
+        <div class="cat" id="catDeriv"><div class="cati">${ICON.lock}</div><div class="cat-title">衍生</div><div class="catcoin">${derivText}</div><div class="catnote">需 30 ${ICON.coin}</div></div>
+        <div class="cat ph"><div class="cati">⋯</div><div class="cat-title">之後</div><div class="catnote">新模式預留</div></div>
       </div>
       <div class="map">
-        <div class="maptitle">${currentTrack === 'work' ? '工作英文 · 職場高頻' : '第一章 · 高頻日常'}</div>
+        <div class="map-brief">
+          <div>
+            <div class="maptitle">${homeInfo.trackSub}</div>
+            <div class="maptopic">第 ${homeInfo.stage} 階・${homeInfo.topic}</div>
+          </div>
+          <div class="map-progress">
+            <div class="map-progress-row"><span>本階 ${homeInfo.step}/${homeInfo.stageSize}</span><b>${homeInfo.pct}%</b></div>
+            <div class="map-progress-bar"><i style="width:${homeInfo.pct}%"></i></div>
+          </div>
+        </div>
         <div class="mapjump" id="mapjump">
           <div class="branch-tabs">
             <button class="branch-tab ${currentTrack === 'work' ? '' : 'cur'}" id="dailybranch">${ICON.book}日常單字</button>
             <button class="branch-tab ${currentTrack === 'work' ? 'cur' : ''}" id="workbranch">${ICON.briefcase}工作英文</button>
           </div>
+          <div class="map-lesson-meta">
+            <span>${homeInfo.nextLabel}</span>
+            <span>第 ${homeInfo.lv} 關</span>
+            <span>${homeInfo.learned}/${homeInfo.wordTotal} 字穩定</span>
+          </div>
           <div class="map-status-row" id="mapstatus"></div>
         </div>
-        <div class="mapscroll" id="mapscroll">${mapSVG()}</div>
+        <div class="mapscroll" id="mapscroll" style="--map-levels:${meta.maxLevel + 2}">${mapSVG()}</div>
       </div>
     </div>`;
   document.getElementById('bgmtoggle').innerHTML = bgm.isOn() ? ICON.play : ICON.mute;
@@ -88,7 +190,7 @@ function showHome() {
   document.getElementById('catChallenge').onclick = () => {
     const st = latestChallengeStage();
     const jump = document.getElementById('mapjump');
-    if (!st) { if (jump) jump.innerHTML = `<button class="cur">先完成第一階,挑戰關就會出現在地圖旁邊</button>`; return; }
+    if (!st) { if (jump) jump.classList.add('nudge'); return; }
     scrollToLv(bossLevelForStage(st), true);
   };
   document.getElementById('catTrain').onclick = showTrainPicker;
@@ -112,11 +214,12 @@ function showHome() {
   const jump = document.getElementById('mapjump');
   if (jump) {
     const status = $('mapstatus');
-    let h = `<button class="cur" data-jump="${meta.maxLevel}">目前 · 第 ${meta.maxLevel} 關</button>`;
-    if (latestChallengeStage()) h += `<button id="jumpboss" style="border-color:#e35b6a;color:#ffd0d6">挑戰關 · 第 ${latestChallengeStage()} 階</button>`;
+    let h = `<button class="cur map-primary-start" data-start="${meta.maxLevel}">開始 · 第 ${meta.maxLevel} 關</button>`;
+    if (latestChallengeStage()) h += `<button id="jumpboss">挑戰關 · 第 ${latestChallengeStage()} 階</button>`;
     if (status) status.innerHTML = h;
     $('dailybranch').onclick = () => { setTrack('daily'); showHome(); };
     $('workbranch').onclick = () => { setTrack('work'); showHome(); };
+    jump.querySelectorAll('button[data-start]').forEach(btn => btn.onclick = () => enterLevel(+btn.dataset.start));
     jump.querySelectorAll('button[data-jump]').forEach(btn => btn.onclick = () => scrollToLv(+btn.dataset.jump, true));
     if ($('jumpboss')) $('jumpboss').onclick = () => scrollToLv(bossLevelForStage(latestChallengeStage()), true);
   }
@@ -139,14 +242,20 @@ function showTrainPicker() {
     $('tback').onclick = showHome; return;
   }
   const sel = new Set();
+  const SKILLS = [['all','混合'],['listen','聽'],['read','讀'],['speak','說'],['write','寫']];
   screen.innerHTML = `<main class="train-pick">
     <div style="text-align:center;font-size:40px">🎯</div>
     <h2 style="text-align:center">單字特訓</h2>
-    <div class="sub" style="text-align:center">挑想加強的字(弱的排前面)→ 聽說讀寫混合練 → 練到會了點「✓ 學會」移除。</div>
+    <div class="sub" style="text-align:center">挑想加強的字(弱的排前面)+ 想練的技能 → 練到會了點「✓ 學會」移除。</div>
+    <div class="train-skills" id="tskills">${SKILLS.map(([sk,label]) => `<button class="tskill${sk === trainSkill ? ' sel' : ''}" data-sk="${sk}">${label}</button>`).join('')}</div>
     <div class="train-words" id="twords"></div>
     <button class="btn train-start" id="tstart" disabled>先選幾個字</button>
     <button class="btn" id="tback" style="margin-top:10px;background:#1d2c3a;border-color:#2c3e52">← 回主畫面</button>
   </main>`;
+  $('tskills').querySelectorAll('.tskill').forEach(btn => btn.onclick = () => {
+    trainSkill = btn.dataset.sk;
+    $('tskills').querySelectorAll('.tskill').forEach(b => b.classList.toggle('sel', b === btn));
+  });
   const box = $('twords');
   words.forEach(w => {
     const el = document.createElement('button');

@@ -47,7 +47,7 @@ function buildSentenceFromPattern(pattern, sourceWords = BANK, mustInclude = nul
   };
 }
 
-let BUILD_SENTENCE_PATTERN_IDS = ["pat_drink_or_drink", "pat_drink_please", "pat_drink_with_sugar", "pat_this_is_a_noun", "pat_this_is_my_noun", "pat_this_is_adj", "pat_i_am_adj", "pat_i_see_a_noun", "pat_i_buy_a_noun", "pat_i_read_noun", "pat_i_drink_noun", "pat_i_eat_noun"];
+let BUILD_SENTENCE_PATTERN_IDS = ["pat_drink_or_drink", "pat_drink_please", "pat_drink_with_sugar", "pat_this_is_a_noun", "pat_this_is_my_noun", "pat_this_is_adj", "pat_i_am_adj", "pat_i_see_a_noun", "pat_i_buy_a_noun", "pat_i_read_noun", "pat_i_drink_noun", "pat_i_eat_noun", "pat_i_look_at_noun", "pat_i_make_noun", "pat_i_get_noun", "pat_i_speak_language"];
 const buildSentencePatterns = () => PATTERNS.filter(p => BUILD_SENTENCE_PATTERN_IDS.includes(p.id));
 
 function learnedByRecord(c) {
@@ -82,6 +82,11 @@ function speakSentence(sentence, rate) {
     const w = BANK.find(x => x.en.toLowerCase() === m.toLowerCase());
     return (w && SPEAK_AS[w.id]) ? SPEAK_AS[w.id] : m;
   }), rate);
+}
+// 念單一個 token(排詞塊、選項…),一樣套 SPEAK_AS → 「a」念 schwa「uh」不念成字母 A
+function speakWordText(text, rate) {
+  const w = BANK.find(x => x.en.toLowerCase() === (text || '').toLowerCase());
+  speak(w && SPEAK_AS[w.id] ? SPEAK_AS[w.id] : text, rate);
 }
 
 function sentenceSourceWords(baseWords = levelWords) {
@@ -126,8 +131,20 @@ function pickFresh(list) {
     || null;
 }
 
+// 依「句型」平均取句子:不被「可填字多的句型」(This is a {noun} 有 cat/book/friend/house 四個)稀釋掉「只有一個變化的句型」(招牌的 I am happy 只有 happy)。
+// 先挑句型(優先「還有沒出過的句子」的句型)→ 再從那句型挑 fresh。每個句型機會均等,I am happy 不會被埋到抽不到。
+function pickSentenceByPattern(patterns, sourceWords = sentenceSourceWords(), filter) {
+  const groups = patterns
+    .map(p => ({ id: p.id, list: (() => { const l = sentenceCandidates([p], sourceWords); return filter ? l.filter(filter) : l; })() }))
+    .filter(g => g.list.length);
+  if (!groups.length) return null;
+  const lastText = recentSentences[0];                                   // 上一題句子 → 找出它的句型
+  const lastPat = lastText && groups.find(g => g.list.some(s => s.text === lastText));
+  let pool = lastPat && groups.length > 1 ? groups.filter(g => g.id !== lastPat.id) : groups;   // 均勻挑句型,但避開「上一題的句型」→ 不會同句型連發、也不被多變化句型稀釋掉單變化的
+  return pickFresh(shuffle(shuffle(pool)[0].list));
+}
 function pickBuildSentence(sourceWords = sentenceSourceWords()) {
-  return pickFresh(shuffle(sentenceCandidates(buildSentencePatterns(), sourceWords)));
+  return pickSentenceByPattern(buildSentencePatterns(), sourceWords);
 }
 // 有沒有「新的」可組句子(避開最近出過的)→ 給 FORMATS.ok 判斷:只剩剛出過的同一句時就別再 offer 句子題,交給單字題換口味(治「一關狂重播同一句」)。
 const hasFreshBuildSentence = (sourceWords = sentenceSourceWords()) =>

@@ -5,7 +5,7 @@ let BANK = [
   { id:"word_cat",        en:"cat",        zh:"貓",     pos:"noun", flags:["countable","ownable","presentable","visible","buyable"], syl:["cat"], why:"短字先暖身:cat 就是貓。" },
   { id:"word_happy",      en:"happy",      zh:"開心",   pos:"adj",  flags:["emotion"], syl:["hap","py"], why:"happy 是心情好、覺得開心。" },
   { id:"word_water",      en:"water",      zh:"水",     pos:"noun", flags:["drinkable"], syl:["wa","ter"], why:"water 當名詞是水;也能當動詞,表示澆水。" },
-  { id:"word_coffee",     en:"coffee",     zh:"咖啡",   pos:"noun", flags:["drinkable","sweetenable"], syl:["cof","fee"], why:"coffee 是咖啡,日常點飲料很常用。" },
+  { id:"word_coffee",     en:"coffee",     zh:"咖啡",   pos:"noun", flags:["drinkable","sweetenable","makeable"], syl:["cof","fee"], why:"coffee 是咖啡,日常點飲料很常用。" },
   { id:"word_sugar",      en:"sugar",      zh:"糖",     pos:"noun", flags:["sweetener"], syl:["su","gar"], why:"sugar 是糖,常用在飲料或甜食裡。" },
   { id:"word_friend",     en:"friend",     zh:"朋友",   pos:"noun", flags:["countable","ownable","presentable","visible"], syl:["friend"], why:"friend 是你認識、信任、會來往的人。" },
   { id:"word_book",       en:"book",       zh:"書",     pos:"noun", flags:["countable","ownable","readable","presentable","visible","buyable"], syl:["book"], why:"book 是書;生活裡也能當動詞,表示預訂。" },
@@ -50,10 +50,14 @@ let BANK = [
   { id:"word_thirsty",    en:"thirsty",    zh:"渴",     pos:"adj",  flags:["emotion"], syl:["thirs","ty"], why:"thirsty 是口渴,想喝東西。" },
   { id:"word_tired",      en:"tired",      zh:"累",     pos:"adj",  flags:["emotion"], syl:["tired"], why:"tired 是累了、沒力氣、想休息。" },
   { id:"word_sad",        en:"sad",        zh:"難過",   pos:"adj",  flags:["emotion"], syl:["sad"], why:"sad 是難過、不開心,跟 happy 相反。" },
-  { id:"word_rice",       en:"rice",       zh:"飯",     pos:"noun", flags:["eatable"], syl:["rice"], why:"rice 是米飯,亞洲的主食。" },
-  { id:"word_bread",      en:"bread",      zh:"麵包",   pos:"noun", flags:["eatable"], syl:["bread"], why:"bread 是麵包。" },
-  { id:"word_tea",        en:"tea",        zh:"茶",     pos:"noun", flags:["drinkable","sweetenable"], syl:["tea"], why:"tea 是茶。" },
+  { id:"word_rice",       en:"rice",       zh:"飯",     pos:"noun", flags:["eatable","makeable"], syl:["rice"], why:"rice 是米飯,亞洲的主食。" },
+  { id:"word_bread",      en:"bread",      zh:"麵包",   pos:"noun", flags:["eatable","makeable"], syl:["bread"], why:"bread 是麵包。" },
+  { id:"word_tea",        en:"tea",        zh:"茶",     pos:"noun", flags:["drinkable","sweetenable","makeable"], syl:["tea"], why:"tea 是茶。" },
   { id:"word_milk",       en:"milk",       zh:"牛奶",   pos:"noun", flags:["drinkable","sweetenable"], syl:["milk"], why:"milk 是牛奶。" },
+  // 救活孤兒動詞:look at(視線對準)/ speak 語言。at 是介係詞,English/Chinese 是語言名(開頭大寫)
+  { id:"word_at",         en:"at",         zh:"朝",     pos:"function", flags:[], syl:["at"], why:"at 把動作釘在一個點上:look at 就是把視線『對準』那個東西。" },
+  { id:"word_english",    en:"English",    zh:"英文",   pos:"noun", flags:["language"], syl:["Eng","lish"], why:"English = 英文。語言的名字開頭一定大寫(English、Chinese、Japanese)。" },
+  { id:"word_chinese",    en:"Chinese",    zh:"中文",   pos:"noun", flags:["language"], syl:["Chi","nese"], why:"Chinese = 中文,也指中國的。跟 English 一樣,語言名開頭要大寫。" },
 ];
 
 let PATTERNS = [
@@ -148,6 +152,34 @@ let PATTERNS = [
     qzh: "我{x}嗎?",
     requires: ["word_i", "word_am"],
     slots: { x: { pos: "adj", flags: ["emotion"] } }
+  },
+  {
+    id: "pat_i_look_at_noun",
+    text: "I look at a {x}.",
+    zh: "我看著一個{x}。",
+    requires: ["word_i", "word_look", "word_at"],
+    slots: { x: { pos: "noun", flags: ["visible"] } }
+  },
+  {
+    id: "pat_i_make_noun",
+    text: "I make {x}.",
+    zh: "我做{x}。",
+    requires: ["word_i", "word_make"],
+    slots: { x: { pos: "noun", flags: ["makeable"] } }
+  },
+  {
+    id: "pat_i_get_noun",
+    text: "I get a {x}.",
+    zh: "我拿到一個{x}。",
+    requires: ["word_i", "word_get"],
+    slots: { x: { pos: "noun", flags: ["buyable"] } }
+  },
+  {
+    id: "pat_i_speak_language",
+    text: "I speak {x}.",
+    zh: "我會說{x}。",
+    requires: ["word_i", "word_speak"],
+    slots: { x: { pos: "noun", flags: ["language"] } }
   }
 ];
 

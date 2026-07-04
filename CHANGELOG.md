@@ -1121,3 +1121,318 @@
 - `js/02` 新增 `ICON`(內嵌 SVG 線條集:play/mute/gear/refresh/coin/close/lock/target/flag/book/briefcase)+ `.ico` CSS(跟 `currentColor` 與 `em` 走、`flex-shrink:0` 防在 flex 鈕被壓扁)。
 - 換掉 emoji:課程音訊鈕(🔊→線條喇叭、🐢慢速→純文字)、首頁上排(設定/靜音/重來/金幣)、側欄(挑戰/特訓/衍生)、分頁(日常=書 / 工作=公事包)、狀態鈕/複習鈕/王音訊鈕。
 - 保留:慶祝時刻大 emoji、題庫看圖題的圖(IMG/EMOJI)、音樂鈕(本就 SVG)、✕、⋯。加圖示 = `${ICON.x}`;純文字夠清楚的鈕就不放圖示。
+
+## 2026-07-03(下午 / Claude Opus 4.8)— 拼寫容錯 + 工作王改辨識
+
+### ★ 打字默寫「拼寫容錯」(Duolingo 式 typo tolerance)
+- 為什麼:現實工作是「打字 + autocorrect」,母語者自己也常拼錯長字;手滑漏/錯一兩個字母不該跟「不會」同罰。也接上既有的「手滑別罰」哲學。
+- `js/04` 新增共用判定 `spellCheck(typed, target, key)` → 回 `'exact' | 'typo' | false`,`isCloseEnough` 是布林版。規則:
+  - 容忍量看字長:**≤4 字精準(0)、5~7 放 1、8+ 放 2**(短字錯一個多半是不會,不是手滑)。
+  - 距離用 `typoDistance`(Levenshtein + 相鄰換位算 1 步,recieve→receive 只算 1)。
+  - **守衛①**:錯字剛好是「別的真字」(當前軌 `BANK`)→ 判錯(cat≠cut、quiet≠quite),不然等於沒分清楚。
+  - 同音/變體逐字指定 `TYPED_ALIASES`(預設空;**別跟語音的 `SPEECH_ALIASES` 混用**——那是給辨識誤判的)。
+- 接線:`askType`/`askFlashType`/`askPicType`(js/05)、`askSentenceCloze` 逐格(js/06)、王的 `sentence_cloze` 與拼字(逐詞)(js/09)、`bossWrongIds`(容錯內的詞不算拼錯、不冤枉進惡補)。
+- `finish(right, w, picked, note)` 加第 4 參 `note`:typo 過關時綠框顯示「差一點!正確拼法是 X」,仍秀正確拼法(工作軌目標之一=看得懂正確寫法)。sentence_cloze 過關但有 typo → `正解:` 行顯示。
+- 驗(8183 console):exact/短字精準 false/換位 typo/差2 false/**quite→quiet 被守衛擋(別的真字)**/長字 tol2/同音別名/BANK 熱抽 6 題全對。
+
+### 工作王九宮格:拼寫辨識 → 意義辨識
+- 為什麼(使用者點破):工作軌**刻意不練寫**,王卻用「從一堆錯字挑對的拼法」考你 → 考一個你沒訓練的技能,結果要嘛送分(錯字都圍著正解一叢、一看就中)、要嘛靠猜(每個錯字都眼熟)。
+- `js/09` `bossGridWordQuestion` 文字模式改**看 `trackSkillOn('write')` 分軌**:
+  - 不練寫的軌(工作):誘答改成**別的真字**(bossPool 撈 8 個、`zh` 不撞),提示中文「選出對應的英文」→ 考意義,要真的知道哪個對應才選得出。
+  - 練寫的軌(日常):維持原本「挑正確拼法、避開相似錯字」(`bossTypoTraps`),對它才是合理驗收。
+- 驗:工作軌 6 題全 recognition(cell 全真字、剛好 1 對);日常軌仍 SPELLING(5 個 typo trap);零 console error。
+
+## 2026-07-03(傍晚 / Claude Opus 4.8)— 轉換題稀有化 + 排句家族防連發(前期手感)
+
+### 問題(使用者實玩回饋)
+前期常玩到「一堆位置互換的詞」——轉換題(`sentence_transform`:This is a cat ↔ Is this a cat?)出太頻繁,同一批字反覆搬來搬去,「很沒誠意」。
+
+### 根因(`js/08` ask 出題器)
+1. `sentence_transform` 說階權重 20、且**沒有每關上限** → 字一到說階(mastery≥34,前期很快)就變常客。
+2. 防連續題型的邏輯把 `sentence_build` / `sentence_transform` 當**不同**題(都 `skill:'read'` 但 `run` 不同)→ 出現 `build→transform→build` 這種「都在重排同批字」的鏈,單調。
+
+### 修法(純節奏,引擎結構不動)
+- **轉換題每關上限 1 次**:新增 `transformsThisLevel`(`js/08` 宣告、`js/01` `startLevel` 歸零、ask 選到就 +1);pool 建好後若已達上限就濾掉 `sentence_transform`(留有其他選項才濾,不會清空)。
+- **排句「家族」防連發**:`ARRANGE_FAMILY = {sentence_build, sentence_transform, sentence_speak}`(都是「重排/唸同一批字」的體感)+ `formatFamilyOf(id)`;反單調過濾**最前面加兩層**「別跟上一題同家族」,湊不到才退回原本各層(前期只剩句子題時仍有保險、不清空)。
+- **轉換題降權** 20→10:就算合格也別急著霸位,搭配上限 → 當偶爾的 aha。
+
+### 驗(8183 console 模擬 ask 選題 3 關×14 題)
+- 轉換次數:**每關剛好 1 次**(原本可多次)。
+- 排句家族連發:**0**(build/transform 不再連鏈)。
+- 真實碼:`formatFamilyOf` 三個句子題型都歸 'arrange'、`transformsThisLevel` 為全域 number、零 console error。
+
+### 誠實備註(沒動、留給之後判斷)
+「純功能詞階段」(this is a ___ 膠水批)`sentence_build` 權重刻意 90(該階本來就靠排句學結構),所以**那一階仍會偏排句**——但轉換題不再霸屏。若之後覺得連 `build` 本身前期都太重,那是另一個更大的取捨(擴前期句型變化 / 降 90),要動再喊,不在這輪偷改。
+
+## 2026-07-03(傍晚 2 / Claude Opus 4.8)— 新題型 Q1:整段英文 → 選意思
+
+### 動機
+補「排詞造句(產出)」缺的反方向——**看懂整句(理解/辨識)**,直接接使用者擔心的「讀真信件看不懂」;辨識題、不逼拼字、兩軌通用;也順便補前期變化(非排句家族)。屬「第 1 類」低成本:句子和中文引擎現在就在生,誘答還能自動生。
+
+### 做法(`js/06` + `js/08`,引擎不動)
+- 新增 `askSentenceMeaning(w)`(js/06):給一句「學過字組成」的英文 → 選中文意思。
+  - 取句:`sentenceWithWord(w) || pickBuildSentence`(優先含當前字,接複習)。
+  - **誘答**:① `literalConcatZh` = 逐字直翻(把每個字的 `zh` 串起來,跟正解不同才用)—— 治「字都認得、合起來讀錯」的殺手誘答,還自動生;② 其他句子的 `zh`。湊不到誘答 → `askReadPick` 保險。
+  - 原生 UI:`.opts`/`.opt`/`.sel`/`.right`/`.wrong` + `#submit .act`(點選定 + 確認才判)+ `.why` 結算;有 🔊 聽整句。
+  - 答對:`creditSentence`(推 SRS + 幫組成字加分)+ `onCorrect(w)`(跟排詞造句一致);答錯:`onWrong(w)`。
+- `FORMATS` 加 `{ id:'sentence_meaning', lv:2, skill:'read', tier:1, ok:canSentenceMeaning }`(js/08),**不在 ARRANGE_FAMILY** → 兼當破前期單調的辨識口味。
+
+### 驗(8183 console)
+- 日常軌:`water or tea?` → 選項含逐字直翻誘答「水或茶」vs 正解「水還是茶?」,4 選項剛好 1 對。
+- `tea, please.` → 誘答「茶請」vs 正解「茶,請。」。
+- 答對流程:選 → 確認鈕啟用 → ✓、正解格變綠、出繼續鈕;答錯流程:! 、標出正解綠格 + 選錯紅格。
+- 工作軌:`I need more time.` 正常生題、兩條答題路徑都對。
+- 零 console error。
+
+## 2026-07-03(晚上 / Claude Opus 4.8)— 內容:救活孤兒動詞(日常軌第一批)
+
+### 動機
+日常軌 12 個動詞(look/listen/hear/say/go/come/bring/take/get/make/do/speak)沒有句型 → 只能當單字背、進不了句子 = 「後期重複」的根(HANDOFF 待辦 #1)。這批先救 4 個最乾淨的:**look / make / get / speak**(語法自然、幾乎不用加字)。
+
+### 加了什麼(純資料,引擎不動)
+- **3 個新字**(`js/00`):`at`(function,look at 用)、`English`/`Chinese`(noun,`language` flag,開頭大寫)。`why` 照台灣向口氣、使用者過目。
+- **2 個新 flag**:`makeable`(加到現有 coffee/tea/bread/rice)、`language`(English/Chinese)。已補進 `CONTENT_RULES.md`。
+- **4 個新句型**(`js/00` PATTERNS,都掛進 `BUILD_SENTENCE_PATTERN_IDS`@js/03):
+  - `pat_i_look_at_noun` I look at a {x}.(visible)—— 順便把 look(主動看)vs see(看見)的差別做進句子。
+  - `pat_i_make_noun` I make {x}.(makeable)
+  - `pat_i_get_noun` I get a {x}.(buyable)
+  - `pat_i_speak_language` I speak {x}.(language)
+- **BATCHES 加批5**(`js/01`):`[at, English, Chinese]`。日常軌 51→54 字、4→5 批、build 句型 12→16。
+
+### 驗(8183 console)
+- 4 句型都生得出、且被 `pickBuildSentence` 真的抽到:I look at a friend / I make coffee / I get a book / I speak English。
+- **token 一致性**:每句每個 token 都對得到一個 `BANK.en`(`creditSentence` 連帶加分 OK)。
+- 語言字進不了 `This is a {x}`(無 presentable/countable);`makeable` 只在 coffee/tea/bread/rice(water/milk 沒給)。
+- 零 console error。
+
+### 還沒救的孤兒(留第二批,要先加名詞)
+listen(→ music/to)、hear、say(→ hello/yes/no)、go/come(→ 地點 + home 特例)、bring/take、do。
+
+## 2026-07-03(晚上 2 / Claude Opus 4.8)— 修:Boss 分類題標題疊字 + 倒數消失
+
+### 現象(使用者實玩截到)
+挑戰王的「分類突襲!」題:標題「分類突襲!」跟分類提示「選出所有可以加糖的飲料」**疊在一起**,且**倒數條(boss-timer)不見**。
+
+### 根因(既有 bug,非本輪改動造成)
+`css/04-boss.css` 只有 `boss-grid-mode` 的版面覆寫(把 arena 壓成自然高度、答題區吃 1fr),**沒有 `boss-category-mode` 對應規則**。分類題選項最多 8 個(2 欄高陣列),用預設 `.boss-layout`(`auto minmax(0,1fr) auto`)時,中間 arena 那格被高選項擠到趨近 0 → prompt/clue/timer 疊在一起、倒數條被擠掉。
+
+### 修法(純 CSS,鏡像 grid-mode)
+`css/04-boss.css` 新增 `#screen.boss-category-mode` 覆寫:`.boss-layout` 改 `auto auto minmax(0,1fr)`(arena 自然高度不再被壓)、arena `justify-content:flex-start`、prompt 縮小、clue `min-height:auto`、timer 加底色邊框、`.boss-answer` `overflow-y:auto`(選項多時可捲)。
+
+### 驗(8183 console)
+- 分類題 `.boss-layout` grid-template-rows → `auto auto minmax(0,1fr)`(修好);一般選擇題維持 `auto minmax(0,1fr) auto`(沒被波及,class 只在 category 時加)。
+- 零 console error。
+- ⚠ 環境限制:headless viewport 為 0×0、截圖逾時,無法像素級量位置;靠「grid 軌結構跟已知正常的 grid-mode 一致」佐證。請在 8182 目視確認。
+
+### 順帶觀察(未修,留給之後)
+分類題誘答會混入功能詞(with/or/please)當選項,對「選出可以加糖的飲料」略怪(雖是明顯錯的誘答)。屬內容/題目品質,非版面 bug。
+
+## 2026-07-03(晚上 3 / Claude Opus 4.8)— 新增拼字記法(寫錯/差一點時上鉤子)+ 修容錯吞掉錯拼
+
+### 動機(使用者:記不起來會自己拆,如 fri+end)
+把「拆字記憶法」接到寫錯的當下(teachable moment),跟既有 `SYL_HINT`(音節答錯上記憶法)同精神,但針對「整個字」。
+
+### 做法(`js/07` + `js/05`)
+- `js/07` 新增 `SPELL_HINT`(word id → 拆字/記法),`markLetters` 秀完逐字母正解後,有記法就接一行藍字「記法:…」。跟 `why` 分開:why=意思(答對秀)、SPELL_HINT=拼字記法(沒拼對時秀)。先種 `word_friend`。
+- **拆法可以是「巧合的」記憶鉤子**(friend 其實是 frēon「愛」的字,-end 是巧合),只拿來記、不當真字源規則 —— 呼應「別編會被亂推的假規則」。
+- **★ 修一個兩功能打架**:拼字容錯會把 `frend`(friend 最經典錯拼)判成 `'typo'` 算對 → 走「對」的路 → `markLetters` 不觸發 → 記法永遠不會對這個錯拼出現。改成 **`if (res !== 'exact')`**(typo 或全錯都算「沒一字不差」)→ 兩種都秀正解字母 + 記法。呼應早先定的「容錯放過時一定把正確拼法秀出來」。
+
+### 驗(8183 console,friend 三種輸入)
+- `friend`(完全對):算對、不出記法。
+- `frend`(容錯過的 typo):**算對**、但秀「差一點」+ 記法。
+- `frnd`(差 2 個):算錯、秀正解 + 記法。
+- 零 console error。
+
+## 2026-07-03(晚上 4 / Claude Opus 4.8)— 修:回舊關學新字 + 分類/選意思題卡片被切
+
+### Bug 1:這階還沒學完時,回去玩舊關卻在學新字(引擎邏輯)
+- 根因:`enterLevel(lv)` 只設 `level=lv`,`buildLevel()` 一律照全域熟練度抓 `fresh`(新字),不管這關是不是「回頭玩的舊關」。
+- 修(`js/01` buildLevel):`isReplay = level < meta.maxLevel`(不是最前線那關 = 複習)→ `fresh = []`,不引新字;空關保險也改「有新字才給新字,否則給已見過的字複習」。
+- 驗:stage 未學完時,回舊關(level 8 < max 12)= 0 新字(只複習在學的字);最前線(level 12)仍導入 2 新字。
+
+### Bug 2:分類題 / 選意思題最下面的卡片被底部操作列切掉(版面)
+- 根因:`.lesson-answer` 是 `justify-content:center; overflow:visible`,內容比作答帶高時往上下溢出、被 `.lesson-screen` 的 `overflow:hidden` 切掉。
+- 修:
+  - **選意思題(`sentence_meaning`,本輪新題型)**:英文句 + 🔊 從「作答帶(body)」搬到「題目帶(stage/prompt)」→ body 只剩 4 選項,像一般四選一一樣塞得下(`js/06`)。
+  - **分類題(既有,最多 8 選項)**:`.lesson-answer.category-answer` 改 `justify-content:flex-start; overflow-y:auto`(從上往下排、溢出可捲,不置中切上下)+ 縮小 `.category-title` 與選項高度(`css/03`)。
+- 驗:選意思題句子已在 `.lesson-stage .prompt`、body 只剩選項;分類題 computed `justify-content:flex-start` + `overflow-y:auto`。零 console error。
+- ⚠ 環境限制:headless viewport 0×0、截圖逾時,無法像素級確認實際塞得下;請在 8182 目視(分類題 8 選項、選意思題)。
+
+## 2026-07-03(晚上 5 / Claude Opus 4.8)— 拿掉「可數/加 a」分類題(交給句型帶)
+
+### 為什麼(使用者實玩點破)
+`presentable` 分類題「選出所有可以放進 This is a ___ 的字」考的是英文可數性,但**可數性邊界太模糊**:方糖 = sugar cube、口語 two sugars / a coffee / a water 都成立 → 把 water/sugar/coffee 當「不可數、不算」會冤枉講得通的答案。改標籤也補不完(改過一版「水糖不算」反而更不誠實)。
+
+### 決策(使用者選的第三條路)
+不做成分類題,**可數/加 a 的觀念改由句型自然帶**:This is a cat.(加 a)vs I drink water.(不加 a)—— 學的人做句型時就在正確地練,而且句型永遠成立,不會踩到模糊邊界。符合本專案「文法靠造句自己懂、不背抽象規則」的信念。
+
+### 改動(`js/03-feedback-choices.js`)
+- 從 `CATEGORY_SETS` 移除 `presentable` 那條(留註解說明為何不做)。`presentable` flag 本身保留(`pat_this_is_a_noun` 的 slot 還在用),只是不再出分類題。
+- 其餘乾淨分類保留:drinkable / sweetenable / eatable / emotion / ownable。
+
+### 驗(8183 console)
+- 生 30 題分類 → 只出 ownable/sweetenable/drinkable(等乾淨類),再也不出 presentable。
+- `This is a cat.` 句型照常生得出(可數觀念沒消失,只是移到句型)。零 console error。
+
+## 2026-07-04(Claude Opus 4.8)— 配對題不再撈功能詞(治「with ↔ 加」脫離語境的錯對照)
+
+### 現象(使用者實玩)
+配對題出現「with ↔ 加」。使用者點破:照字面推「1 with 1 = 1+1」不通 —— 中文「加」一詞多用(加糖 vs 1加1),但 with 只有「加糖/附帶」那種、沒有數學相加。標籤「加」其實對「coffee with sugar = 咖啡加糖」的語境是對的,問題在**把功能詞單獨拿出來配對**(脫離語境),違反本專案「功能詞只在句子裡學」的原則。
+
+### 根因(`js/05` askMatch)
+配對誘答主池是 `pos === w.pos`(w 一定是實詞 → 已排除功能詞);但**同詞性不夠 3 個時的 fallback** 撈「任何教過的字」,把功能詞(with/is/a/my/or…)拉進配對。
+
+### 修
+- `js/05` askMatch fallback 加 `x.pos !== 'function'` → 功能詞永不進配對。
+- `js/08` FORMATS `match` 的 ok 一致化:要有 `≥2 個實詞`(排除功能詞)才 offer,免得只剩功能詞時湊出退化的單組配對。
+- `with.zh = "加"` 不動 —— 它在唯一用到 with 的句型「coffee with sugar / {x}加{y}」語境裡是對的;錯的是脫離語境展示,不是 gloss。
+
+### 驗(8183 console)
+- 逼 fallback 狀態:配對不再出現功能詞。
+- 實詞充足時:每題 4 組全實詞(coffee/cat/home/English…)。
+- 零 console error。
+
+## 2026-07-04(2 / Claude Opus 4.8)— sugar 拿掉誤導圖示(🍬 是 candy 不是 sugar)
+
+### 現象(使用者實玩)
+使用者看到 sugar 的圖示問「sugar 是不是也叫 candy?」。查:`EMOJI.word_sugar = "🍬"` —— 🍬 是**糖果(candy)**,不是**砂糖(sugar)**。中文「糖」同時指原料糖(sugar)和零食糖果(candy),英文分開;圖示畫成 candy → 教錯聯想。
+
+### 修(`js/04-visuals.js`)
+- 移除 `word_sugar:"🍬"`。沒有好的「砂糖」emoji(🧂=鹽、🍬=糖果),照「沒好圖的字不出看圖題」原則乾脆不掛圖;sugar 靠「coffee with sugar」語境學。
+- 驗:`visualOf(sugar)=null`、picture 題不再出 sugar;coffee/water 等其他 emoji 沒被動。零 console error。
+
+### 備註(內容 backlog)
+若之後要教「糖果」,`candy` 是**另一個字**(糖果,eatable),跟 sugar(砂糖,sweetener)分開收 —— 正好也是「一中文(糖)對多英文」的好教材。
+
+## 2026-07-04(3 / Claude Opus 4.8)— 加 get 自製圖 + 補圖檔 fallback
+
+### 使用者提供 get 的 pixel 圖(手接箱子=得到)
+- `js/04` IMG 登錄 `word_get:'img/get.png'`。語意準(往手裡收=get),pixel 風對 8-bit 調性。
+- ⚠ 註記:之後加 take(拿走)/bring(帶來)的圖要畫「不同方向」,別三個「手+東西」動詞撞視覺。
+- **圖檔待放**:使用者要自行存 `img/get.png`(去背透明)。程式碼已登錄,放檔即生效。
+
+### 順手修:picHTML 的「沒檔 fallback」名不副實
+- 註解一直寫「沒檔 onerror 自動 fallback 回 emoji」,但 `<img>` 根本沒有 onerror → 缺檔會顯示破圖。
+- 補 `imgFallback(el, wid)`:圖檔載入失敗 → 有 emoji 退 emoji、沒有就移除(不留破圖)。picHTML 的 img 加上 `onerror`。→ 以後登錄自製圖即使檔還沒到,也只顯示空白不破圖。
+- 驗:visualOf(get)=img/get.png、picture 題會出 get、picHTML 含 onerror、imgFallback 存在、house 等既有圖沒被動;零 console error。
+
+## 2026-07-04(4 / Claude Opus 4.8)— sugar 換成正確自製圖(一碗白方糖)
+
+- 使用者用 GPT 生了一張「一碗白方糖」的 pixel 圖 → 正確表達 sugar(砂糖),取代先前誤導的 🍬(candy)。
+- `js/04` IMG 登錄 `word_sugar:'img/sugar.png'`。**圖檔待放**:使用者要存 `img/sugar.png`(去背)。
+- 驗:visualOf(sugar)=img/sugar.png、picture 題會出 sugar、get 圖沒被動;零 console error。
+- 觀念:圖是 GPT 生的 → 瓶頸從「畫得累」變「清不清楚」。具體字(sugar/sad/tired)划算加;take/bring 卡在「方向要參考點」的字本身問題,生再多也沒用 → 維持不畫、交句子。
+
+## 2026-07-04(5 / Claude Opus 4.8)— 轉換題:標題被卡片蓋 + 「a」念成字母 A
+
+### Bug 1:轉換題標題「改成問句…」被直述句卡片蓋住
+- 根因:`mountArrange` 的 body 內容(轉換題多一張 `.transform-intro` 直述句卡 + slots + bank)較高,而 body 是預設 `.lesson-answer`(`justify-content:center; overflow:visible`)→ 太高就往上下溢出,往上蓋到題目帶標題。(跟先前分類/選意思題同類。)
+- 修:`js/06` mountArrange 給 body 加 `build-answer` class;`css/05` `.lesson-answer.build-answer { justify-content:flex-start; overflow-y:auto; }` → 從上往下排、溢出可捲,不往上蓋標題。
+
+### Bug 2:排詞塊「a」放上去念成字母 A(應為 schwa「uh」)
+- 根因:`js/06:88` 放塊時 `speak(card.text)` 是原始 token,`SPEAK_AS`(a→uh)只有 `speakSentence` 有套。
+- 修:`js/03` 新增 `speakWordText(text)`(單 token 也套 SPEAK_AS);mountArrange 放塊改用它;順手把 `mountChoices` 選項發音改 `speak(SPEAK_AS[o.id]||o.en)`(選項若是 a 也不念字母)。
+- 驗:speakWordText('a')→'uh'、book/This 不變;轉換題 body computed `justify-content:flex-start`+`overflow-y:auto`+有 build-answer。零 console error。
+- ⚠ headless 0×0 量不到像素,標題不疊請在 8182 硬重整目視。
+
+## 2026-07-04(6 / Claude Opus 4.8)— 選句子改「依句型平均」(治九成都 This is a + 漏掉 I am happy)
+
+### 現象(使用者重玩 6~10 關十次)
+近九成句子題都是「這是一個 ___」;而「I am happy」幾乎不出現 → 若一路按「我已經會了」打完階段王,就整句沒學到。
+
+### 根因
+`pickBuildSentence` / `pickTransformSentence` 都是「把所有句型的變化攤平成一串再隨機抽」。「This is a {noun}」有 cat/book/friend/house 四個可填 → 變化多;「I am happy」只有 happy 一個 → 被稀釋。實測:I am happy 只被抽中 6/100,This is a / my 各 20+。
+
+### 修(`js/03` + `js/06`)
+- 新增共用 `pickSentenceByPattern(patterns, sourceWords, filter)`:**先「均勻」挑句型(避開上一題的句型 → 不連發)、再從該句型挑 fresh 句子** → 每個句型機會均等,不被多變化句型稀釋。
+- `pickBuildSentence` / `pickTransformSentence` 都改用它。
+- 驗(200 抽):build 六句型各 ~30(I am happy 6→30)、同句型連發 1/200;transform 三句型各 ~67(I am happy 拉到與 This is a 齊平)。→ I am happy 不再被埋、不會漏學;This is a 不再霸屏。零 console error。
+
+### 另兩件(本輪未動)
+- 轉換題卡片後「會亮+有 tooltip 的框」:確認是「有互動+懸浮提示」的元素(非純視覺),但 headless 0×0 看不到像素;待使用者回報 tooltip 文字即可定位。
+- 「我已經會了」skip 讓句型可完全跳過 = 設計上的 skip 本意;但配合本次「I am happy 會正常出現」,已不會「根本沒機會遇到」。
+
+## 2026-07-04(7 / Claude Opus 4.8)— 分類題不用下拉 + 轉換題別稀有到消失
+
+### Bug 1:分類題變成要下拉(承接前面「可捲」修法的副作用)
+- 前面把分類題改 `overflow-y:auto` 治「卡片被切」,但選項最多 8 個 → 一頁塞不下、跑出捲軸。
+- 修:`js/03` 主線分類題 `categoryQuestionForWord` 傳 `maxOptions:6` → 最多 6 個(2 欄 3 列)一頁塞得下,捲動只當保險。驗:連生 12 題都恰好 6 個。
+
+### Bug 2:「is this」轉換題消失(玩到 12 關沒遇到)
+- 根因:前面「轉換題稀有化」調過頭 —— 每關上限 1(對)+ 權重砍半 20→10 + 放進 arrange 家族被 build 壓抑,三個疊起來 → 混合 recipe 下 12 關幾乎抽不到。
+- 修(`js/08`):① 轉換題**移出 `ARRANGE_FAMILY`**(它已被「每關上限 1」擋住連發,不需要再被家族壓);② 權重 10→**18**(上限已防霸屏,拉回來讓它「可靠地每關出現一次」)。
+- 驗(真 ask() 混合 recipe 跑 12 關):轉換題出現在 **8/12 關**(之前近乎 0)、每關至多 1 次。零 console error。
+
+## 2026-07-04(8 / Claude Opus 4.8)— 單字特訓:卡死 40% 無限練習 + 「我學會了」鈕出框
+
+### Bug 1:特訓卡在 40%、無限練習、不會結束
+- 根因:①特訓只有按「我學會了」才移除字,否則永遠循環;②進度條 `updateBar` 算的是「主回合 quota」,特訓不碰它 → 凍在進特訓前的值(40%)不動。
+- 修:
+  - `js/08` `trainNext` 開頭 `trainPool = trainPool.filter(w => !isLearned(w))` → **練到 100% 的字自動畢業**(特訓本來就是挑「沒滿 100%」的字);清空 → `trainingDone`,不再無限。
+  - `js/03` `updateBar` 加 `inTraining` 分支:進度 = (原本選的字 − 剩下的)/ 原本;`js/01` 加 `trainTotal`、`startTraining` 設定、`trainAsk` 每題 `updateBar()`。
+- 驗:選 3 字 → 練滿 1 個 bar 0%→33%、練滿全部 → 顯示「特訓完成」、`inTraining=false`。
+
+### Bug 2:特訓「✓ 我學會了,移除」鈕飄出操作列外
+- 根因:說題左下已有 `跳過說題`(sideact),特訓再把「我學會了」(sideact)**堆在它上面**(bottom:110px),兩顆 64px 鈕疊起來超過 150px 操作列高 → 上面那顆頂出框。
+- 修:`js/08` `injectTrainKnown` 改成**特訓時把「跳過說題」收掉**(它在特訓多餘:答題 / 我學會了 都能往下),「我學會了」回到單顆預設位置(bottom:34px)→ 不疊、不出框。
+- 驗:模擬有 skipspeak 時,injectTrainKnown 後 skipline 隱藏、trainknown 無堆疊 bottom。零 console error。
+
+## 2026-07-04(9 / Claude Opus 4.8)— 排詞霸屏 + 跳過說題誤刪 + 特訓自選技能
+
+### Bug 1:排詞造句(4種)霸屏 6~10 關,近乎看不到別的
+- 根因:`sentence_build` 說階權重 40,辨識/聽/看圖類只有 1 → 排詞是它們的 40 倍,~九成都排詞。
+- 修(`js/08` wt):`sentence_build` 40→16、`sentence_speak` 18→12(要麥克風別過重);辨識類「差一階」floor 1→2.2。
+- 驗(混合 recipe 12 關):排詞從 ~90% 降到 **15%**;readpick/listenpick/picture/match/sentence_meaning 都回來了、轉換題也在。
+
+### Bug 2(認錯):上一輪在特訓拿掉「跳過說題」→ 沒麥克風的人卡死
+- 「跳過說題」是給沒麥克風玩家的逃生口,不能拿掉。還原它。
+- 重疊改用「兩顆都壓矮貼底」:`js/08` injectTrainKnown 把 skipspeak + trainknown 都設 `min-height:46px`、bottom 22 / 76 → 兩顆 top(68 / 122)都 < 150 操作列,不出框也不疊。(⚠ headless 0×0 量不到像素,靠數學;請目視確認。)
+
+### 新功能:特訓自選技能(聽/說/讀/寫/混合)
+- 動機(使用者):去特訓是因為關卡要寫、寫不出來,結果特訓混合出題幾乎不給寫題。
+- `js/01` 加 `trainSkill`;`js/10` showTrainPicker 加技能選擇列(混合/聽/讀/說/寫,`.tskill` 樣式在 `css/06`);`js/08` trainAsk 依 `trainSkill` 濾題型(該字沒有該技能題型才退回混合)。
+- 驗:寫模式 40/40 全是 write 題、聽模式 40/40 全是 listen 題。零 console error。
+
+## 2026-07-04(10 / Claude Opus 4.8)— ★真根因:學會的字被「硬走排字」攔截 → 整階只出排字、轉換題 0
+
+### 現象(使用者玩 20 場)
+6~10 關近乎每題都排字造句,之前修好的轉換題「這是一隻貓嗎?」完全不出現;前一輪的權重調整看起來完全沒作用。
+
+### 真根因(`js/08` ask())
+`ask()` 對「學會又默寫過的字」有一條**優先攔截**:`if (isLearned(w) && wroteOk(w)) return askBuildSentence(...)` —— **一律排字、完全跳過題型池**。6~10 關(字都學會了)每一題都走這條 → 100% 排字、轉換題/辨識/聽 永遠 0。之前所有「權重」修改都在題型池裡,學會的字**根本到不了那段**,所以無效。
+
+### 修
+- 移除該攔截:學會的字也走題型池(句子仍是複習重點,靠 sentence_build/transform/speak 的高權重維持;SRS 由 onCorrect 對學會的字照推;補考用 FORMATS 各自的 run,不會踩舊「sourceWords.map」雷)。
+- 配合把寫階句子權重降一點、辨識 floor 拉高:`sentence_cloze` 18→8、default `d===2` 0.4→1.5。
+
+### 驗(對「全學會」的字跑 15 關,mixed recipe)
+- 排字 **100% → 16%**;句子類合計 41%(仍是重點、非全部);辨識/聽/看圖 16%;轉換題出現在 **14/15 關**;18 種格式都有。零 console error。
+
+## 2026-07-04(11 / Claude Opus 4.8)— 轉換題排版:原句卡搬上題目帶(不再上下捲)
+
+### 現象
+轉換題比別的題型多一張「原句參考卡」(This is a house / 這是一個房子 / ↓改成問句),塞在作答帶 → 內容太高、冒上下捲軸(前面用 overflow-y:auto 擋蓋標題的副作用)。
+
+### 修(`js/06` mountArrange + `css/05`)
+- mountArrange 渲染後,把 `.transform-intro`(原句卡)從作答帶(#body)DOM-move 到題目帶(`.lesson-stage`)→ 作答帶只剩「buildzh + 格子 + 字塊 + 確定」,跟一般排詞題**一模一樣**、塞得下、不用捲。(一般排詞沒有 intro 卡 → 此段是 no-op,不影響。)
+- `.transform-intro` 限寬 680 + 壓扁 padding,在題目帶不佔太多高。
+- 驗:askTransform 後原句卡在 `.lesson-stage`、不在 #body;#body 內容 = buildzh/slots/bank/buildactions(同一般排詞)。零 console error。
+- ⚠ headless 0×0 量不到像素;結構已跟一般排詞一致(那個本來就不捲),請目視確認。
+
+## 2026-07-04(12 / Claude Opus 4.8)— 分類題壓緊(不用捲)
+
+### 現象(使用者)
+分類題 6 個選項還是要捲;選項格子又寬又高、裝一個短字浪費一堆垂直空間。
+
+### 修(`js/05` + `css/03`)
+- 拿掉多餘的 `.category-title`(「可以說我的…的東西」)—— 跟題目「選出所有可以說成 my ___ 的東西」重複,省一整行(~36px)。
+- 選項格子壓矮:`min-height` clamp 52~66 → 40~50、gap 縮小、字級略降。短字不需要大格子。
+- 兩者共省 ~80px → 6 個選項一頁塞得下,`overflow-y:auto` 只當極矮螢幕的保險。
+- 驗:分類題無 .category-title、選項 min-height 40px、≤6 選項。零 console error。⚠ headless 0×0 量不到像素,請目視確認不再捲。
+
+## 2026-07-04(13 / Claude Opus 4.8)— 轉換題原句卡改純文字(拿掉 box)
+
+### 使用者:「完全沒必要放卡,直接寫上去不好嗎?」
+對。原句參考卡用了一個有邊框+底色+內距的 box,白佔一堆高度 → 題目帶太高、擠得作答帶還要捲。
+- `css/05` `.transform-intro` 拿掉 background/border/padding/max-width → 純文字;`.transform-stmt` 30→26、arrow/zh margin 壓小。
+- 驗:transform-intro computed 無底色/無邊框/無內距、在題目帶;作答帶只剩 buildzh/slots/bank(同一般排詞)。零 console error。⚠ headless 量不到像素,請目視確認不再捲。

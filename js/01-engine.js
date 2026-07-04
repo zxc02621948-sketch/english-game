@@ -52,6 +52,7 @@ let BATCHES = [
   ['word_cat','word_book','word_friend','word_happy','word_this','word_is','word_a','word_my','word_i','word_am','word_home','word_house'], // 批2(L6-10)膠水詞 + 早期具體字 → 造句時也有新材料
   ['word_hungry','word_thirsty','word_tired','word_sad','word_eat'], // 批3:感受 + eat 暖身
   ['word_drink','word_rice','word_bread','word_milk'],    // 批4:吃喝句子材料
+  ['word_at','word_english','word_chinese'],              // 批5:救活孤兒動詞的材料(look at / speak 語言)
 ];
 let _batchSet, _rest, _batchIndex, LEARN_ORDER;
 function rebuildCurriculum() {                                        // 依「當前軌」的 BANK+BATCHES 重算課程衍生表(切軌時要重跑)
@@ -124,7 +125,8 @@ function buildLevel() {
   const sentenceFocus = !stageHasRealWords(stage);
   const MAX = sentenceFocus ? 4 : 8, ACTIVE_CAP = sentenceFocus ? 2 : 5, clock = meta.clock || 0;
   let _g = false; BANK.forEach(w => { if (w.pos === 'function' && batchOf(w) < stage && isFresh(w)) { rec(w).taught = true; _g = true; } }); if (_g) save();   // 功能詞(膠水)沒單獨意義 → 不出教卡;批次一解鎖就靜默標 taught(讓句子組得出),意義交給句子 + teachPattern
-  const fresh  = LEARN_ORDER.filter(w => isFresh(w) && batchOf(w) < stage && w.pos !== 'function');   // 解鎖批內的新「實詞」(功能詞不走教卡)
+  const isReplay = (level || 1) < (meta.maxLevel || 1);   // 回去玩「已過的舊關」(不是最前線那關)= 純複習,不引新字(治「這階還沒學完時回舊關卻在學新字」)
+  const fresh  = isReplay ? [] : LEARN_ORDER.filter(w => isFresh(w) && batchOf(w) < stage && w.pos !== 'function');   // 解鎖批內的新「實詞」(功能詞不走教卡);複習關不引新字
   const focus = LEARN_ORDER.filter(w => isAdvancedWord(w) && batchOf(w) < stage && !isFresh(w) && !microBatchReady(w));   // 第三階段後:小組沒練穩前,先專注這組,不再開下一組新字
   const needsWrite = trackSkillOn('write') ? BANK.filter(w => !isFresh(w) && w.pos !== 'function' && !rec(w).wrote && batchOf(w) < stage && clozeReadyForDictation(w)) : [];   // 不練默寫的軌:不排補默寫
   const active = shuffle(BANK.filter(w => !isFresh(w) && !isLearned(w) && w.pos !== 'function' && batchOf(w) < stage && !focus.some(f => f.id === w.id))); // 學習中(<100%),主力。功能詞排除 → 不單獨刷,只在句子裡練
@@ -142,7 +144,7 @@ function buildLevel() {
   add(needsWrite.slice(0, 2));         // 4. 補默寫:只穿插幾個;長字/第三階段字要先通過克漏字門檻
   add(due.slice(0, 2));                // 4. 到期複習:只穿插幾個(舊字主要靠句子複習帶,別灌一堆已會的淹掉學習)
   if (picked.length < 4 && !fresh.length) add(shuffle(BANK.filter(w => isLearned(w) && w.pos !== 'function' && batchOf(w) < stage)));   // 5. 太少且「沒有新字可學了」(純鞏固期)才補學會的字回鍋
-  if (!picked.length) add(fresh);      // 極早期保險:還是空 → 多給新字
+  if (!picked.length) add(fresh.length ? fresh : shuffle(BANK.filter(w => !isFresh(w) && w.pos !== 'function' && batchOf(w) < stage)));   // 極早期保險:還是空 → 有新字給新字,沒有(複習關/全學會)給已見過的字複習
   return shuffle(picked);
 }
 // 王可挑戰的條件(內容驅動,取代固定第 5×stage 關):跑夠鞏固關 + 當前批次的實詞都教過 + 寫對過 + 練到「會寫」。
@@ -232,7 +234,7 @@ let level = 1, levelWords = [], queue = [], current = null;
 let plan = null, currentRung = 0;
 let quota = {}, lgot = {}, reviewQueue = [], inReview = false;     // 這關每字「要答對幾次 / 已答對幾次」;reviewQueue = 答錯待回顧重答的題
 let reviewMiss = {};                                               // 每字「連續答錯次數」(答對歸零)→ 連錯 2 次補考強制走複習卡
-let inTraining = false, trainPool = [];                            // 🎯 單字特訓:自選字、聽說讀寫混合、各題可「我學會了」移除;不走主回合 quota/SRS 佇列(見 js/08 trainNext)
+let inTraining = false, trainPool = [], trainTotal = 0, trainSkill = 'all';   // 🎯 單字特訓:自選字 + 自選技能('all'混合 / listen / speak / read / write);各題可「我學會了」移除;不走主回合 quota/SRS。trainTotal=原本選幾個字(進度條用)
 let currentRecipe = null;
 function buildLessonQuota(words, recipe) {
   const q = {}, caps = {}, clock = meta.clock || 0;
@@ -275,7 +277,7 @@ function startLevel() {
   currentRecipe = completionRecipe(stagePendingWords(playStage)) || lessonRecipeForLevel(level);
   levelWords = (remedialWords && remedialWords.length) ? remedialWords : buildLevel();   // 惡補關:用打輸王時卡住的字
   remedialWords = null;
-  quota = {}; lgot = {}; reviewQueue = []; inReview = false; reviewMiss = {};
+  quota = {}; lgot = {}; reviewQueue = []; inReview = false; reviewMiss = {}; transformsThisLevel = 0;
   quota = buildLessonQuota(levelWords, currentRecipe);
   levelWords.forEach(w => { lgot[wordKey(w)] = 0; }); // 新字至少教+馬上考;其餘題數由本關 recipe 分配
   queue = shuffle([...levelWords]);

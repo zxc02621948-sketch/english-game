@@ -26,7 +26,8 @@ const CATEGORY_SETS = [
   { id:'sweetenable', flag:'sweetenable', label:'可以加糖的飲料', prompt:'選出所有可以加糖的飲料' },
   { id:'eatable', flag:'eatable', label:'食物', prompt:'選出所有可以吃的東西' },
   { id:'emotion', flag:'emotion', label:'感受', prompt:'選出所有感受或心情' },
-  { id:'presentable', flag:'presentable', label:'可以介紹「這是一個...」的東西', prompt:'選出所有可以放進 This is a ___ 的東西' },
+  // 「可數/加 a」不做成分類題:英文可數性邊界太模糊(a sugar cube、two sugars、a coffee 都通),
+  // 抽成「選出所有可數的字」會冤枉講得通的答案。這個觀念改由句型自然帶:This is a cat.(加 a)vs I drink water.(不加 a)。
   { id:'ownable', flag:'ownable', label:'可以說「我的...」的東西', prompt:'選出所有可以說成 my ___ 的東西' },
 ];
 const hasFlag = (w, flag) => asList(w && w.flags).includes(flag);
@@ -57,7 +58,7 @@ function buildCategoryQuestion(mustInclude = null, sourceWords = categorySourceW
   }
   return null;
 }
-const categoryQuestionForWord = w => buildCategoryQuestion(w);
+const categoryQuestionForWord = w => buildCategoryQuestion(w, undefined, { maxOptions: 6 });   // 主線分類題最多 6 個 → 一頁塞得下、不用下拉(捲動只當保險)
 
 function wrongHint(w, picked) {
   const diff = confuseNote(w, picked);             // 選到近義字 → 優先教兩者差別
@@ -75,7 +76,7 @@ function clearBottomActions() {
 }
 
 // 答完的共用結算:對 → 加分前進;錯 → 給字根 + 繼續
-function finish(right, w, picked = null) {
+function finish(right, w, picked = null, note = '') {
   clearBottomActions();   // 收掉送出 / 特訓學會鈕,別跟底部結算列重疊
   const why = $('why');
   if (right) {
@@ -86,7 +87,7 @@ function finish(right, w, picked = null) {
       <div class="result-mark">✓</div>
       <div class="result-main">
         <div class="result-word">${w.en}<span class="result-eq"> = ${w.zh}</span></div>
-        <div class="result-copy">${w.why || '很好,下一題繼續。'}</div>
+        <div class="result-copy">${note ? `<b>${note}</b><br>` : ''}${w.why || '很好,下一題繼續。'}</div>
       </div>
       <button class="replay" id="rehear">${ICON.play}再聽</button>
     </div>
@@ -149,7 +150,7 @@ function mountChoices(box, opts, getText, w, correctText) {
       if (box.classList.contains('locked')) return;
       [...box.children].forEach(c => c.classList.remove('sel'));
       el.classList.add('sel'); sel = { el, o };
-      if (o && o.en) speak(o.en);                       // 選了就念那個字的英文發音(聽覺回饋)
+      if (o && o.en) speak(SPEAK_AS[o.id] || o.en);     // 選了就念那個字(套 SPEAK_AS:a→uh 不念字母 A)
       const sb = $('submit'); if (sb) sb.disabled = false;
     };
     box.appendChild(el);

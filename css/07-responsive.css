@@ -1,4 +1,31 @@
   @media (max-width: 720px) {
+    .wrap { width:min(100% - 24px, 560px); }
+    .topbar { flex-direction:column; align-items:stretch; gap:12px; margin:10px 0 16px; }
+    .logo { white-space:nowrap; font-size:24px; line-height:1.15; }
+    .topbar > div:last-child { width:100%; flex-wrap:wrap !important; justify-content:flex-start; gap:8px !important; }
+    .topbar > div:last-child button { min-height:42px; }
+    .coin { min-height:42px; padding:8px 16px; font-size:18px; }
+    .homebody { display:flex; flex-direction:column; gap:14px; }
+    .map { order:1; width:100%; min-height:0; padding:16px 12px; border-radius:14px; }
+    .side { order:2; width:100%; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .cat { min-height:126px; padding:14px; border-radius:14px; font-size:16px; gap:5px; }
+    .cat .cati { margin-bottom:2px; }
+    .cat .catcoin { font-size:13px; }
+    .catnote { font-size:12px; }
+    .map-brief { grid-template-columns:1fr; gap:12px; margin-bottom:14px; }
+    .maptitle { margin-bottom:5px; font-size:13px; }
+    .maptopic { font-size:20px; line-height:1.25; }
+    .map-progress-row b { font-size:17px; }
+    .mapjump { gap:10px; margin-bottom:12px; }
+    .branch-tabs { width:100%; display:grid; grid-template-columns:1fr 1fr; gap:4px; }
+    .mapjump .branch-tab { min-width:0; width:100%; padding:10px 8px; font-size:14px; white-space:nowrap; }
+    .map-lesson-meta { width:100%; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; font-size:12px; }
+    .map-lesson-meta span { min-width:0; justify-content:center; border-radius:12px; padding:5px 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .map-status-row { width:100%; }
+    .map-status-row .map-primary-start, #workmapcurrent { width:100%; min-width:0; padding:12px 18px; font-size:18px; }
+    .map-status-row #jumpboss { flex:0 0 auto; width:auto; margin-top:2px; padding:8px 14px; font-size:13px; }
+    .map-info-pill { max-width:100%; border-radius:14px; text-align:center; justify-content:center; }
+    .mapscroll { height:clamp(280px, calc(var(--map-levels, 6) * 22px + 170px), 410px); max-height:54vh; }
     .card { padding:18px 18px 0; }
     #screen.lesson-screen { --action-bar-h:186px; --action-gap:28px; }
     .lesson { gap:14px; padding:16px 0 calc(var(--action-bar-h) + var(--action-gap)); }
@@ -33,9 +60,6 @@
     .teach-syllables { font-size:38px; margin-top:8px; }
     .teach-why { min-height:96px; font-size:16px; line-height:1.55; padding:16px; }
     .skipchoices { grid-template-columns:1fr; }
-    .branch-tabs { width:100%; }
-    .mapjump .branch-tab { flex:1; min-width:0; padding:11px 12px; }
-    .map-status-row { width:100%; }
     .map-status-row button { flex:1; min-width:0; }
     .work-start-grid { grid-template-columns:1fr; }
     .work-level-card { padding:14px; }

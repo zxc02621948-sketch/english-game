@@ -37,6 +37,9 @@ function mountArrange({ promptText, zh, introHTML = '', cards, targetTokens, cas
     <div class="sentence-slots" id="slots"></div>
     <div class="chunks sentence-bank" id="bank"></div>
     <div class="buildactions" id="bactions" style="grid-template-columns:1fr"><button class="btn act" id="check">確定</button></div>`);
+  $('body').classList.add('build-answer');
+  const _intro = $('body').querySelector('.transform-intro');   // 轉換題:把「原句參考卡」從作答帶搬到題目帶(stage)→ 作答帶只剩「格子+字塊」,跟一般排詞一樣塞得下、不用上下捲
+  if (_intro) document.querySelector('.lesson-stage').appendChild(_intro);
   let slots = Array(cards.length).fill(null);
   const _norm = t => caseInsensitive ? (t || '').toLowerCase() : t;
   const _target = targetTokens.map(_norm).join(' ');
@@ -85,7 +88,7 @@ function mountArrange({ promptText, zh, introHTML = '', cards, targetTokens, cas
     el.draggable = true;
     el.addEventListener('dragstart', e => dragStart(e, card.id));
     el.addEventListener('dragend', () => { draggingId = null; });
-    el.onclick = () => { if (from === 'bank') { placeFirst(card.id); speak(card.text); } else removeFromSlot(slotIndex); render(); };   // 放進句子時念那個字
+    el.onclick = () => { if (from === 'bank') { placeFirst(card.id); speakWordText(card.text); } else removeFromSlot(slotIndex); render(); };   // 放進句子時念那個字(套 SPEAK_AS:a→uh 不念字母 A)
     return el;
   };
 
@@ -138,6 +141,77 @@ function sentenceWithWord(w, sourceWords = sentenceSourceWords()) {
   const picked = pickFresh(shuffle(cands));
   if (picked && cands.length === 1 && picked.text === recentSentences[0]) return null;   // 只剩上一題同一句時,別硬為了含這個字重複;交給一般句子池換題
   return picked;   // 避開最近出過的句子
+}
+
+// Q1 整段英文 → 選意思(理解/辨識;不逼拼字、兩軌通用)。給一句「學過字組成」的英文,選它的中文意思。
+//   答對 creditSentence(推 SRS + 幫組成字加分,跟排詞造句一致)。誘答:① 逐字直翻(把每個字的中文串起來 →
+//   治「字都認得、合起來卻讀錯」;跟正解相同就不用)② 其他句子的中文。是排句家族之外的辨識口味 → 也幫破前期單調。
+function sentenceMeaningSentence(w) {
+  const source = currentSentenceSourceWords();
+  return sentenceWithWord(w, source) || pickBuildSentence(source);
+}
+function canSentenceMeaning(w) {
+  return !!sentenceMeaningSentence(w);
+}
+function literalConcatZh(sentence) {
+  const toks = sentence.text.replace(/[.?!,]/g, '').split(/\s+/).filter(Boolean);
+  return toks.map(t => { const m = BANK.find(x => x.en.toLowerCase() === t.toLowerCase()); return m ? m.zh : ''; }).join('');
+}
+function askSentenceMeaning(w) {
+  const sentence = sentenceMeaningSentence(w);
+  if (!sentence) return askReadPick(w);
+  rememberSentence(sentence.text);
+  const correct = sentence.zh;
+  const distractors = [];
+  const lit = literalConcatZh(sentence);
+  if (lit && lit !== correct) distractors.push(lit);                        // 逐字直翻(最毒誘答;跟正解相同就不放)
+  sentenceCandidates(buildSentencePatterns(), currentSentenceSourceWords())
+    .map(s => s.zh).filter(zh => zh && zh !== correct)
+    .forEach(zh => { if (distractors.length < 3 && !distractors.includes(zh)) distractors.push(zh); });
+  if (!distractors.length) return askReadPick(w);                           // 湊不到誘答 → 退回看中選英
+  const opts = shuffle([correct, ...distractors.slice(0, 3)]);
+  // 句子放「題目帶」(stage),作答帶只留選項 → 不會把選項擠到被底部操作列切掉
+  shell(`這句話在說什麼?<div class="sentence-cloze-line" style="color:#9bd2ff;font-weight:600;margin-top:12px">${sentence.text}</div><div style="margin-top:8px"><button class="replay" id="hear">${ICON.play} 聽</button></div>`, `
+    <div class="opts" id="opts"></div>`);
+  $('body').classList.add('choice-answer');
+  speakSentence(sentence);
+  $('hear').onclick = () => speakSentence(sentence);
+  const box = $('opts'); let sel = null;
+  opts.forEach(zh => {
+    const el = document.createElement('div'); el.className = 'opt'; el.textContent = zh;
+    el.onclick = () => {
+      if (box.classList.contains('locked')) return;
+      [...box.children].forEach(c => c.classList.remove('sel'));
+      el.classList.add('sel'); sel = zh;
+      const sb = $('submit'); if (sb) sb.disabled = false;
+    };
+    box.appendChild(el);
+  });
+  $('body').insertAdjacentHTML('beforeend', '<button class="btn act" id="submit" disabled>確認</button>');
+  $('submit').onclick = () => {
+    if (sel == null || box.classList.contains('locked')) return;
+    box.classList.add('locked');
+    const right = sel === correct;
+    [...box.children].forEach(c => {
+      if (c.textContent === correct) c.classList.add('right');
+      else if (c.textContent === sel) c.classList.add('wrong');
+    });
+    clearBottomActions();
+    const why = $('why'); why.className = right ? 'why' : 'why bad';
+    why.innerHTML = `<div class="result-head">
+      <div class="result-mark">${right ? '✓' : '!'}</div>
+      <div class="result-main">
+        <div class="result-word">${sentence.text}</div>
+        <div class="result-copy">${sentence.zh}</div>
+      </div>
+      <button class="replay" id="sayit">${ICON.play}再聽</button>
+    </div>
+    <button class="btn act" id="cont">繼續 →</button>`;
+    why.hidden = false;
+    $('sayit').onclick = () => speakSentence(sentence);
+    if (right) { sfx.correct(); creditSentence(sentence); onCorrect(w); updateBar(); $('cont').onclick = nextQuestion; }
+    else { sfx.wrong(); speakSentence(sentence); $('cont').onclick = () => { onWrong(w); nextQuestion(); }; }
+  };
 }
 
 function askBuildSentence(sourceWords = sentenceSourceWords(), done = showDone, forced = null, onMiss = null) {
@@ -348,7 +422,7 @@ function offerSentenceSelfAssess(sentence, done, retry, lastHeard = '') {
 let TRANSFORM_PATTERN_IDS = ["pat_this_is_a_noun", "pat_this_is_my_noun", "pat_this_is_adj", "pat_i_am_adj"];
 function pickTransformSentence(sourceWords = sentenceSourceWords()) {
   const pats = PATTERNS.filter(p => TRANSFORM_PATTERN_IDS.includes(p.id) && p.q && patMastery(p.id) > 0);   // 直述句練過(patMastery>0)才轉換 → 有「我會這句、現在改問句」的對照
-  return pickFresh(shuffle(sentenceCandidates(pats, sourceWords).filter(s => s && s.question)));   // 避開最近出過的句子(I am 只有 happy,沒避開會一直重複)
+  return pickSentenceByPattern(pats, sourceWords, s => s && s.question);   // 依句型平均取(不被 This is a 的多名詞稀釋掉 I am happy);避開最近出過的句子
 }
 function canTransform() { return !!pickTransformSentence(); }
 function askTransform(w, done) {
@@ -452,16 +526,16 @@ function askSentenceCloze(w) {
     <div class="letters" id="letters"></div>`);
   const inputs = [...document.querySelectorAll('.clozeinp')];
   if (inputs[0]) inputs[0].focus();
-  const clean = s => (s || '').normalize('NFKC').trim().toLowerCase();
   const go = () => {
     if (!inputs.length || inputs[0].disabled) return;
-    const right = inputs.every((inp, i) => clean(inp.value) === clean(q.answers[i]));
+    const slot = inputs.map((inp, i) => spellCheck(inp.value, q.answers[i]));   // 每格容錯:手滑一兩字母算對,但錯成別的真字判錯
+    const right = slot.every(r => r !== false);
     inputs.forEach((inp, i) => {
-      const ok = clean(inp.value) === clean(q.answers[i]);
       inp.disabled = true;
-      inp.classList.add(ok ? 'right' : 'wrong');
+      inp.classList.add(slot[i] !== false ? 'right' : 'wrong');
     });
     if (!right) $('letters').textContent = `正解: ${q.full}`;
+    else if (slot.some(r => r === 'typo')) $('letters').textContent = `差一點!正解: ${q.full}`;
     $('submit').disabled = true;
     recordSentenceClozeResult(w, q, right);
     bumpPat(q.patternId, right ? 20 : -15);
