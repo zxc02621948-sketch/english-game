@@ -157,17 +157,30 @@ function literalConcatZh(sentence) {
   const toks = sentence.text.replace(/[.?!,]/g, '').split(/\s+/).filter(Boolean);
   return toks.map(t => { const m = BANK.find(x => x.en.toLowerCase() === t.toLowerCase()); return m ? m.zh : ''; }).join('');
 }
+function sentenceMeaningKey(text) {
+  return String(text || '')
+    .normalize('NFKC')
+    .replace(/[\s,，.。!！?？、;；:："'“”‘’`~～()（）[\]【】{}《》<>-]/g, '')
+    .toLowerCase();
+}
 function askSentenceMeaning(w) {
   const sentence = sentenceMeaningSentence(w);
   if (!sentence) return askReadPick(w);
   rememberSentence(sentence.text);
   const correct = sentence.zh;
   const distractors = [];
+  const seen = new Set([sentenceMeaningKey(correct)]);
+  const pushDistractor = zh => {
+    const key = sentenceMeaningKey(zh);
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    distractors.push(zh);
+  };
   const lit = literalConcatZh(sentence);
-  if (lit && lit !== correct) distractors.push(lit);                        // 逐字直翻(最毒誘答;跟正解相同就不放)
+  pushDistractor(lit);                                                       // 逐字直翻(最毒誘答;跟正解相同就不放)
   sentenceCandidates(buildSentencePatterns(), currentSentenceSourceWords())
-    .map(s => s.zh).filter(zh => zh && zh !== correct)
-    .forEach(zh => { if (distractors.length < 3 && !distractors.includes(zh)) distractors.push(zh); });
+    .map(s => s.zh)
+    .forEach(zh => { if (distractors.length < 3) pushDistractor(zh); });
   if (!distractors.length) return askReadPick(w);                           // 湊不到誘答 → 退回看中選英
   const opts = shuffle([correct, ...distractors.slice(0, 3)]);
   // 句子放「題目帶」(stage),作答帶只留選項 → 不會把選項擠到被底部操作列切掉

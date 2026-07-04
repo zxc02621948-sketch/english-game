@@ -32,8 +32,8 @@
   .catnote { color:#8fa5b9; font-size:13px; line-height:1.35; }
   .cat.ph { border-style:dashed; color:#5f7488; opacity:.55; cursor:default; }
   .cat.ph:hover { border-color:#2c3e52; }
-  .map { order:1; min-width:0; background:#13202e; border:1px solid #243343; border-radius:16px; padding:22px; min-height:0; }
-  .map-brief { display:grid; grid-template-columns:minmax(0,1fr) minmax(220px,300px); gap:18px; align-items:end; margin-bottom:16px; }
+  .map { order:1; min-width:0; position:relative; background:#13202e; border:1px solid #243343; border-radius:16px; padding:22px; min-height:0; }
+  .map-brief { display:grid; grid-template-columns:minmax(0,1fr) minmax(220px,300px); gap:18px; align-items:center; margin-bottom:10px; }
   .maptitle { font-size:14px; color:#7f96ad; margin-bottom:6px; }
   .maptopic { color:#f1f6fa; font-size:24px; font-weight:900; line-height:1.18; }
   .map-progress { display:grid; gap:8px; }
@@ -41,22 +41,25 @@
   .map-progress-row b { color:#8ee000; font-size:18px; }
   .map-progress-bar { height:10px; border-radius:99px; background:#16202c; border:1px solid #2c3e52; overflow:hidden; }
   .map-progress-bar i { display:block; height:100%; border-radius:99px; background:linear-gradient(90deg,#2ecc8f,#8ee000); }
-  .mapscroll { height:clamp(300px, calc(var(--map-levels, 6) * 24px + 170px), 580px); max-height:56vh; overflow-y:auto; overflow-x:hidden; scrollbar-width:thin; scrollbar-color:#2c3e52 transparent; border-radius:14px; background:linear-gradient(180deg, rgba(15,31,43,.88), rgba(14,26,34,.7)); border:1px solid rgba(44,62,82,.62); }
+  .mapscroll { height:clamp(340px, calc(var(--map-levels, 6) * 24px + 220px), 640px); max-height:calc(100vh - 250px); overflow-y:auto; overflow-x:hidden; scrollbar-width:thin; scrollbar-color:#2c3e52 transparent; border-radius:14px; background:linear-gradient(180deg, rgba(15,31,43,.88), rgba(14,26,34,.7)); border:1px solid rgba(44,62,82,.62); }
+  .map-float-jump { position:absolute; right:38px; bottom:38px; z-index:4; width:48px; height:48px; display:grid; place-items:center; border-radius:999px; border:1px solid #5aa9ff; background:#13324a; color:#cfe6ff; cursor:pointer; box-shadow:0 14px 30px rgba(0,0,0,.28), 0 0 0 4px rgba(19,32,46,.58); transition:transform .12s ease, filter .12s ease, opacity .12s ease; }
+  .map-float-jump:hover { filter:brightness(1.1); transform:translateY(-1px); }
+  .map-float-jump .ico { width:24px; height:24px; margin:0; stroke-width:2.2; }
   .mapboss { transition:.12s; }
   .mapboss:hover { filter:brightness(1.18); }
-  .mapjump { display:grid; gap:10px; justify-items:center; margin-bottom:14px; }
+  .mapjump { display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:10px; align-items:center; justify-items:stretch; margin-bottom:12px; }
   .mapjump.nudge { animation:mapNudge .34s ease; }
   @keyframes mapNudge { 0%,100%{ transform:translateX(0); } 30%{ transform:translateX(-5px); } 65%{ transform:translateX(5px); } }
-  .branch-tabs, .map-status-row { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+  .branch-tabs, .map-status-row { display:flex; gap:10px; justify-content:center; flex-wrap:nowrap; }
   .branch-tabs { background:#16202c; border:1px solid #243343; border-radius:99px; padding:4px; }
   .mapjump button { background:#1d2c3a; border:1px solid #2c3e52; color:#9fb4c8; border-radius:99px; padding:6px 12px; cursor:pointer; font-size:13px; }
   .mapjump button.cur { border-color:#5aa9ff; color:#cfe6ff; }
   .mapjump .branch-tab { border-color:transparent; background:transparent; color:#cdd9e5; font-weight:800; font-size:15px; padding:10px 20px; min-width:134px; display:inline-flex; align-items:center; justify-content:center; }
   .mapjump .branch-tab.cur { background:#13324a; border-color:#5aa9ff; color:#fff; }
-  .map-lesson-meta { display:flex; justify-content:center; flex-wrap:wrap; gap:8px; color:#9fb4c8; font-size:13px; line-height:1.25; }
-  .map-lesson-meta span { min-height:28px; display:inline-flex; align-items:center; border:1px solid #243343; background:#16202c; border-radius:99px; padding:5px 11px; }
+  .map-lesson-meta { min-width:0; display:flex; justify-content:center; flex-wrap:wrap; gap:6px; color:#9fb4c8; font-size:12px; line-height:1.25; }
+  .map-lesson-meta span { min-height:26px; display:inline-flex; align-items:center; border:1px solid #243343; background:#16202c; border-radius:99px; padding:4px 10px; }
   .map-status-row { align-items:center; }
-  .mapjump .map-status-row .map-primary-start, #workmapcurrent { background:#8ee000; border-color:#8ee000; border-bottom:4px solid #5fa900; color:#102016; font-weight:900; font-size:18px; padding:12px 30px; min-width:190px; box-shadow:0 10px 24px rgba(142,224,0,.12); }
+  .mapjump .map-status-row .map-primary-start, #workmapcurrent { background:#8ee000; border-color:#8ee000; border-bottom:4px solid #5fa900; color:#102016; font-weight:900; font-size:16px; padding:10px 24px; min-width:172px; box-shadow:0 10px 24px rgba(142,224,0,.12); }
   .map-status-row #jumpboss { background:transparent; border-color:#e35b6a; color:#ffd0d6; font-weight:800; font-size:13px; padding:8px 14px; min-width:0; box-shadow:none; }
   .map-info-pill { display:inline-flex; align-items:center; max-width:min(520px, 90%); min-height:34px; border-radius:99px; padding:6px 14px; background:#16202c; border:1px solid #2c3e52; color:#9fb4c8; font-size:13px; line-height:1.35; }
 

@@ -15,6 +15,8 @@ const ICON = {
   flag:    _ico('<path d="M6 21V4.5"/><path d="M6 5h11l-2.2 3.4L17 12H6"/>'),
   book:    _ico('<path d="M12 6.6C10.5 5.3 8.3 4.8 6 5.1v12c2.3-.3 4.5.2 6 1.5 1.5-1.3 3.7-1.8 6-1.5v-12c-2.3-.3-4.5.2-6 1.5Z"/><path d="M12 6.6v12.4"/>'),
   briefcase: _ico('<rect x="4" y="8" width="16" height="11" rx="2"/><path d="M9 8V6.6A1.6 1.6 0 0 1 10.6 5h2.8A1.6 1.6 0 0 1 15 6.6V8"/><path d="M4 13h16"/>'),
+  arrowUp: _ico('<path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>'),
+  arrowDown: _ico('<path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>'),
 };
 
 // 挑最好的英文語音:Chrome 常有「Google US English」自然很多,但不指定就會被隨便挑(常選到死板的微軟 David/Zira)。

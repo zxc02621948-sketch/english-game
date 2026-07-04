@@ -182,19 +182,20 @@ let PATTERNS = [
     slots: { x: { pos: "noun", flags: ["language"] } }
   },
   // 複合句(兩子句)—— 給「你呢?」回應題(sentence_respond)用。用現有的 感受+喝/吃 就組得出,不必加新字。
+  // ★ 感受固定配對到合理的動作(渴→喝 / 餓→吃),句子才講得通;tired/sad 不自然接吃喝,不放進來。
   {
     id: "pat_resp_feel_drink",
-    text: "I am {e}. I drink {d}.",
-    zh: "我很{e},我喝{d}。",
-    requires: ["word_i", "word_am", "word_drink"],
-    slots: { e: { pos: "adj", flags: ["emotion"] }, d: { pos: "noun", flags: ["drinkable"] } }
+    text: "I am thirsty. I drink {d}.",
+    zh: "我很渴,我喝{d}。",
+    requires: ["word_i", "word_am", "word_thirsty", "word_drink"],
+    slots: { d: { pos: "noun", flags: ["drinkable"] } }
   },
   {
     id: "pat_resp_feel_eat",
-    text: "I am {e}. I eat {f}.",
-    zh: "我很{e},我吃{f}。",
-    requires: ["word_i", "word_am", "word_eat"],
-    slots: { e: { pos: "adj", flags: ["emotion"] }, f: { pos: "noun", flags: ["eatable"] } }
+    text: "I am hungry. I eat {f}.",
+    zh: "我很餓,我吃{f}。",
+    requires: ["word_i", "word_am", "word_hungry", "word_eat"],
+    slots: { f: { pos: "noun", flags: ["eatable"] } }
   }
 ];
 

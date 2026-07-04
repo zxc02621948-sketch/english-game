@@ -104,13 +104,13 @@ function ask(w) {
 }
 
 /* ---- 🎯 單字特訓:自選字、聽說讀寫混合、各題可「我學會了」移除(玩法層) ---- */
-function startTraining(words) {
-  inTraining = true; trainPool = words.slice(); trainTotal = trainPool.length;
+function startTraining(words, mode = 'weak') {
+  inTraining = true; trainMode = mode; trainPool = words.slice(); trainTotal = trainPool.length;
   homeEl.hidden = true; screen.hidden = false;
   trainNext();
 }
 function trainNext() {
-  trainPool = trainPool.filter(w => !isLearned(w));   // ★ 練到 100% 的字自動畢業(特訓本來就是挑「沒滿 100%」的字)→ 清空就結束,不再無限循環卡進度
+  if (trainMode !== 'review') trainPool = trainPool.filter(w => !isLearned(w));   // 練會模式:滿100%自動畢業;複習模式:已學會的字留著隨你刷,靠「移除」鈕退出(下面 injectTrainKnown)
   if (!trainPool.length) return trainingDone();
   const w = shuffle(trainPool)[0];
   current = w; currentRung = 1; inReview = false;   // 特訓不是補考 → 答對正常加熟練度
@@ -121,7 +121,11 @@ function trainAsk(w) {
   const k = wordKey(w);
   let pool = FORMATS.filter(f => !/^sentence/.test(f.id) && trackSkillOn(f.skill) && f.ok(w) && (f.tier || (f.skill === 'write' ? 3 : f.skill === 'speak' ? 2 : 1)) <= maxRungOf(w));
   if (!clozeReadyForDictation(w)) pool = pool.filter(f => !isHardDictationFormatId(f.id));   // 特訓也尊重長字/第三階段字的克漏字門檻,先不硬默寫
-  if (trainSkill !== 'all') { const only = pool.filter(f => f.skill === trainSkill); if (only.length) pool = only; }   // 🎯 自選技能:只練聽/說/讀/寫;該字沒有這技能的題型才退回混合
+  if (trainSkills.size) {   // 🎯 自選技能(可複選):只練選到的聽/讀/說/寫
+    let only = pool.filter(f => trainSkills.has(f.skill));
+    if (!only.length && !trainSkills.has('speak')) only = pool.filter(f => f.skill !== 'speak');   // 選了技能卻沒該字的題型 → 退而求其次,但沒選「說」就絕不塞說題(治「選寫卻跑出說題」;讀題 readpick 永遠在,退得掉)
+    if (only.length) pool = only;
+  }
   if (!pool.length) pool = [READPICK];
   if (pool.length > 1) { const alt = pool.filter(f => f.run !== lastFormat); if (alt.length) pool = alt; }
   const f = shuffle(pool)[0];
@@ -136,8 +140,8 @@ function injectTrainKnown(w) {
   if (document.getElementById('trainknown')) return;
   const b = document.createElement('button');
   b.id = 'trainknown'; b.className = 'btn sideact';
-  b.textContent = '✓ 我學會了,移除';
-  b.onclick = () => { markWordKnown(w); trainPool = trainPool.filter(x => x.id !== w.id); trainNext(); };
+  b.textContent = trainMode === 'review' ? '✓ 練夠了,移除' : '✓ 我學會了,移除';
+  b.onclick = () => { if (trainMode !== 'review') markWordKnown(w); trainPool = trainPool.filter(x => x.id !== w.id); trainNext(); };   // 複習模式的字已經 100%,不重新標會,只從這回合移除
   const skip = document.getElementById('skipspeak');   // ★ 說題左下已有「跳過說題」(給沒麥克風的人用,不能拿掉)→ 兩顆都壓矮、貼底,讓兩顆都塞進操作列不出框
   if (skip) {
     skip.style.minHeight = '46px'; skip.style.bottom = '22px';        // 下面那顆:22~68

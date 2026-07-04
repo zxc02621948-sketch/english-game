@@ -1,3 +1,7 @@
+  @media (max-width: 980px) and (min-width: 721px) {
+    .mapjump { grid-template-columns:1fr; justify-items:center; }
+  }
+
   @media (max-width: 720px) {
     .wrap { width:min(100% - 24px, 560px); }
     .topbar { flex-direction:column; align-items:stretch; gap:12px; margin:10px 0 16px; }
@@ -16,7 +20,7 @@
     .maptitle { margin-bottom:5px; font-size:13px; }
     .maptopic { font-size:20px; line-height:1.25; }
     .map-progress-row b { font-size:17px; }
-    .mapjump { gap:10px; margin-bottom:12px; }
+    .mapjump { grid-template-columns:1fr; gap:10px; justify-items:center; margin-bottom:12px; }
     .branch-tabs { width:100%; display:grid; grid-template-columns:1fr 1fr; gap:4px; }
     .mapjump .branch-tab { min-width:0; width:100%; padding:10px 8px; font-size:14px; white-space:nowrap; }
     .map-lesson-meta { width:100%; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; font-size:12px; }
@@ -26,6 +30,7 @@
     .map-status-row #jumpboss { flex:0 0 auto; width:auto; margin-top:2px; padding:8px 14px; font-size:13px; }
     .map-info-pill { max-width:100%; border-radius:14px; text-align:center; justify-content:center; }
     .mapscroll { height:clamp(280px, calc(var(--map-levels, 6) * 22px + 170px), 410px); max-height:54vh; }
+    .map-float-jump { right:24px; bottom:24px; width:44px; height:44px; }
     .card { padding:18px 18px 0; }
     #screen.lesson-screen { --action-bar-h:186px; --action-gap:28px; }
     .lesson { gap:14px; padding:16px 0 calc(var(--action-bar-h) + var(--action-gap)); }

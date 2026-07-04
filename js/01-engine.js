@@ -234,7 +234,7 @@ let level = 1, levelWords = [], queue = [], current = null;
 let plan = null, currentRung = 0;
 let quota = {}, lgot = {}, reviewQueue = [], inReview = false;     // 這關每字「要答對幾次 / 已答對幾次」;reviewQueue = 答錯待回顧重答的題
 let reviewMiss = {};                                               // 每字「連續答錯次數」(答對歸零)→ 連錯 2 次補考強制走複習卡
-let inTraining = false, trainPool = [], trainTotal = 0, trainSkill = 'all';   // 🎯 單字特訓:自選字 + 自選技能('all'混合 / listen / speak / read / write);各題可「我學會了」移除;不走主回合 quota/SRS。trainTotal=原本選幾個字(進度條用)
+let inTraining = false, trainPool = [], trainTotal = 0, trainSkills = new Set(), trainMode = 'weak';   // 🎯 單字特訓:自選字 + 自選技能(trainSkills 可複選:空=混合,或任選 listen/read/speak/write 幾種);各題可「我學會了」移除;不走主回合 quota/SRS。trainTotal=原本選幾個字(進度條用)。trainMode:'weak'=練還不會的字(滿100畢業)/'review'=複習已學會的字(不畢業,靠「移除」退出)
 let currentRecipe = null;
 function buildLessonQuota(words, recipe) {
   const q = {}, caps = {}, clock = meta.clock || 0;

@@ -171,6 +171,7 @@ function showHome() {
           <div class="map-status-row" id="mapstatus"></div>
         </div>
         <div class="mapscroll" id="mapscroll" style="--map-levels:${meta.maxLevel + 2}">${mapSVG()}</div>
+        <button class="map-float-jump" id="mapfloatjump" aria-label="回到目前關" title="回到目前關" hidden>${ICON.arrowDown}</button>
       </div>
     </div>`;
   document.getElementById('bgmtoggle').innerHTML = bgm.isOn() ? ICON.play : ICON.mute;
@@ -203,14 +204,39 @@ function showHome() {
   });
   // 關卡鏡頭:固定視窗 + 進場置中在目前關 + 滑鼠/觸控捲動 + 王快捷
   const mapscroll = document.getElementById('mapscroll'), mapsvg = mapscroll && mapscroll.querySelector('svg');
+  const mapFloatJump = document.getElementById('mapfloatjump');
+  const currentMapY = () => {
+    const node = mapsvg && mapsvg.querySelector(`.mapnode[data-lv="${meta.maxLevel}"]`);
+    if (!mapscroll || !mapsvg || !node) return null;
+    const scale = mapsvg.getBoundingClientRect().height / (mapsvg.viewBox.baseVal.height || 1);
+    return (+node.getAttribute('cy')) * scale;
+  };
+  const updateMapFloatJump = () => {
+    if (!mapscroll || !mapFloatJump) return;
+    const y = currentMapY();
+    if (y === null) { mapFloatJump.hidden = true; return; }
+    const top = mapscroll.scrollTop, bottom = top + mapscroll.clientHeight;
+    const pad = Math.min(88, Math.max(42, mapscroll.clientHeight * .16));
+    const dir = y < top + pad ? 'up' : (y > bottom - pad ? 'down' : '');
+    mapFloatJump.hidden = !dir;
+    if (!dir) return;
+    mapFloatJump.dataset.dir = dir;
+    mapFloatJump.innerHTML = dir === 'up' ? ICON.arrowUp : ICON.arrowDown;
+    const label = dir === 'up' ? '回到上方的目前關' : '回到下方的目前關';
+    mapFloatJump.setAttribute('aria-label', label);
+    mapFloatJump.title = label;
+  };
   const scrollToLv = (lv, smooth) => {
     const node = mapsvg && mapsvg.querySelector(`.mapnode[data-lv="${lv}"]`);
     if (!mapscroll || !node) return;
     const scale = mapsvg.getBoundingClientRect().height / (mapsvg.viewBox.baseVal.height || 1);
     mapscroll.scrollTo({ top: Math.max(0, (+node.getAttribute('cy')) * scale - mapscroll.clientHeight / 2), behavior: smooth ? 'smooth' : 'auto' });
+    requestAnimationFrame(updateMapFloatJump);
   };
+  if (mapFloatJump) mapFloatJump.onclick = () => scrollToLv(meta.maxLevel, true);
+  if (mapscroll) mapscroll.addEventListener('scroll', updateMapFloatJump, { passive: true });
   scrollToLv(meta.maxLevel, false);                                  // 同步置中(讀 getBoundingClientRect 會強制排版,拿得到真實尺寸)
-  requestAnimationFrame(() => scrollToLv(meta.maxLevel, false));     // 保險:萬一同步時尺寸還沒到位,下一幀再置中
+  requestAnimationFrame(() => { scrollToLv(meta.maxLevel, false); updateMapFloatJump(); });     // 保險:萬一同步時尺寸還沒到位,下一幀再置中
   const jump = document.getElementById('mapjump');
   if (jump) {
     const status = $('mapstatus');
@@ -228,49 +254,61 @@ function enterLevel(lv) {
   level = lv; homeEl.hidden = true; screen.hidden = false;
   showStart();
 }
-// 🎯 單字特訓:自選教過的字 → 各種聽說讀寫混合練 → 每題可「✓ 學會」把字移出特訓題庫(見 js/08 trainNext)。
+// 🎯 單字特訓:自選教過的字 → 聽說讀寫混合練。兩模式:「還不會」練到會(滿100畢業)/「已學會」複習(不畢業,靠「移除」退出)。見 js/08 trainNext / startTraining。
 function showTrainPicker() {
   inTraining = false;
   homeEl.hidden = true; screen.hidden = false;
   screen.className = 'card'; screen.innerHTML = '';
-  const words = BANK.filter(w => w.pos !== 'function' && wordIsTaught(w) && !isLearned(w)).sort((a, b) => pOf(a) - pOf(b));   // 教過、還沒滿 100% 的實詞(滿了不用特訓),弱的排前面
+  const review = trainMode === 'review';
+  const words = review
+    ? BANK.filter(w => w.pos !== 'function' && wordIsTaught(w) && isLearned(w)).sort((a, b) => (rec(a).due || 0) - (rec(b).due || 0))    // 已學會:最該複習(due 最早/最過期)的排前面
+    : BANK.filter(w => w.pos !== 'function' && wordIsTaught(w) && !isLearned(w)).sort((a, b) => pOf(a) - pOf(b));                          // 還不會:弱的排前面
+  const pill = (m, label) => `<button class="tmode" data-m="${m}" style="padding:6px 18px;border-radius:16px;border:1px solid #2c3e52;font-weight:700;color:#e8eef5;background:${(trainMode === m) ? '#2b6cb0' : 'transparent'}">${label}</button>`;
+  const modeTabs = `<div id="tmodes" style="display:flex;gap:8px;justify-content:center;margin:8px 0 4px">${pill('weak', '還不會')}${pill('review', '已學會')}</div>`;
+  const wireModes = () => $('tmodes').querySelectorAll('.tmode').forEach(b => b.onclick = () => { trainMode = b.dataset.m; showTrainPicker(); });
   if (!words.length) {
-    screen.innerHTML = `<main class="start-panel"><div style="text-align:center;font-size:40px">🎯</div>
-      <h2 style="text-align:center">目前沒有需要加強的字</h2>
-      <div class="sub" style="text-align:center">教過的字都已經 100% 了 —— 去「日常單字練習」學新字,弱掉的字之後也會出現在這。</div>
-      <button class="btn" id="tback" style="margin-top:14px">← 回主畫面</button></main>`;
-    $('tback').onclick = showHome; return;
+    screen.innerHTML = `<main class="train-pick"><div style="text-align:center;font-size:40px">🎯</div>
+      <h2 style="text-align:center">單字特訓</h2>${modeTabs}
+      <div class="sub" style="text-align:center;margin-top:8px">${review ? '還沒有「學會」的字可以複習 —— 先把字練到 100% 再回來這裡保持手感。' : '目前沒有需要加強的字 —— 教過的都 100% 了(去「已學會」可以複習),弱掉的字之後也會出現在這。'}</div>
+      <button class="btn" id="tback" style="margin-top:14px;background:#1d2c3a;border-color:#2c3e52">← 回主畫面</button></main>`;
+    wireModes(); $('tback').onclick = showHome; return;
   }
   const sel = new Set();
   const SKILLS = [['all','混合'],['listen','聽'],['read','讀'],['speak','說'],['write','寫']];
   screen.innerHTML = `<main class="train-pick">
     <div style="text-align:center;font-size:40px">🎯</div>
-    <h2 style="text-align:center">單字特訓</h2>
-    <div class="sub" style="text-align:center">挑想加強的字(弱的排前面)+ 想練的技能 → 練到會了點「✓ 學會」移除。</div>
-    <div class="train-skills" id="tskills">${SKILLS.map(([sk,label]) => `<button class="tskill${sk === trainSkill ? ' sel' : ''}" data-sk="${sk}">${label}</button>`).join('')}</div>
+    <h2 style="text-align:center">單字特訓</h2>${modeTabs}
+    <div class="sub" style="text-align:center">${review ? '挑學會但想保持/常搞混的字(該複習的排前面)+ 技能 → 練夠了點「✓ 移除」。' : '挑想加強的字(弱的排前面)+ 想練的技能 → 練到會了點「✓ 學會」移除。'}</div>
+    <div class="train-skills" id="tskills">${SKILLS.map(([sk,label]) => `<button class="tskill" data-sk="${sk}">${label}</button>`).join('')}</div>
     <div class="train-words" id="twords"></div>
     <button class="btn train-start" id="tstart" disabled>先選幾個字</button>
     <button class="btn" id="tback" style="margin-top:10px;background:#1d2c3a;border-color:#2c3e52">← 回主畫面</button>
   </main>`;
+  wireModes();
+  // 技能可複選:「混合」= 清空(= 全部);點各技能 toggle 加入/移除。空集合視為混合。
+  const syncSkills = () => $('tskills').querySelectorAll('.tskill').forEach(b => b.classList.toggle('sel', b.dataset.sk === 'all' ? trainSkills.size === 0 : trainSkills.has(b.dataset.sk)));
   $('tskills').querySelectorAll('.tskill').forEach(btn => btn.onclick = () => {
-    trainSkill = btn.dataset.sk;
-    $('tskills').querySelectorAll('.tskill').forEach(b => b.classList.toggle('sel', b === btn));
+    const sk = btn.dataset.sk;
+    if (sk === 'all') trainSkills.clear();
+    else if (trainSkills.has(sk)) trainSkills.delete(sk); else trainSkills.add(sk);
+    syncSkills();
   });
+  syncSkills();
   const box = $('twords');
   words.forEach(w => {
     const el = document.createElement('button');
     el.className = 'twordchip'; el.dataset.id = w.id;
-    el.innerHTML = `<b>${w.en}</b> <span class="tzh">${w.zh}</span> <span class="tpct">${pOf(w)}%</span>`;
+    el.innerHTML = `<b>${w.en}</b> <span class="tzh">${w.zh}</span> ${review ? '<span class="tpct">會</span>' : `<span class="tpct">${pOf(w)}%</span>`}`;
     el.onclick = () => {
       if (sel.has(w)) { sel.delete(w); el.classList.remove('sel'); }
       else { sel.add(w); el.classList.add('sel'); }
       const n = sel.size;
       $('tstart').disabled = !n;
-      $('tstart').textContent = n ? `開始特訓 ${n} 個字 →` : '先選幾個字';
+      $('tstart').textContent = n ? `開始${review ? '複習' : '特訓'} ${n} 個字 →` : '先選幾個字';
     };
     box.appendChild(el);
   });
-  $('tstart').onclick = () => { if (sel.size) startTraining([...sel]); };
+  $('tstart').onclick = () => { if (sel.size) startTraining([...sel], trainMode); };
   $('tback').onclick = showHome;
 }
 function showSettings() {
