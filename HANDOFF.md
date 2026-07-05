@@ -8,7 +8,33 @@
 
 ---
 
-## 最新交接快照（2026-07-04 深夜 / Claude Opus 4.8）— 產品方向定案 + 三個功能進遊戲 + GitHub 備份
+## 最新交接快照（2026-07-05 / Claude Opus 4.8）— 劃重點標註系統做出來了（Claude 邏輯 + Codex 視覺,收尾中）
+
+> 接續下一則(2026-07-04 深夜)。這輪把「劃重點單字標註系統」從設計做成東西、進了遊戲。**Claude/Codex 分工實測成立**:Claude 做資料/邏輯、Codex 做視覺,靠 `js/04-annotate.js` 的 contract + `CODEX_TODO.md` 對接。
+
+### 劃重點標註系統 —— 現況
+- **資料/邏輯(Claude,`js/04-annotate.js`,console 驗過)**:拼讀規則表 `PHONICS`(dr/tr/kn/wr/tion/ck/ee/ea/oo/字尾-y/magic-e,正則偵測、支援 `exclude`/`only`)、字根表 `ROOTS`(seed)、`annotateSegments` / `showAnnotations`(淡出式鷹架:`meta.annotMode` learned-hide/always/off + `isLearned` + `force`)/ `marksForError`(答錯挑「你錯的那點」那條)。**日常軌 22/43 字會亮、零 false positive**。
+- **渲染/接線(Codex)**:低調線條 + hover note + data 屬性 + 事件委派;接進教卡/複習/選項/排詞塊/結算等 + 設定三態 + `.why` 答錯秀 note。**但視覺還在收尾**(見下)。
+- **git**:committed 到 `7bae320`;**Codex 的視覺 pass 還掛在工作區沒 commit**(css/02、js/03/04/05/06/10)—— ★ 接手先確認它 commit+push 了沒,不然沒備份。
+
+### ★ 視覺規範已定案 → 全在 `CODEX_TODO.md` 第 7 條(Codex 照這個收尾)
+使用者實玩後拍板:**虛線底線**(不是實線、**不是整個字變色/填色塊**)、**橘虛線=沒教過**(★ 只在閱讀/沉浸情境,**教卡不套**)、淺虛線=有註解、劃重點色(霧藍拼讀/琥珀字根)=字裡那段、skip-ink 決定、**顯示範圍只在 教卡/答錯回饋/複習**(答題選字 UI 換回純文字)、**記號說明(圖例)還沒做**。
+
+### 還開著的(優先序)
+1. **Codex 收視覺**(CODEX_TODO #7 那整套)+ 把它的改動 commit+push。
+2. **記號說明文字**:等 Codex 建圖例 UI,Claude 出「橘虛線=沒教過…」那些字。
+3. **標註內容擴充**:字根/家族要**等字庫變豐富**才有料(現在基礎字幾乎沒家族對);拼讀可繼續加規則。
+4. **CODEX_TODO #1~5**:移除地圖王節點、小遊戲 hub 版面等,Codex 還沒做。
+5. **B 故事關進遊戲**(當階段收尾)、王→小遊戲(引擎已做、地圖王節點待 Codex 清)。
+
+### 協作備忘(這輪學到的)
+- 分工靠 **`js/04-annotate.js` contract + `CODEX_TODO.md`** 對接,很順。
+- 但兩邊會**同時改同一批檔**(js/03/05/06/10)→ **commit 前先 `git status` 分清、別掃到對方的**;能錯開改檔更好。
+- 節奏成立:**使用者玩 → 分流(規則/內容給 Claude、版面/視覺給 Codex)**。
+
+---
+
+## 交接快照（2026-07-04 深夜 / Claude Opus 4.8）— 產品方向定案 + 三個功能進遊戲 + GitHub 備份
 
 > 這輪從一次「交接」滾成一整場**產品方向探索**(對照多鄰國逐點釐清),同時把幾個東西真的做進遊戲。**下面「方向定案」比程式碼更重要,別走回頭路。**
 
