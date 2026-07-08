@@ -24,7 +24,11 @@ const PHONICS = [
   { id:'ck',   re:/ck$/i,   label:'ck → 念一個「k」',  note:'ck 就是一個 k 音。back / duck / rock。', say:'k' },
   // 母音組合(字中任何位置)
   { id:'ee',   re:/ee/i,    label:'ee → 長音「i」',    note:'兩個 e 疊在一起念長音 i(像「衣」)。see / coffee / tree / meet。' },
-  { id:'ea',   re:/ea/i,    label:'ea → 多念長音「i」', note:'ea 常念長音 i:eat / read / tea / speak;少數念短音 e:bread / head。' },
+  // ea 拆兩條:bread 那群念短音,別讓它掛「長音 i」的標籤教錯音(使用者實玩把 bread 拼成 bared 引出來的)
+  { id:'ea_short', re:/ea/i, only:['bread','head','dead','ready','heavy','weather','breakfast','sweater'],
+    label:'ea → 這裡念短音「e」', note:'這個字的 ea 念短音 e(跟 bed 一樣),不是 tea 的長音 i。bread / head / dead 都是這掛的。', say:'eh' },
+  { id:'ea',   re:/ea/i,    exclude:['bread','head','dead','ready','heavy','weather','breakfast','sweater'],
+    label:'ea → 多念長音「i」', note:'ea 常念長音 i:eat / read / tea / speak;少數念短音 e:bread / head。' },
   { id:'oo',   re:/oo/i,    label:'oo → 兩種音',       note:'oo 有兩種音:短音(book / good / look)、長音(moon / food)。' },
   // 字尾 -y(子音後)念 i;用 lookbehind 只標那個 y,避開 my / buy / say(母音+y)
   { id:'y_i',  re:/(?<=[bcdfghjklmnpqrstvwxz])y$/i, label:'字尾 -y → 念「i」音', note:'子音後面的字尾 y 念 i:happy / hungry / thirsty / baby。(不是 my / buy 那種母音+y)' },

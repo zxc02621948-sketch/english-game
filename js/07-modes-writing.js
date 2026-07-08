@@ -106,6 +106,8 @@ function askWrite(w) {
 // 只給「有好拆法」的字,沒有就不出;拆法可以是「巧合的」記憶鉤子(fri+end),不必是真字源 —— 只拿來記、別當真規則推別的字。
 const SPELL_HINT = {
   word_friend: "fri + end —— 朋友陪你到最後(end);結尾是 -end,別漏掉中間的 e(不是 frend)。",
+  word_bread:  "b + read —— 邊吃麵包邊讀書:b 後面就是整個 read。br 是黏在一起的音(brrr),r 一定緊跟著 b(不是 bared)。",
+  word_drink:  "dr + ink —— dr 黏在一起念「jr」,後面是 ink(墨水):喝下一瓶墨水?好記就好。",
 };
 // 拼錯 → 把正解逐字母標出來(綠=對 紅=錯/漏),有記法就一起上
 function markLetters(target, typed) {

@@ -1501,3 +1501,15 @@ listen(→ music/to)、hear、say(→ hello/yes/no)、go/come(→ 地點 + home 
 - 拆掉 ownable(my ___)與 sweetenable(可以加糖的飲料;water 會被判錯,但糖水明明存在)兩題;留 drinkable/eatable/emotion(考字義,正當)。
 - flag 本身不動(This is my {x} 等句型照用)。跟先前拆「可數/加 a」是同一個判例。
 - 驗:全字庫抽 60 次分類題,只出 drinkable/eatable/emotion。
+
+
+## 2026-07-08(4 / Claude Opus 4.8)— bread 拼成 bared 引出的拼讀修正
+
+### 使用者實玩
+把 bread 拼成 bared,說「這樣拚念起來也是對的吧🤣」。判錯本身是對的(bared 是真字,spellCheck 的「錯成別的真字判錯」防線正常);但暴露兩個教學洞:
+1. **ea 規則會教錯音**:PHONICS 的 ea 標籤寫「多念長音 i」,劃重點畫在 bread 上會先看到錯的音(bread 的 ea 念短音 e)。
+2. **br 子音串沒有記憶鉤**:字母順序錯(br vs bar)是零基礎典型錯,沒東西接住。
+
+### 修
+- **ea 拆兩條**(js/04-annotate.js):`ea_short`(only:bread/head/dead/ready/heavy/weather/breakfast/sweater)標「ea → 這裡念短音 e(跟 bed 一樣)」;原 ea 規則 exclude 同一批。驗:bread/head 拿短音標籤、eat/tea/read 長音、marksForError(bread,'bared') 挑出短音那條。
+- **SPELL_HINT 加 bread**(js/07):「b + read —— 邊吃麵包邊讀書;br 是黏在一起的音,r 一定緊跟著 b(不是 bared)」。順手補 drink(dr+ink)。
