@@ -55,14 +55,24 @@
 - **變體 = 文法的道理**:「this is a cat ↔ is this a cat?」一樣的字換順序就變問句 → 文法不用背、重排就懂。**剛好吃現有排詞機制**(排詞 = 排順序)。
 - **膠水一學會就永久在線**:L6-10 後你有 is/this/a → L11+ 的新字也能順手造句;後面的應用階段是再加新句型 / 變體,不是重新解鎖。
 
-## 字的分批(已寫進 `index.html` 的 `BATCHES`,可改)
-> 原則:第一批實詞要「跟膠水批一搭就造得出很多句」。階段 N 解鎖批 0..N-1(`batchOf(w) < meta.stage`)。
+## 字的分批(★ 2026-07-08 重編:10 個「情境批」,在 `js/01-engine.js` 的 `BATCHES`)
+> 原則:每批 = 一個**可完成的生活情境**、實詞 ≤5、**每個字進來當下就有句子可用**(不准孤兒字)、後面的批持續回收前面的字。階段 N 解鎖批 0..N-1(`batchOf(w) < meta.stage`)。全部字都要編批,**不留「未編批自動接最後」的字**(那會在後段一次倒出一面牆)。
 
-- **批 1(L1-5,飲料短語原型)**:`water` `tea` `coffee` `sugar` + 膠水 `or/with/please`
-  - 第一關原型先試「先用短語,錯了再回頭教」:`water or tea?`、`coffee with sugar.`、`tea, please.`
-- **批 2(L6-10,膠水 + 早期具體字)**:`cat` `book` `friend` `happy` + `this` `is` `a` `my` `I` `am` + `home/house`
-  - 一湊齊就能造:**This is a cat / book / friend.**、**This is my home / house.**、**I am happy.**
-- **批 3+(L11 起)**:更多實詞 + 動詞(`drink`/`read`/`eat`/`big`/`small`…)。**目前還沒編批的字暫附在最後**(`batchOf = BATCHES.length`,會在 stage 3 一次解鎖)→ 擴字庫時要照這份補進 `BATCHES`。
+| 批 | 情境 | 實詞 | 膠水 | 解鎖句 |
+|---|------|------|------|--------|
+| 1 | ☕ 點飲料 | water, tea, coffee, sugar | or, with, please | Coffee or tea? / Tea, please. / Coffee with sugar. |
+| 2 | 👉 這是什麼 | cat, book, friend | this, is, a, my | This is a cat. / This is my book. / Is this…?(轉換) |
+| 3 | 🙂 我的心情 | happy, sad, tired | I, am | I am happy. / Am I…?(轉換) |
+| 4 | 🍚 肚子餓了 | hungry, eat, rice, bread | — | I eat rice. / I am hungry. I eat bread.(回應句) |
+| 5 | 🥛 口渴了 | thirsty, drink, milk | — | I drink milk.(回收批1飲料) |
+| 6 | 🏠 我的家 | home, house, go, big, small | — | This is my home. / I go home. / This is big. |
+| 7 | 🛒 上街 | buy, get, see, look | at | I buy a book. / I see a cat. / I look at a house. |
+| 8 | 👋 開口說 | speak, say, hello, English, Chinese | — | I speak English. / I say hello. |
+| 9 | 👂 用耳朵 | listen, hear, music | to | I listen to music. / I hear a cat. |
+| 10 | 🍞 在家的一天 | make, good, bad, beautiful, read | — | I make tea. / I read a book. / This is good. |
+
+- **移出日常軌**(2026-07-08):`project` `experience`(工作軌的料)、`do` `come` `bring` `take` `and`(零基礎給不出自然句子,等有句型再回來)。CONFUSE_PAIRS 相關對照一併清掉。
+- **新字**:`hello` `music` + 功能詞 `to`;新句型 `I go home.` / `I say hello.` / `I listen to {x}.` / `I hear a {x}.`;新 flags `audible`/`listenable`。
 
 ## 變體 / 句型擴充(L16-20 起)
 - 問句:`Is this a {x}?`(直述 `This is a {x}.` 的重排)→ 排詞題「排成問句」。

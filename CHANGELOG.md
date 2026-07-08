@@ -1436,3 +1436,30 @@ listen(→ music/to)、hear、say(→ hello/yes/no)、go/come(→ 地點 + home 
 對。原句參考卡用了一個有邊框+底色+內距的 box,白佔一堆高度 → 題目帶太高、擠得作答帶還要捲。
 - `css/05` `.transform-intro` 拿掉 background/border/padding/max-width → 純文字;`.transform-stmt` 30→26、arrow/zh margin 壓小。
 - 驗:transform-intro computed 無底色/無邊框/無內距、在題目帶;作答帶只剩 buildzh/slots/bank(同一般排詞)。零 console error。⚠ headless 量不到像素,請目視確認不再捲。
+
+
+## 2026-07-08(1 / Claude Opus 4.8)— ★ 日常軌字庫重編:10 個情境批(治學習曲線斷崖 + 孤兒動詞)
+
+### 為什麼(整體檢查抓出的三個結構問題)
+1. 54 字只有 31 字有編批,**23 字擠在自動接尾的最後一批** → 第 6 階一次倒出一面牆(定案是每批 ≤5)。
+2. **孤兒動詞一堆**(go/come/say/take/bring/hear/do):教了卻沒句子可用,違反「讓英文有道理」初衷;project/experience 會生出「這是一個專案」給零基礎玩家。
+3. 動力迴圈太薄(另開 Step 2 處理:情境完成卡)。
+
+### 改了什麼
+- **BATCHES(js/01)重編成 10 個情境批**(每批=可完成的生活情境、實詞 ≤5、字進來當下就有句子用):點飲料/這是什麼/我的心情/肚子餓了/口渴了/我的家/上街/開口說/用耳朵/在家的一天。表在 CURRICULUM.md。
+- **移出日常軌**:project、experience(工作軌的料)、do/come/bring/take/and(給不出自然句,等有句型再回來)。CONFUSE_PAIRS 死引用一併清(js/03,不然 fourOptions 會拿 undefined 當誘答)。
+- **新字**:hello、music + 功能詞 to(EMOJI 掛 👋/🎵)。
+- **新句型(js/00)**:I go home. / I say hello.(固定句)+ I listen to {x}.(listenable)+ I hear a {x}.(audible;cat 加 audible flag)。新 flags 記進 CONTENT_RULES.md。
+- **中文修正**:「{x}, please.」的 zh「{x},請。」→「請給我{x}。」
+
+### 驗(console,零 error)
+- 字庫 50 字、全部編批、無孤兒字(每個實詞在自己的批解鎖當下就有句型可用)。
+- 每階都有新句型解鎖(階1~10 各 1~4 條)。
+- 50 關全曲線模擬:每階新字都在前 3 關引入、全教到、buildLevel 無爆。
+- 新句型生成抽查:I go home./我回家。 I hear a cat./我聽見貓的聲音。 等全對。
+- ⚠ BATCHES 變了,舊進度的 stage 對應會亂 → 建議 🔄 重來。
+
+### 下一步(已跟使用者定案)
+1. 「學會」門檻改嚴:默寫成功要「隔關再驗」(wroteClock + 下一關 SRS 再考一次寫,過了才算真的會寫)。
+2. Step 2 動力迴圈:情境完成卡(「你會點飲料了 ☕」)、結算獎勵動畫、連擊。
+3. Step 3 關卡畫面微整:選項配圖、答對回饋動畫、地圖標情境名。

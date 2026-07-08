@@ -8,12 +8,7 @@ const CONFUSE_PAIRS = {
   word_hear:   { with:"word_listen", note:"hear 是聽見(結果);listen 是主動專心聽。" },
   word_speak:  { with:"word_say",    note:"speak 是開口說話 / 說某語言;say 是說出具體內容。" },
   word_say:    { with:"word_speak",  note:"say 重點是說的內容;speak 重點是開口這個動作。" },
-  word_make:   { with:"word_do",     note:"make 是做出一個成品;do 是執行一件事。" },
-  word_do:     { with:"word_make",   note:"do 是做某件事;make 是做出某個東西。" },
-  word_bring:  { with:"word_take",   note:"bring 是帶『來』這裡;take 是帶『走』離開。" },
-  word_take:   { with:"word_bring",  note:"take 是拿走 / 帶走;bring 是帶來這裡。" },
-  word_come:   { with:"word_go",     note:"come 是往這裡來;go 是往別處去。" },
-  word_go:     { with:"word_come",   note:"go 是離開往別處;come 是靠近往這來。" },
+  // do/come/bring/take 已移出日常字庫(零基礎給不出自然句子,等有句型再回來)→ 相關對照先拿掉,免得 fourOptions 拿 undefined 當誘答。
 };
 
 const confuseNote = (w, picked) => {

@@ -47,12 +47,18 @@ const isLearned = w => rungOf(w) === 4;         // mastery 到 100% = 學會
 const pOf = w => rec(w).mastery || 0;
 
 // 學習順序 + 分批解鎖(課程結構,見 CURRICULUM.md):批1 實詞 → 批2 膠水詞(解鎖造句)→ 之後交替。階段 N 解鎖批 0..N-1。
+// ★ 2026-07-08 重編:10 個「情境批」,每批 = 一個可完成的生活情境,實詞 ≤5、進來當下就有句子可用、後面的批持續回收前面的字。
 let BATCHES = [
-  ['word_water','word_tea','word_coffee','word_sugar','word_or','word_with','word_please'],   // 批1(L1-5)飲料短語:先用 water/tea/coffee/sugar 做生活應用
-  ['word_cat','word_book','word_friend','word_happy','word_this','word_is','word_a','word_my','word_i','word_am','word_home','word_house'], // 批2(L6-10)膠水詞 + 早期具體字 → 造句時也有新材料
-  ['word_hungry','word_thirsty','word_tired','word_sad','word_eat'], // 批3:感受 + eat 暖身
-  ['word_drink','word_rice','word_bread','word_milk'],    // 批4:吃喝句子材料
-  ['word_at','word_english','word_chinese'],              // 批5:救活孤兒動詞的材料(look at / speak 語言)
+  ['word_water','word_tea','word_coffee','word_sugar','word_or','word_with','word_please'],       // 批1 ☕ 點飲料:Coffee or tea? / Tea, please. / Coffee with sugar.
+  ['word_cat','word_book','word_friend','word_this','word_is','word_a','word_my'],                // 批2 👉 這是什麼:This is a cat. / This is my book. / Is this…?
+  ['word_happy','word_sad','word_tired','word_i','word_am'],                                      // 批3 🙂 我的心情:I am happy. / Am I…?
+  ['word_hungry','word_eat','word_rice','word_bread'],                                            // 批4 🍚 肚子餓了:I eat rice. / I am hungry. I eat bread.
+  ['word_thirsty','word_drink','word_milk'],                                                      // 批5 🥛 口渴了:I drink milk.(回收批1飲料)
+  ['word_home','word_house','word_go','word_big','word_small'],                                   // 批6 🏠 我的家:This is my home. / I go home. / This is big.
+  ['word_buy','word_get','word_see','word_look','word_at'],                                       // 批7 🛒 上街:I buy a book. / I see a cat. / I look at a house.
+  ['word_speak','word_say','word_hello','word_english','word_chinese'],                           // 批8 👋 開口說:I speak English. / I say hello.
+  ['word_listen','word_hear','word_music','word_to'],                                             // 批9 👂 用耳朵:I listen to music. / I hear a cat.
+  ['word_make','word_good','word_bad','word_beautiful','word_read'],                              // 批10 🍞 在家的一天:I make tea. / I read a book. / This is good.(回收食物飲料/書)
 ];
 let _batchSet, _rest, _batchIndex, LEARN_ORDER;
 function rebuildCurriculum() {                                        // 依「當前軌」的 BANK+BATCHES 重算課程衍生表(切軌時要重跑)

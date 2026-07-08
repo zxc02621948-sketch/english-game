@@ -49,6 +49,8 @@
   - `descriptive`: 可描述物件狀態的形容詞，可放進 `This is {x}.`，例如 `beautiful/big/small/good/bad`。不要給 `happy` 這種人/心情狀態，避免出 `This is happy.`
   - `makeable`: 可製作的食物飲料，可放進 `I make {x}.`，例如 `coffee/tea/bread/rice`。不給 `water/milk`（不「做」水/奶）。
   - `language`: 語言名（開頭大寫），可放進 `I speak {x}.`，例如 `English/Chinese`。不要同時給 `presentable/countable`（避免 `This is a English`）。
+  - `audible`: 會發出聲音、可數的東西，可放進 `I hear a {x}.`，例如 `cat`。不可數的（music）不要給（會出 `I hear a music`）。
+  - `listenable`: 適合專心聽的內容，可放進 `I listen to {x}.`，例如 `music`。
 
 不要新增沒有句型會用到的 flags。
 
