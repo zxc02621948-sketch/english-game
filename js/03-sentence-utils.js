@@ -133,15 +133,29 @@ function pickFresh(list) {
 
 // 依「句型」平均取句子:不被「可填字多的句型」(This is a {noun} 有 cat/book/friend/house 四個)稀釋掉「只有一個變化的句型」(招牌的 I am happy 只有 happy)。
 // 先挑句型(優先「還有沒出過的句子」的句型)→ 再從那句型挑 fresh。每個句型機會均等,I am happy 不會被埋到抽不到。
+// 句型「跟本階有關」= requires 裡有本階的字,或 slot 收得進本階已教的字 → 句子題偏重它們(2026-07-08 治「第4階還在狂出請給我茶」)
+function patternTouchesStage(p, stage) {
+  const cur = (stage || 1) - 1;
+  if (asList(p.requires).some(id => { const w = wordById(id); return w && batchOf(w) === cur; })) return true;
+  return Object.values(p.slots || {}).some(slot => BANK.some(w => batchOf(w) === cur && rec(w).taught && wordMatchesSlot(w, slot)));
+}
 function pickSentenceByPattern(patterns, sourceWords = sentenceSourceWords(), filter) {
   const groups = patterns
-    .map(p => ({ id: p.id, list: (() => { const l = sentenceCandidates([p], sourceWords); return filter ? l.filter(filter) : l; })() }))
+    .map(p => ({ id: p.id, p, list: (() => { const l = sentenceCandidates([p], sourceWords); return filter ? l.filter(filter) : l; })() }))
     .filter(g => g.list.length);
   if (!groups.length) return null;
   const lastText = recentSentences[0];                                   // 上一題句子 → 找出它的句型
   const lastPat = lastText && groups.find(g => g.list.some(s => s.text === lastText));
   let pool = lastPat && groups.length > 1 ? groups.filter(g => g.id !== lastPat.id) : groups;   // 均勻挑句型,但避開「上一題的句型」→ 不會同句型連發、也不被多變化句型稀釋掉單變化的
-  return pickFresh(shuffle(shuffle(pool)[0].list));
+  // ★ 偏重本階:池裡有「跟本階有關」的句型 → 7 成機率只從那群挑;3 成照舊(舊句型仍回鍋複習,只是不再霸屏)
+  const stage = typeof stageOfLevel === 'function' ? stageOfLevel(level) : (meta.stage || 1);
+  const curPool = pool.filter(g => patternTouchesStage(g.p, stage));
+  if (curPool.length && curPool.length < pool.length && Math.random() < 0.7) pool = curPool;
+  // 同句型內也優先「含本階字」的句子(I am ___ 在第4階優先填 hungry 不是 happy);pickFresh 的避重複照舊 → 不會同一句連發
+  const curEns = new Set(BANK.filter(w => batchOf(w) === stage - 1).map(w => w.en.toLowerCase()));
+  const containsCur = s => s.text.toLowerCase().split(/[^a-z']+/).some(t => curEns.has(t));
+  const list = shuffle(shuffle(pool)[0].list).sort((a, b) => containsCur(b) - containsCur(a));
+  return pickFresh(list);
 }
 function pickBuildSentence(sourceWords = sentenceSourceWords()) {
   return pickSentenceByPattern(buildSentencePatterns(), sourceWords);

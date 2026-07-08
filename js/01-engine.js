@@ -173,6 +173,8 @@ function buildLevel() {
   add(focus);                          // 1. 第三階段後的小組鎖定:這組還沒穩,先練它
   add(fresh.slice(0, NEW));            // 2. 新字(在學/焦點太多就先不加,先把在學的練完)
   add(active.slice(0, ACTIVE_CAP));    // 3. 學習中(主力)— 優先練這些,這關的重點
+  if (recipe.role === 'sentence' || recipe.role === 'review')   // 3.5 句子應用/王前整理關 = 本階的應用場:本階字(含已學會的)先進場,別讓到期舊字把主角擠掉(2026-07-08 使用者:「本階單字練得比回顧少」)
+    add(shuffle(BANK.filter(w => batchOf(w) === stage - 1 && w.pos !== 'function' && !isFresh(w))));
   add(needsWrite.slice(0, 2));         // 4. 補默寫:只穿插幾個;長字/第三階段字要先通過克漏字門檻
   add(due.slice(0, 2));                // 4. 到期複習:只穿插幾個(舊字主要靠句子複習帶,別灌一堆已會的淹掉學習)
   if (picked.length < 4 && !fresh.length) add(shuffle(BANK.filter(w => isLearned(w) && w.pos !== 'function' && batchOf(w) < stage)));   // 5. 太少且「沒有新字可學了」(純鞏固期)才補學會的字回鍋
@@ -285,14 +287,20 @@ function buildLessonQuota(words, recipe) {
     caps[k] = cap;
   });
   // ★ 2026-07-08 情境批(每批 3~5 字)後,字少/字都學會的關 sum(caps) 會塌到 4 題沒手感(句子應用關 14 題縮成 4)。
-  //   → caps 輪流 +1 補到 recipe 要的題數;每字仍封頂 HARD_CAP=5(單關別拿同一個字磨爛)。句子應用/王前整理「多練幾輪」本來就是目的。
-  const HARD_CAP = 5;
+  //   → caps 輪流 +1 補到 recipe 要的題數。★ 補題「本階字優先」:主角先吃滿(封頂 5),學習中舊字次之(4),
+  //   已學會的舊字最後且單關最多 2 次(複習點到為止)—— 治「舊題一直出、本階單字練得比回顧少」。
+  const stageCur = stageOfLevel(level) - 1;
+  const bumpMax = w => batchOf(w) === stageCur ? 5 : (isLearned(w) ? 2 : 4);
+  const bumpOrder = words.slice().sort((a, b) => {
+    const rank = w => (batchOf(w) === stageCur ? 0 : isLearned(w) ? 2 : 1);
+    return rank(a) - rank(b);
+  });
   let capSum = words.reduce((sum, w) => sum + (caps[wordKey(w)] || 0), 0);
   while (capSum < desired) {
     let bumped = false;
-    for (const w of words) {
+    for (const w of bumpOrder) {
       const k = wordKey(w);
-      if (caps[k] < HARD_CAP && capSum < desired) { caps[k]++; capSum++; bumped = true; }
+      if (caps[k] < bumpMax(w) && capSum < desired) { caps[k]++; capSum++; bumped = true; }
     }
     if (!bumped) break;
   }
