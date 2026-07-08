@@ -205,7 +205,9 @@ function renderAnnotatedWord(word, opts = {}) {
 }
 
 function annotationErrorHTML(word, typed) {
-  if (!word || !(typeof isLearned === 'function' && isLearned(word))) return '';
+  // 2026-07-08 拆掉「只有已學會的字才跳」門檻:答題區故意純文字(顯示範圍規則),學習中的字答錯當下畫面上什麼標記都沒有,
+  // 「標記已經在畫面上」的理由不成立 —— 答錯就是最好的教學時機,只要錯的那點有註解就跳(annotMode off 仍尊重全關)。
+  if (!word || (typeof annotMode === 'function' && annotMode() === 'off')) return '';
   const marks = marksForError(word, typed);
   if (!marks.length) return '';
   const m = marks[0];
