@@ -2,6 +2,84 @@ const homeEl = document.getElementById('home');
 const bossLevelForStage = stage => defaultStageStartLevel(stage) + stageMinLevels(stage) - 1;
 const challengeCleared = stage => !!(meta.challengeCleared && meta.challengeCleared[stage]);
 const latestChallengeStage = () => Math.max(0, (meta.stage || 1) - 1);
+const homeEsc = s => String(s ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
+function homeStageWords(stage) {
+  const orderedStageWords = (Array.isArray(LEARN_ORDER) && typeof batchOf === 'function')
+    ? LEARN_ORDER.filter(w => w && w.pos !== 'function' && batchOf(w) === stage - 1)
+    : [];
+  return (orderedStageWords.length ? orderedStageWords : (typeof stageWordsFor === 'function' ? stageWordsFor(stage) : BANK))
+    .filter(w => w && w.pos !== 'function');
+}
+function homeTopicType(w) {
+  const raw = `${w?.id || ''} ${w?.en || w || ''} ${w?.zh || ''}`.toLowerCase();
+  if (/water|水/.test(raw)) return 'water';
+  if (/coffee|咖啡/.test(raw)) return 'coffee';
+  if (/tea|茶/.test(raw)) return 'tea';
+  if (/sugar|糖/.test(raw)) return 'sugar';
+  if (/home|house|家|房/.test(raw)) return 'home';
+  return 'word';
+}
+function homeTopicIcon(type) {
+  const icon = {
+    water: '<path d="M12 3.5C8.7 7.6 6.4 10.7 6.4 14a5.6 5.6 0 0 0 11.2 0C17.6 10.7 15.3 7.6 12 3.5Z"/><path d="M9.4 14.4c.4 1.4 1.5 2.2 3 2.2"/>',
+    tea: '<path d="M6.8 9.2h9.1v4.2a4 4 0 0 1-4 4H9.8a3 3 0 0 1-3-3V9.2Z"/><path d="M15.9 10.6h1.3a1.7 1.7 0 0 1 0 3.4h-1.3"/><path d="M8.8 5.3c-.8.8-.8 1.6 0 2.4M12 4.8c-.8.8-.8 1.7 0 2.5M15.1 5.3c-.8.8-.8 1.6 0 2.4"/>',
+    coffee: '<path d="M5.8 8.8h10.4v4.6a4.4 4.4 0 0 1-4.4 4.4H10a4.2 4.2 0 0 1-4.2-4.2V8.8Z"/><path d="M16.2 10.3h1.2a1.9 1.9 0 0 1 0 3.8h-1.2"/><path d="M7.3 19h9.1M9 5.1c-.6.7-.6 1.3 0 2M12 4.6c-.6.7-.6 1.5 0 2.1"/>',
+    sugar: '<path d="M12 4.4 18 8v8l-6 3.6L6 16V8l6-3.6Z"/><path d="m6.5 8.2 5.5 3.2 5.5-3.2M12 11.4v7.5"/>',
+    home: '<path d="M4.5 11.2 12 5l7.5 6.2"/><path d="M6.7 10.2v8.3h10.6v-8.3"/><path d="M10 18.5v-4.4h4v4.4"/>',
+    word: '<path d="M6 7.5h12M6 12h9M6 16.5h7"/>',
+  }[type] || '';
+  return `<svg class="unit-ico" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon}</svg>`;
+}
+function homeTopicChips(words) {
+  const count = words.length;
+  if (!count) return '';
+  const zhPreview = words.slice(0, 6).map(w => w.zh || w.en).filter(Boolean).join('、');
+  const glueText = count > 4 ? '混合應用組' : '基礎主題組';
+  return `<span class="unit-chip unit-summary" title="${homeEsc(zhPreview)}">${ICON.target}<span>${count} 個主題字</span></span>
+    <span class="unit-chip unit-summary unit-summary-soft"><span>${homeEsc(glueText)}</span></span>`;
+}
+function mapThemeIcon(type, x, y, label, dim, width = 174, height = 48) {
+  const stroke = { water:'#77cdf2', tea:'#d9b56b', coffee:'#b98561', sugar:'#eee4bf', home:'#9ed0a3', word:'#8fa5b9' }[type] || '#8fa5b9';
+  const fill = { water:'#12364b', tea:'#332813', coffee:'#352315', sugar:'#343120', home:'#1d3426', word:'#18293a' }[type] || '#18293a';
+  const name = homeEsc(label);
+  const left = Math.round(-width / 2);
+  const top = Math.round(-height / 2);
+  const fontSize = height >= 48 ? 16 : 15;
+  return `<g class="map-theme map-theme-${type}" transform="translate(${Math.round(x)} ${Math.round(y)})" opacity="${dim ? .54 : .96}">
+    <rect x="${left}" y="${top}" width="${width}" height="${height}" rx="${Math.round(height / 2)}" fill="${fill}" stroke="${stroke}" stroke-width="1.7"/>
+    <g color="${stroke}" transform="translate(${left + 13} ${top + 10}) scale(1.02)">${homeTopicIcon(type).replace('class="unit-ico"', 'class="unit-ico map-unit-ico"')}</g>
+    <text x="${left + 50}" y="7" text-anchor="start" font-size="${fontSize}" font-weight="900" fill="${stroke}" opacity=".94">${name}</text>
+  </g>`;
+}
+function mapTopicCluster(words, x, y, dim, ax, ay, accent, compact, side = 1) {
+  const items = words.slice(0, 6).filter(Boolean);
+  if (!items.length) return '';
+  const badgeH = compact ? 48 : 50;
+  const baseW = compact ? 168 : 184;
+  const rows = Math.ceil(items.length / 2);
+  const rowGap = compact ? 56 : 58;
+  const colGap = compact ? 186 : 208;
+  const nearOffset = items.length > 4 ? (compact ? 160 : 172) : (compact ? 92 : 106);
+  const topY = -((rows - 1) * rowGap) / 2;
+  const loose = items.map((_, idx) => {
+    const row = Math.floor(idx / 2);
+    const col = idx % 2;
+    const inner = side * (nearOffset + col * colGap);
+    return { x: inner, y: topY + row * rowGap + (col ? 12 : -8) };
+  });
+  const stem = Number.isFinite(ax) && Number.isFinite(ay)
+    ? `<path d="M${Math.round(ax)} ${Math.round(ay)} C${Math.round((ax + x) / 2)} ${Math.round(ay)} ${Math.round((ax + x) / 2)} ${Math.round(y)} ${Math.round(x)} ${Math.round(y)}" fill="none" stroke="${accent}" stroke-width="2.2" stroke-dasharray="4 10" stroke-linecap="round" opacity="${dim ? .18 : .3}"/>
+       <circle cx="${Math.round(ax)}" cy="${Math.round(ay)}" r="5" fill="${accent}" opacity="${dim ? .18 : .32}"/>`
+    : '';
+  const badges = items.map((w, idx) => {
+    const label = `${w.zh || ''}${w.zh && w.en ? ' ' : ''}${w.en || ''}` || (w.id || '');
+    const type = homeTopicType(w);
+    const badgeW = baseW + (type === 'coffee' ? 22 : type === 'sugar' ? 10 : 0);
+    const p = loose[idx] || { x:0, y:idx * (badgeH + 8) };
+    return mapThemeIcon(type, x + p.x, y + p.y, label, dim, badgeW, badgeH);
+  }).join('');
+  return `<g class="map-topic-cluster">${stem}${badges}</g>`;
+}
 function homeStageSummary() {
   const lv = Math.max(1, meta.maxLevel || 1);
   const stage = typeof stageOfLevel === 'function' ? stageOfLevel(lv) : (meta.stage || 1);
@@ -11,12 +89,8 @@ function homeStageSummary() {
   const step = Math.max(1, Math.min(stageSize, lv - stageStart + 1));
   const pct = Math.round(step / stageSize * 100);
   const recipe = typeof lessonRecipeForLevel === 'function' ? lessonRecipeForLevel(lv) : null;
-  const orderedStageWords = (Array.isArray(LEARN_ORDER) && typeof batchOf === 'function')
-    ? LEARN_ORDER.filter(w => w && w.pos !== 'function' && batchOf(w) === stage - 1)
-    : [];
-  const words = (orderedStageWords.length ? orderedStageWords : (typeof stageWordsFor === 'function' ? stageWordsFor(stage) : BANK))
-    .filter(w => w && w.pos !== 'function');
-  const topic = words.slice(0, 4).map(w => w.zh || w.en).join('・') || (currentTrack === 'work' ? '職場高頻' : '高頻日常');
+  const words = homeStageWords(stage);
+  const topic = words.slice(0, 6).map(w => w.zh || w.en).join('・') || (currentTrack === 'work' ? '職場高頻' : '高頻日常');
   const keyOf = typeof wordKey === 'function' ? wordKey : w => w.id || w.en;
   const learnedAt = typeof LEARNED === 'number' ? LEARNED : 100;
   const stat = w => store[keyOf(w)] || {};
@@ -27,6 +101,7 @@ function homeStageSummary() {
   return {
     lv, stage, stageStart, stageEnd, stageSize, step, pct, topic,
     nextLabel: recipe && recipe.label ? recipe.label : '下一關',
+    topicWords: words.slice(0, 6),
     trackLabel: currentTrack === 'work' ? '工作英文' : '日常單字',
     trackSub: currentTrack === 'work' ? '工作英文・職場高頻' : '日常單字・高頻日常',
     touched, learned, weak, wordTotal: allWords.length
@@ -34,13 +109,17 @@ function homeStageSummary() {
 }
 function mapSVG() {
   const total = meta.maxLevel + 2;                       // 已解鎖 + 下一關 + 2 個鎖著
-  const W = 720, compact = total <= 8, mid = total <= 14;
-  const pad = compact ? 38 : mid ? 52 : 70;
-  const gap = compact ? 66 : mid ? 78 : 96;
+  const W = 960, compact = total <= 8, mid = total <= 14;
+  const pad = compact ? 44 : mid ? 54 : 70;
+  let gap = compact ? 86 : mid ? 86 : 100;
+  if (compact && total > 1) {
+    const fitH = total <= 4 ? 420 : total <= 6 ? 500 : 560;
+    gap = Math.max(78, Math.round((fitH - pad * 2) / (total - 1)));
+  }
   const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
   const pt = i => {
-    const drift = Math.sin(i * 0.94 - 1.05) * (compact ? 94 : 126) + Math.sin(i * 0.41 + 0.55) * (compact ? 42 : 62) + (Math.floor(i / 5) % 2 ? -30 : 30);
-    return { x: Math.round(clamp(W / 2 + drift, W * 0.2, W * 0.8)), y: pad + i * gap };
+    const drift = Math.sin(i * 0.94 - 1.05) * (compact ? 170 : 190) + Math.sin(i * 0.41 + 0.55) * (compact ? 78 : 88) + (Math.floor(i / 5) % 2 ? -42 : 42);
+    return { x: Math.round(clamp(W / 2 + drift, W * 0.18, W * 0.82)), y: pad + i * gap };
   };
   const pts = Array.from({ length: total }, (_, i) => pt(i));
   const curvePath = points => {
@@ -68,29 +147,47 @@ function mapSVG() {
     const y2 = Math.min(H - 10, seg[seg.length - 1].y + (compact ? 34 : 48));
     const isActive = meta.maxLevel >= start && meta.maxLevel <= end;
     const isDone = meta.maxLevel > end;
-    const fill = stg % 2 ? '#0f2230' : '#10251f';
-    const stroke = isActive ? '#31516a' : isDone ? '#1d4b3e' : '#26384a';
-    const opacity = isActive ? .68 : isDone ? .54 : .38;
-    const labelX = stg % 2 ? W - 116 : 116;
-    const contourX = stg % 2 ? 88 : W - 246;
+    const opacity = isActive ? .84 : isDone ? .58 : .34;
+    const accent = stg % 2 ? '#f0b86e' : '#77cdf2';
+    const contourX = stg % 2 ? 110 : W - 350;
+    const showTopicBadges = isActive || isDone;
+    const topicWords = showTopicBadges ? homeStageWords(stg).slice(0, 6) : [];
+    const routePin = seg.reduce((acc, p) => ({ x: acc.x + p.x / seg.length, y: acc.y + p.y / seg.length }), { x: 0, y: 0 });
+    const side = routePin.x < W * .52 ? 1 : -1;
+    const clusterHalfW = topicWords.length > 4 ? (compact ? 392 : 432) : (compact ? 318 : 356);
+    const clusterHalfH = topicWords.length > 4 ? (compact ? 178 : 194) : (compact ? 132 : 144);
+    const badgeAnchorOffset = topicWords.length > 4 ? (compact ? 76 : 88) : (compact ? 58 : 68);
+    const clusterX = clamp(routePin.x + side * (compact ? 320 : 370), clusterHalfW + 24, W - clusterHalfW - 24) - side * badgeAnchorOffset;
+    const clusterMinY = Math.min(H - clusterHalfH - 18, y1 + clusterHalfH + 18);
+    const clusterMaxY = Math.max(clusterMinY, Math.min(H - clusterHalfH - 18, y2 - clusterHalfH - 18));
+    let clusterY = clamp(routePin.y, clusterMinY, clusterMaxY);
+    const currentPt = pts[Math.max(0, Math.min(total - 1, (meta.maxLevel || 1) - 1))];
+    if (isActive && currentPt && topicWords.length > 4) {
+      clusterY = clamp(Math.min(clusterY, currentPt.y - (compact ? 132 : 146)), clusterMinY, clusterMaxY);
+    }
+    // Topic badges describe the whole stage, not one word per level.
+    const themeIcons = showTopicBadges ? mapTopicCluster(topicWords, clusterX, clusterY, false, routePin.x, routePin.y, accent, compact, side) : '';
     stageBackdrops += `<g opacity="${opacity}">
-      <rect x="76" y="${Math.round(y1)}" width="${W - 152}" height="${Math.round(y2 - y1)}" rx="30" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>
-      <path d="M${contourX} ${Math.round(y1 + 34)} C${contourX + 54} ${Math.round(y1 + 16)} ${contourX + 132} ${Math.round(y1 + 22)} ${contourX + 184} ${Math.round(y1 + 4)}" fill="none" stroke="#6f8398" stroke-width="2" opacity=".22"/>
-      <path d="M${contourX - 24} ${Math.round(y2 - 34)} C${contourX + 44} ${Math.round(y2 - 66)} ${contourX + 116} ${Math.round(y2 - 42)} ${contourX + 194} ${Math.round(y2 - 72)}" fill="none" stroke="#6f8398" stroke-width="2" opacity=".18"/>
-      <circle cx="${labelX}" cy="${Math.round(y1 + 42)}" r="14" fill="#6f8398" opacity=".12"/>
-      <path d="M${labelX - 18} ${Math.round(y1 + 60)}h36" stroke="#6f8398" stroke-width="3" stroke-linecap="round" opacity=".18"/>
-      <path d="M108 ${Math.round(y2)}H612" stroke="#6f8398" stroke-width="1.5" stroke-dasharray="2 12" stroke-linecap="round" opacity=".16"/>
+      <path d="M${contourX} ${Math.round(y1 + 34)} C${contourX + 96} ${Math.round(y1 + 10)} ${contourX + 206} ${Math.round(y1 + 34)} ${contourX + 318} ${Math.round(y1 + 2)}" fill="none" stroke="${accent}" stroke-width="2.2" opacity=".2"/>
+      <path d="M${contourX - 34} ${Math.round(y2 - 34)} C${contourX + 70} ${Math.round(y2 - 76)} ${contourX + 184} ${Math.round(y2 - 42)} ${contourX + 318} ${Math.round(y2 - 82)}" fill="none" stroke="#8fa5b9" stroke-width="2" opacity=".13"/>
+      ${themeIcons}
     </g>`;
   }
   for (let i = 0; i < total; i++) {
     const lv = i + 1, p = pts[i];
     const st = lv < meta.maxLevel ? 'done' : lv === meta.maxLevel ? 'cur' : 'lock';
-    const fill = st==='done'?'#0e2a1f':st==='cur'?'#2563eb':'#16202c';
-    const stroke = st==='done'?'#2ecc8f':st==='cur'?'#5aa9ff':'#2c3e52';
+    const fill = st==='done'?'#0e3a2a':st==='cur'?'#2f6af2':'#16202c';
+    const stroke = st==='done'?'#43df9b':st==='cur'?'#77b7ff':'#38506a';
     const tc = st==='lock'?'#5f7488':st==='cur'?'#fff':'#6ee7a8';
-    const r = st==='cur'?38:32, cur = st==='lock'?'default':'pointer';
-    circles += `<circle class="mapnode" data-lv="${lv}" cx="${p.x}" cy="${p.y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="3.5" style="cursor:${cur}"/>`
-      + `<text x="${p.x}" y="${p.y+10}" text-anchor="middle" font-size="27" font-weight="700" fill="${tc}" style="pointer-events:none">${lv}</text>`;
+    const r = st==='cur' ? (compact ? 48 : 52) : (compact ? 38 : 42), cur = st==='lock'?'default':'pointer';
+    const halo = st==='cur' ? `<circle cx="${p.x}" cy="${p.y}" r="${r + 10}" fill="#5aa9ff" opacity=".18"/>` : '';
+    circles += `<g class="mapstage mapstage-${st}">
+        ${halo}
+        <circle cx="${p.x}" cy="${p.y + 6}" r="${r}" fill="#06131f" opacity=".42"/>
+        <circle class="mapnode" data-lv="${lv}" cx="${p.x}" cy="${p.y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${st==='cur'?5:4}" style="cursor:${cur}"/>
+        <circle cx="${p.x}" cy="${p.y - 6}" r="${Math.max(8, r - 12)}" fill="none" stroke="rgba(255,255,255,.16)" stroke-width="2" style="pointer-events:none"/>
+        <text x="${p.x}" y="${p.y+12}" text-anchor="middle" font-size="${st==='cur'?34:30}" font-weight="900" fill="${tc}" style="pointer-events:none">${lv}</text>
+      </g>`;
   }
   const mapBgId = `mapgrid-${total}-${meta.maxLevel}`;
   const trail = `<defs>
@@ -98,12 +195,13 @@ function mapSVG() {
         <path d="M64 0H0V64" fill="none" stroke="#243343" stroke-width="1" opacity=".42"/>
       </pattern>
     </defs>
-    <rect x="34" y="18" width="${W - 68}" height="${H - 36}" rx="34" fill="url(#${mapBgId})" opacity=".08"/>
+    <rect x="0" y="0" width="${W}" height="${H}" fill="url(#${mapBgId})" opacity=".045"/>
     ${stageBackdrops}
-    <path d="${path}" fill="none" stroke="#23384d" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/>
-    ${meta.maxLevel > 1 ? `<path d="${donePath}" fill="none" stroke="#155946" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" opacity=".68"/>` : ''}
-    <path d="${path}" fill="none" stroke="#48637e" stroke-width="4" stroke-dasharray="3 16" stroke-linecap="round" opacity=".72"/>`;
-  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto">${trail}${circles}</svg>`;
+    <path d="${path}" fill="none" stroke="#173047" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" opacity=".76"/>
+    <path d="${path}" fill="none" stroke="#2a4963" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" opacity=".76"/>
+    ${meta.maxLevel > 1 ? `<path d="${donePath}" fill="none" stroke="#1f8b6c" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" opacity=".76"/>` : ''}
+    <path d="${path}" fill="none" stroke="#87a8c7" stroke-width="3.4" stroke-dasharray="3 18" stroke-linecap="round" opacity=".58"/>`;
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMin meet">${trail}${circles}</svg>`;
 }
 function showHome() {
   inTraining = false;                    // 從任何地方回主畫面都結束特訓
@@ -112,36 +210,46 @@ function showHome() {
   const challengeText = latestChallengeStage() ? `第 ${latestChallengeStage()} 階可遊玩` : '完成第 1 階開放';
   const trainText = homeInfo.weak ? `${homeInfo.weak} 個字待加強` : (homeInfo.touched ? '目前沒有弱字' : (homeInfo.lv > 1 ? '可自選複習' : '先開始第一關'));
   const derivText = meta.coins >= 30 ? '金幣足夠' : `還差 ${Math.max(0, 30 - (meta.coins || 0))} 枚`;
+  const unitChips = homeTopicChips(homeInfo.topicWords);
   screen.classList.remove('lesson-screen', 'boss-screen', 'done-screen', 'start-screen');
   screen.hidden = true; homeEl.hidden = false;
   screen.innerHTML = '';
   homeEl.innerHTML = `
     <div class="topbar">
-      <div class="logo">讓英文有道理</div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <button id="settingsbtn" aria-label="設定" style="background:#1d2c3a;border:1px solid #2c3e52;color:#9fb4c8;border-radius:99px;padding:8px 12px;cursor:pointer;font-size:16px;display:inline-flex;align-items:center">${ICON.gear}</button>
-        <button id="bgmtoggle" aria-label="靜音開關" title="靜音開關" style="background:#1d2c3a;border:1px solid #2c3e52;color:#9fb4c8;border-radius:99px;padding:8px 12px;cursor:pointer;font-size:16px;display:inline-flex;align-items:center">${bgm.isOn() ? ICON.play : ICON.mute}</button>
-        <button id="musicbtn" title="背景音樂" style="background:#1d2c3a;border:1px solid #2c3e52;color:#9fb4c8;border-radius:99px;padding:8px 13px;cursor:pointer;display:inline-flex;align-items:center"><svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M15,6H3V8H15V6M15,10H3V12H15V10M3,16H11V14H3V16M17,6V14.18C16.69,14.07 16.35,14 16,14A3,3 0 0,0 13,17A3,3 0 0,0 16,20A3,3 0 0,0 19,17V8H22V6H17Z"/></svg></button>
-        <button id="reset" style="background:#1d2c3a;border:1px solid #2c3e52;color:#9fb4c8;border-radius:99px;padding:8px 15px;cursor:pointer;font-size:14px;display:inline-flex;align-items:center">${ICON.refresh}重來</button>
+      <div class="brand-lockup">
+        <div class="logo">讓英文有道理</div>
+        <div class="brand-sub">Daily learning path</div>
+      </div>
+      <div class="home-controls">
+        <button id="settingsbtn" class="home-icon-btn" aria-label="設定" title="設定">${ICON.gear}</button>
+        <button id="bgmtoggle" class="home-icon-btn" aria-label="靜音開關" title="靜音開關">${bgm.isOn() ? ICON.play : ICON.mute}</button>
+        <button id="musicbtn" class="home-icon-btn" title="背景音樂" aria-label="背景音樂"><svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true"><path d="M15,6H3V8H15V6M15,10H3V12H15V10M3,16H11V14H3V16M17,6V14.18C16.69,14.07 16.35,14 16,14A3,3 0 0,0 13,17A3,3 0 0,0 16,20A3,3 0 0,0 19,17V8H22V6H17Z"/></svg></button>
+        <button id="reset" class="home-reset">${ICON.refresh}重來</button>
         <div class="coin">${ICON.coin}${meta.coins}</div>
       </div>
     </div>
     <div class="homebody">
       <div class="side">
-        <div class="cat" id="catChallenge"><div class="cati">${ICON.flag}</div><div class="cat-title">小遊戲</div><div class="catcoin">${challengeText}</div><div class="catnote">⚔ 王戰挑戰 · 純娛樂</div></div>
-        <div class="cat" id="catTrain"><div class="cati">${ICON.target}</div><div class="cat-title">單字特訓</div><div class="catcoin">${trainText}</div><div class="catnote">${homeInfo.learned}/${homeInfo.wordTotal} 字穩了</div></div>
-        <div class="cat" id="catDeriv"><div class="cati">${ICON.lock}</div><div class="cat-title">衍生</div><div class="catcoin">${derivText}</div><div class="catnote">需 30 ${ICON.coin}</div></div>
-        <div class="cat ph"><div class="cati">⋯</div><div class="cat-title">之後</div><div class="catnote">新模式預留</div></div>
+        <div class="mission-card">
+          <div class="mission-kicker">目前任務</div>
+          <div class="mission-title">第 ${homeInfo.lv} 關</div>
+          <div class="mission-sub">${homeInfo.nextLabel}</div>
+          <div class="mission-progress">
+            <div class="map-progress-row"><span>本階 ${homeInfo.step}/${homeInfo.stageSize}</span><b>${homeInfo.pct}%</b></div>
+            <div class="map-progress-bar"><i style="width:${homeInfo.pct}%"></i></div>
+          </div>
+          <button class="mission-start map-primary-start" data-start="${homeInfo.lv}">開始 · 第 ${homeInfo.lv} 關</button>
+        </div>
+        <div class="cat" id="catChallenge"><div class="cati">${ICON.flag}</div><div class="cat-copy"><div class="cat-title">小遊戲</div><div class="catcoin">${challengeText}</div><div class="catnote">王戰挑戰 · 純娛樂</div></div><div class="cat-arrow">›</div></div>
+        <div class="cat" id="catTrain"><div class="cati">${ICON.target}</div><div class="cat-copy"><div class="cat-title">單字特訓</div><div class="catcoin">${trainText}</div><div class="catnote">${homeInfo.learned}/${homeInfo.wordTotal} 字穩了</div></div><div class="cat-arrow">›</div></div>
+        <div class="cat" id="catDeriv"><div class="cati">${ICON.lock}</div><div class="cat-copy"><div class="cat-title">衍生</div><div class="catcoin">${derivText}</div><div class="catnote">需 30 ${ICON.coin}</div></div><div class="cat-arrow">›</div></div>
       </div>
       <div class="map">
         <div class="map-brief">
-          <div>
-            <div class="maptitle">${homeInfo.trackSub}</div>
+          <div class="map-stage-copy">
+            <div class="maptitle"><span>${homeInfo.trackLabel}</span><span>${currentTrack === 'work' ? '職場高頻' : '高頻日常'}</span></div>
             <div class="maptopic">第 ${homeInfo.stage} 階・${homeInfo.topic}</div>
-          </div>
-          <div class="map-progress">
-            <div class="map-progress-row"><span>本階 ${homeInfo.step}/${homeInfo.stageSize}</span><b>${homeInfo.pct}%</b></div>
-            <div class="map-progress-bar"><i style="width:${homeInfo.pct}%"></i></div>
+            <div class="unit-chips">${unitChips}</div>
           </div>
         </div>
         <div class="mapjump" id="mapjump">
@@ -149,12 +257,6 @@ function showHome() {
             <button class="branch-tab ${currentTrack === 'work' ? '' : 'cur'}" id="dailybranch">${ICON.book}日常單字</button>
             <button class="branch-tab ${currentTrack === 'work' ? 'cur' : ''}" id="workbranch">${ICON.briefcase}工作英文</button>
           </div>
-          <div class="map-lesson-meta">
-            <span>${homeInfo.nextLabel}</span>
-            <span>第 ${homeInfo.lv} 關</span>
-            <span>${homeInfo.learned}/${homeInfo.wordTotal} 字穩定</span>
-          </div>
-          <div class="map-status-row" id="mapstatus"></div>
         </div>
         <div class="mapscroll" id="mapscroll" style="--map-levels:${meta.maxLevel + 2}">${mapSVG()}</div>
         <button class="map-float-jump" id="mapfloatjump" aria-label="回到目前關" title="回到目前關" hidden>${ICON.arrowDown}</button>
@@ -184,16 +286,18 @@ function showHome() {
   const currentMapY = () => {
     const node = mapsvg && mapsvg.querySelector(`.mapnode[data-lv="${meta.maxLevel}"]`);
     if (!mapscroll || !mapsvg || !node) return null;
-    const scale = mapsvg.getBoundingClientRect().height / (mapsvg.viewBox.baseVal.height || 1);
-    return (+node.getAttribute('cy')) * scale;
+    const nr = node.getBoundingClientRect();
+    const sr = mapscroll.getBoundingClientRect();
+    return mapscroll.scrollTop + (nr.top + nr.height / 2 - sr.top);
   };
   const updateMapFloatJump = () => {
     if (!mapscroll || !mapFloatJump) return;
+    if (mapscroll.scrollHeight <= mapscroll.clientHeight + 2) { mapFloatJump.hidden = true; return; }
     const y = currentMapY();
     if (y === null) { mapFloatJump.hidden = true; return; }
     const top = mapscroll.scrollTop, bottom = top + mapscroll.clientHeight;
-    const pad = Math.min(88, Math.max(42, mapscroll.clientHeight * .16));
-    const dir = y < top + pad ? 'up' : (y > bottom - pad ? 'down' : '');
+    const margin = Math.min(28, Math.max(14, mapscroll.clientHeight * .04));
+    const dir = y < top - margin ? 'up' : (y > bottom + margin ? 'down' : '');
     mapFloatJump.hidden = !dir;
     if (!dir) return;
     mapFloatJump.dataset.dir = dir;
@@ -205,8 +309,10 @@ function showHome() {
   const scrollToLv = (lv, smooth) => {
     const node = mapsvg && mapsvg.querySelector(`.mapnode[data-lv="${lv}"]`);
     if (!mapscroll || !node) return;
-    const scale = mapsvg.getBoundingClientRect().height / (mapsvg.viewBox.baseVal.height || 1);
-    mapscroll.scrollTo({ top: Math.max(0, (+node.getAttribute('cy')) * scale - mapscroll.clientHeight / 2), behavior: smooth ? 'smooth' : 'auto' });
+    const nr = node.getBoundingClientRect();
+    const sr = mapscroll.getBoundingClientRect();
+    const delta = (nr.top + nr.height / 2) - (sr.top + sr.height / 2);
+    mapscroll.scrollTo({ top: Math.max(0, mapscroll.scrollTop + delta), behavior: smooth ? 'smooth' : 'auto' });
     requestAnimationFrame(updateMapFloatJump);
   };
   if (mapFloatJump) mapFloatJump.onclick = () => scrollToLv(meta.maxLevel, true);
@@ -215,12 +321,10 @@ function showHome() {
   requestAnimationFrame(() => { scrollToLv(meta.maxLevel, false); updateMapFloatJump(); });     // 保險:萬一同步時尺寸還沒到位,下一幀再置中
   const jump = document.getElementById('mapjump');
   if (jump) {
-    const status = $('mapstatus');
-    if (status) status.innerHTML = `<button class="cur map-primary-start" data-start="${meta.maxLevel}">開始 · 第 ${meta.maxLevel} 關</button>`;
     $('dailybranch').onclick = () => { setTrack('daily'); showHome(); };
     $('workbranch').onclick = () => { setTrack('work'); showHome(); };
-    jump.querySelectorAll('button[data-start]').forEach(btn => btn.onclick = () => enterLevel(+btn.dataset.start));
   }
+  homeEl.querySelectorAll('button[data-start]').forEach(btn => btn.onclick = () => enterLevel(+btn.dataset.start));
 }
 function enterLevel(lv) {
   level = lv; homeEl.hidden = true; screen.hidden = false;
@@ -270,7 +374,7 @@ function showTrainPicker() {
   words.forEach(w => {
     const el = document.createElement('button');
     el.className = 'twordchip'; el.dataset.id = w.id;
-    el.innerHTML = `<b>${typeof annotatedWordHTML === 'function' ? annotatedWordHTML(w) : w.en}</b> <span class="tzh">${w.zh}</span> ${review ? '<span class="tpct">會</span>' : `<span class="tpct">${pOf(w)}%</span>`}`;
+    el.innerHTML = `<b>${w.en}</b> <span class="tzh">${w.zh}</span> ${review ? '<span class="tpct">會</span>' : `<span class="tpct">${pOf(w)}%</span>`}`;
     el.onclick = () => {
       if (sel.has(w)) { sel.delete(w); el.classList.remove('sel'); }
       else { sel.add(w); el.classList.add('sel'); }

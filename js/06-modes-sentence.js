@@ -9,7 +9,7 @@ function attrText(text) {
 function hintedEnglish(text) {
   return String(text || '').replace(/[A-Za-z]+/g, word => {
     const hint = tokenHint(word);
-    const shown = typeof annotatedTokenHTML === 'function' ? annotatedTokenHTML(word) : attrText(word);
+    const shown = attrText(word);
     return hint ? `<span class="word-hint" data-hint="${attrText(hint)}" title="${attrText(hint)}" tabindex="0">${shown}</span>` : shown;
   });
 }
@@ -20,7 +20,7 @@ function teachPattern(sentence, then, onKnown) {
     <div class="buildzh">${sentence.zh}</div>
     <div class="buildline">${chunks.map(c => {
       const hint = tokenHint(c);
-      return `<div class="opt chunk${hint ? ' word-hint' : ''}"${hint ? ` data-hint="${attrText(hint)}"` : ''}>${typeof annotatedTokenHTML === 'function' ? annotatedTokenHTML(c) : attrText(c)}</div>`;
+      return `<div class="opt chunk${hint ? ' word-hint' : ''}"${hint ? ` data-hint="${attrText(hint)}"` : ''}>${attrText(c)}</div>`;
     }).join('')}</div>
     <div class="sub2" style="margin-top:12px">英文照這個順序:<b style="color:#9bd2ff">${sentence.text}</b></div>
     <button class="btn act" id="gotit" style="margin-top:16px">懂了,我來排 →</button>
@@ -84,8 +84,7 @@ function mountArrange({ promptText, zh, introHTML = '', cards, targetTokens, cas
     const el = document.createElement('button');
     el.type = 'button';
     el.className = 'opt chunk sentence-card';
-    if (typeof annotatedTokenHTML === 'function') el.innerHTML = annotatedTokenHTML(card.text);
-    else el.textContent = card.text;
+    el.textContent = card.text;
     el.dataset.id = card.id;
     el.draggable = true;
     el.addEventListener('dragstart', e => dragStart(e, card.id));

@@ -109,7 +109,7 @@ function marksForError(word, typed) {
   // 只回「錯在標記段落上」那幾條;錯在沒標記的地方 → 回空(那個錯跟拼讀/字根無關,不亂跳)。整個拼錯時各標記段落自然也會命中。
 }
 
-/* ── 渲染層:低調色帶 + hover note + 答錯提示(資料/邏輯層不動)── */
+/* ── 渲染層:低調線條 + hover note + 答錯提示(資料/邏輯層不動)── */
 function _annotEscape(v) {
   return String(v ?? '').replace(/[&<>"']/g, ch => ({
     '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
@@ -123,17 +123,30 @@ function _annotWordForText(text) {
   const w = BANK.find(x => x && x.en && x.en.toLowerCase() === key);
   return w ? { ...w, en: raw.replace(/[^a-z]/gi, '') || w.en } : null;  // 保留句首 This 這類大小寫顯示
 }
+function _annotIsUntaught(word) {
+  if (!word || typeof store === 'undefined') return false;
+  const key = typeof wordKey === 'function' ? wordKey(word) : (word.id || word.en);
+  const c = key && store[key];
+  return !c || !c.taught;
+}
 function annotatedWordHTML(word, opts = {}) {
   const en = _annotWordText(word);
   const wordAttr = _annotEscape(en);
+  const marks = wordMarks(word);
+  const stateOn = !!opts.force || annotMode() !== 'off';
   const on = showAnnotations(word, !!opts.force);
+  const showingMarks = stateOn && marks.length && on;
+  const classes = ['annot-word'];
+  if (stateOn && marks.length && !showingMarks) classes.push('annot-has-marks');
+  if (showingMarks) classes.push('annot-showing-marks');
+  if (stateOn && opts.showUntaught && _annotIsUntaught(word) && !showingMarks) classes.push('annot-untaught');
   const segs = on ? annotateSegments(word) : [{ text: en, mark: null }];
   const body = segs.map(seg => {
     if (!seg.mark) return _annotEscape(seg.text);
     const m = seg.mark;
     return `<span class="annot-mark annot-${_annotEscape(m.kind)}" tabindex="0" data-kind="${_annotEscape(m.kind)}" data-label="${_annotEscape(m.label)}" data-note="${_annotEscape(m.note)}" data-say="${_annotEscape(m.say || en)}" data-word="${wordAttr}">${_annotEscape(seg.text)}</span>`;
   }).join('');
-  return `<span class="annot-word" data-word="${wordAttr}">${body}</span>`;
+  return `<span class="${classes.join(' ')}" data-word="${wordAttr}">${body}</span>`;
 }
 function annotatedTokenHTML(text, opts = {}) {
   const raw = String(text || '');
@@ -169,7 +182,7 @@ function _annotSpeak(el) {
   else if (typeof speak === 'function') speak(text);
 }
 
-// 回傳一個 <span class="annot-word">:單字切段,有標記的段落=色帶+hover看註解+點擊念標記音。
+// 回傳一個 <span class="annot-word">:單字切段,有標記的段落=線條+hover看註解+點擊念標記音。
 function renderAnnotatedWord(word, opts = {}) {
   const t = document.createElement('template');
   t.innerHTML = annotatedWordHTML(word, opts).trim();

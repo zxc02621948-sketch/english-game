@@ -151,8 +151,7 @@ function mountChoices(box, opts, getText, w, correctText) {
   opts.forEach(o => {
     const el = document.createElement('div'); el.className = 'opt';
     const text = getText(o);
-    if (o && text === o.en && typeof renderAnnotatedWord === 'function') el.appendChild(renderAnnotatedWord(o));
-    else el.textContent = text;
+    el.textContent = text;
     el.onclick = () => {
       if (box.classList.contains('locked')) return;
       [...box.children].forEach(c => c.classList.remove('sel'));

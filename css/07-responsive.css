@@ -1,34 +1,57 @@
   @media (max-width: 980px) and (min-width: 721px) {
-    .mapjump { grid-template-columns:1fr; justify-items:center; }
+    .mapjump { justify-content:flex-start; }
+    .homebody { grid-template-columns:minmax(0,1fr) 236px; gap:16px; }
+    .map { padding:18px; }
+    .map-brief { grid-template-columns:1fr; align-items:start; }
+    .mission-card { padding:14px; }
+    .mission-title { font-size:24px; }
   }
 
   @media (max-width: 720px) {
-    .wrap { width:min(100% - 24px, 560px); }
-    .topbar { flex-direction:column; align-items:stretch; gap:12px; margin:10px 0 16px; }
-    .logo { white-space:nowrap; font-size:24px; line-height:1.15; }
-    .topbar > div:last-child { width:100%; flex-wrap:wrap !important; justify-content:flex-start; gap:8px !important; }
-    .topbar > div:last-child button { min-height:42px; }
-    .coin { min-height:42px; padding:8px 16px; font-size:18px; }
-    .homebody { display:flex; flex-direction:column; gap:14px; }
-    .map { order:1; width:100%; min-height:0; padding:16px 12px; border-radius:14px; }
-    .side { order:2; width:100%; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
-    .cat { min-height:126px; padding:14px; border-radius:14px; font-size:16px; gap:5px; }
-    .cat .cati { margin-bottom:2px; }
+    .wrap { width:min(100% - 20px, 560px); padding-top:6px; }
+    .topbar { flex-direction:column; align-items:stretch; gap:10px; margin:6px 0 12px; }
+    .brand-lockup { gap:3px; }
+    .logo { white-space:nowrap; font-size:25px; line-height:1.12; }
+    .brand-sub { font-size:12px; }
+    .home-controls { width:100%; flex-wrap:wrap; justify-content:flex-start; gap:7px; }
+    .home-icon-btn, .home-reset { min-height:38px; }
+    .coin { min-height:38px; padding:7px 14px; font-size:17px; }
+    .homebody { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .side { display:contents; }
+    .mission-card { order:1; grid-column:1 / -1; min-height:0; padding:13px; border-radius:15px; gap:7px; }
+    .mission-card::before { width:120px; height:120px; right:-40px; top:-46px; border-width:22px; }
+    .mission-title { font-size:24px; }
+    .mission-sub { font-size:12px; }
+    .mission-progress { margin-top:0; }
+    .mission-start { min-height:48px; font-size:16px; }
+    .map { order:2; grid-column:1 / -1; width:100%; min-height:0; padding:13px 11px 12px; border-radius:15px; }
+    .cat { min-height:104px; padding:12px; border-radius:13px; font-size:15px; grid-template-columns:1fr auto; gap:9px; }
+    .cat { order:3; }
+    .cat .cati { width:38px; height:38px; grid-row:1; margin-bottom:2px; }
+    .cat .cat-copy { grid-column:1 / -1; gap:5px; }
+    .cat-arrow { position:absolute; right:12px; top:14px; font-size:22px; }
     .cat .catcoin { font-size:13px; }
     .catnote { font-size:12px; }
-    .map-brief { grid-template-columns:1fr; gap:12px; margin-bottom:14px; }
-    .maptitle { margin-bottom:5px; font-size:13px; }
-    .maptopic { font-size:20px; line-height:1.25; }
-    .map-progress-row b { font-size:17px; }
-    .mapjump { grid-template-columns:1fr; gap:10px; justify-items:center; margin-bottom:12px; }
+    .map-brief { grid-template-columns:1fr; gap:10px; margin-bottom:10px; }
+    .maptitle { margin-bottom:4px; font-size:12px; }
+    .maptitle span { min-height:24px; padding:3px 9px; }
+    .maptopic { font-size:19px; line-height:1.18; }
+    .unit-chips { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; margin-top:8px; }
+    .unit-chip { min-width:0; width:100%; min-height:32px; padding:5px 8px; gap:6px; font-size:12px; }
+    .unit-chip span, .unit-chip em { min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .unit-ico { width:20px; height:20px; }
+    .map-progress { padding:10px; border-radius:13px; }
+    .map-progress-row b { font-size:16px; }
+    .mapjump { gap:8px; justify-content:center; margin-bottom:9px; }
     .branch-tabs { width:100%; display:grid; grid-template-columns:1fr 1fr; gap:4px; }
-    .mapjump .branch-tab { min-width:0; width:100%; padding:10px 8px; font-size:14px; white-space:nowrap; }
+    .mapjump .branch-tab { min-width:0; width:100%; padding:8px 7px; font-size:13px; white-space:nowrap; }
     .map-lesson-meta { width:100%; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; font-size:12px; }
     .map-lesson-meta span { min-width:0; justify-content:center; border-radius:12px; padding:5px 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .map-status-row { width:100%; }
-    .map-status-row .map-primary-start, #workmapcurrent { width:100%; min-width:0; padding:12px 18px; font-size:18px; }
+    .map-primary-start, #workmapcurrent { width:100%; min-width:0; padding:10px 16px; font-size:16px; }
     .map-info-pill { max-width:100%; border-radius:14px; text-align:center; justify-content:center; }
-    .mapscroll { height:clamp(280px, calc(var(--map-levels, 6) * 22px + 170px), 410px); max-height:54vh; }
+    .mapscroll { height:clamp(250px, calc(100vh - 540px), 300px); max-height:none; overflow-y:auto; overflow-x:hidden; padding:36px 0; border-radius:0; }
+    .mapscroll svg { width:160%; max-width:none; margin-left:-30%; }
     .map-float-jump { right:24px; bottom:24px; width:44px; height:44px; }
     .card { padding:18px 18px 0; }
     #screen.lesson-screen { --action-bar-h:186px; --action-gap:28px; }

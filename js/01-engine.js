@@ -364,9 +364,9 @@ function injectReviewButton(w, r) {
 // 重看卡:字 + 音節 + 念 + 字根(原本強制出現的那張,現在改成「我要複習」才看)→ 看完回去補考
 function showReviewCard(w, r) {
   const syls = sylOf(w);
-  const sylHTML = syls.map(s => `<span class="syl">${s}</span>`).join('<span class="sep">·</span>');
+  const sylHTML = syls.map(s => `<span class="syl">${s}</span>`).join('<span class="sep" aria-hidden="true"> </span>');
   const sylBlock = syls.length > 1
-    ? `<div class="syllables teach-syllables" id="syls">${sylHTML}</div><div class="syltip teach-tip">「·」只是音節分隔,拼字沒有點</div>`
+    ? `<div class="syllables teach-syllables" id="syls">${sylHTML}</div><div class="syltip teach-tip">分段只是幫你聽,拼字不用空格</div>`
     : `<div class="syllables teach-syllables" id="syls" hidden>${sylHTML}</div>`;
   shell('複習一下這個字,再回去答 👇', `
     <div class="teach-layout">

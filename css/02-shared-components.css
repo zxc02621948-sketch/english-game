@@ -33,11 +33,13 @@
   .syllables.bad .syl { color:#e35b6a; }   /* 說題判不出 = 整排音節紅 */
   .sub2 { text-align:center; color:#9fb4c8; margin-bottom:22px; font-size:20px; }
   .fullword { text-align:center; font-size:54px; font-weight:800; letter-spacing:1px; margin:8px 0 0; }
-  .annot-word { display:inline; letter-spacing:inherit; white-space:nowrap; }
-  .annot-mark { position:relative; border-radius:.22em; padding:0 .04em; margin:0 -.01em; cursor:help; box-decoration-break:clone; -webkit-box-decoration-break:clone; transition:background .12s, box-shadow .12s, color .12s; }
-  .annot-mark:hover, .annot-mark:focus-visible { color:#f6fbff; outline:none; }
-  .annot-phonics { background:rgba(94,160,203,.17); box-shadow:inset 0 -.26em rgba(94,160,203,.30); }
-  .annot-root { background:rgba(220,166,99,.16); box-shadow:inset 0 -.26em rgba(220,166,99,.27); }
+  .annot-word { display:inline-block; letter-spacing:inherit; white-space:nowrap; line-height:1; border-bottom:.09em dotted transparent; padding-bottom:.08em; }
+  .annot-word.annot-has-marks { border-bottom-color:rgba(186,212,232,.38); }
+  .annot-word.annot-untaught { border-bottom-color:rgba(240,184,110,.72); }
+  .annot-mark { display:inline-block; position:relative; margin:0; cursor:help; background:none; box-shadow:none; line-height:1; border-bottom:.105em dotted transparent; padding-bottom:.075em; transition:color .12s, border-color .12s, border-width .12s; }
+  .annot-mark:hover, .annot-mark:focus-visible { color:#f6fbff; outline:none; border-bottom-width:.12em; }
+  .annot-phonics { border-bottom-color:rgba(123,178,216,.92); }
+  .annot-root { border-bottom-color:rgba(216,164,95,.92); }
   #annottip { position:fixed; z-index:9999; max-width:300px; display:none; pointer-events:none; background:#101c28; border:1px solid #36506a; border-radius:10px; padding:9px 12px; color:#e8f1fb; font-size:14px; line-height:1.45; box-shadow:0 12px 30px rgba(0,0,0,.45); }
   #annottip b { color:#f1f6fa; font-size:14px; }
   #annottip div { margin-top:4px; color:#cfe0f0; }
@@ -51,7 +53,7 @@
   .sylinp.right { border-color:#2ecc8f; background:#0e2a1f; color:#6ee7a8; }
   .sylinp.wrong { border-color:#e35b6a; background:#2a0e12; color:#ff9ba3; }
   .syl.lit { color:#fff; background:#2563eb; transform:scale(1.18); }
-  .sep { color:#3a4a5c; }
+  .sep { display:inline-block; width:.28em; }
   .speakrow { display:flex; gap:12px; justify-content:center; margin:14px 0; }
   .speakrow .replay { margin:0; padding:14px 24px; font-size:20px; }
   .skipline { min-height:0; }

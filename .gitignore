@@ -7,3 +7,6 @@ desktop.ini
 
 # Claude Code 本機設定(各機器不同,不進版控)
 .claude/settings.local.json
+
+# 本機手動備份(patch 檔等)
+backups/

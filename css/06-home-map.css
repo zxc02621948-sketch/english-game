@@ -1,5 +1,5 @@
   /* 主畫面外殼:左分類 / 中圓形地圖 / 右上金幣 */
-  .wrap { width:min(1180px,94vw); }
+  .wrap { width:min(1180px,94vw); padding:8px 0 18px; }
   /* 🎯 單字特訓選字頁 */
   .train-pick { width:100%; max-width:760px; margin:0 auto; padding:24px 4px; }
   .train-skills { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin:16px 0 4px; }
@@ -14,50 +14,91 @@
   .twordchip .tpct { color:#6f8398; font-size:13px; }
   .train-start:not(:disabled) { background:#8ee000; border-color:#8ee000; border-bottom:4px solid #5fa900; color:#102016; font-weight:800; }
   .train-start:disabled { opacity:.5; cursor:default; }
-  .topbar { display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:22px; }
-  .logo { font-size:26px; font-weight:700; }
-  .coin { display:flex; align-items:center; gap:8px; background:#1d2c3a; border:1px solid #2c3e52; border-radius:99px; padding:9px 20px; font-size:20px; color:#f0b86e; font-weight:700; }
+  .topbar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:14px; }
+  .brand-lockup { display:grid; gap:2px; }
+  .logo { font-size:28px; font-weight:900; letter-spacing:.02em; line-height:1.05; color:#f5f8fb; }
+  .brand-sub { color:#7f96ad; font-size:13px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+  .home-controls { display:flex; align-items:center; gap:10px; }
+  .home-icon-btn, .home-reset { min-height:38px; display:inline-flex; align-items:center; justify-content:center; gap:6px; color:#b8cadd; background:#162333; border:1px solid #2b4056; border-radius:999px; cursor:pointer; transition:transform .12s ease, border-color .12s ease, background .12s ease, color .12s ease; }
+  .home-icon-btn { width:38px; padding:0; }
+  .home-reset { padding:7px 14px; font-size:13px; font-weight:800; }
+  .home-icon-btn:hover, .home-reset:hover { color:#f2f7fb; background:#1b2d3e; border-color:#4b6a88; transform:translateY(-1px); }
+  .home-icon-btn:focus-visible, .home-reset:focus-visible, .cat:focus-visible, .mapjump button:focus-visible, .map-float-jump:focus-visible { outline:3px solid rgba(90,169,255,.28); outline-offset:2px; }
+  .home-icon-btn .ico, .home-reset .ico { margin-right:0; }
+  .coin { min-height:40px; display:flex; align-items:center; gap:8px; background:#1b2b3a; border:1px solid #33485d; border-radius:99px; padding:8px 17px; font-size:18px; color:#f0b86e; font-weight:900; box-shadow:inset 0 1px 0 rgba(255,255,255,.04); }
   .coin .ico { margin-right:0; }                    /* 金幣用 flex gap 就好,別再加圖示自己的右間距 */
   .cat .cati { display:flex; }
   .cat .cati .ico { width:30px; height:30px; margin-right:0; }   /* 側欄分類圖示放大到原 emoji 尺寸 */
   .catcoin .ico { width:1em; height:1em; }          /* 小字裡的金幣圖示縮回字級 */
-  .homebody { display:grid; grid-template-columns:minmax(0,1fr) 230px; gap:20px; align-items:start; }
+  .homebody { display:grid; grid-template-columns:minmax(0,1fr) minmax(255px,292px); gap:20px; align-items:start; }
   .side { order:2; min-width:0; display:grid; align-content:start; gap:12px; }
-  .cat { min-height:138px; background:#16202c; border:1px solid #243343; border-radius:14px; padding:16px; cursor:pointer; font-size:16px; transition:.12s; display:grid; align-content:start; gap:6px; }
-  .cat:hover { border-color:#3a5170; }
-  .cat .cati { font-size:28px; margin-bottom:2px; }
-  .cat-title { color:#f1f6fa; font-weight:900; line-height:1.25; }
+  .mission-card { position:relative; overflow:hidden; min-height:150px; display:grid; gap:7px; padding:15px; border-radius:16px; background:linear-gradient(160deg,#20314a 0%,#142536 48%,#182315 100%); border:1px solid #405973; box-shadow:0 18px 36px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.06); }
+  .mission-card::before { content:""; position:absolute; right:-46px; top:-52px; width:150px; height:150px; border-radius:999px; border:28px solid rgba(240,184,110,.12); }
+  .mission-card > * { position:relative; z-index:1; }
+  .mission-kicker { color:#9bd2ff; font-size:12px; font-weight:900; letter-spacing:.08em; }
+  .mission-title { color:#f8fbff; font-size:26px; font-weight:950; line-height:1; }
+  .mission-sub { color:#d5e5f2; font-size:13px; font-weight:800; }
+  .mission-progress { display:grid; gap:7px; margin-top:0; }
+  .mission-start { width:100%; margin-top:2px; }
+  .cat { position:relative; min-height:98px; background:linear-gradient(180deg,#172433,#131e2b); border:1px solid #26394d; border-radius:14px; padding:13px 14px; cursor:pointer; font-size:15px; transition:transform .14s ease, border-color .14s ease, background .14s ease, box-shadow .14s ease; display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:start; gap:11px; box-shadow:inset 0 1px 0 rgba(255,255,255,.035); }
+  .cat:hover { border-color:#54708c; background:linear-gradient(180deg,#1a2b3d,#142334); transform:translateY(-1px); box-shadow:0 14px 32px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.045); }
+  .cat .cati { width:38px; height:38px; display:grid; place-items:center; border-radius:12px; background:#102231; color:#c7d8e8; border:1px solid #2b4056; font-size:24px; margin:0; }
+  .cat .cat-copy { min-width:0; display:grid; gap:4px; }
+  .cat-title { color:#f4f8fb; font-weight:900; line-height:1.16; font-size:17px; }
   .cat.active { background:#13324a; border-color:#2563eb; }
-  .cat .catcoin { font-size:14px; color:#f0b86e; margin-top:0; font-weight:800; }
-  .catnote { color:#8fa5b9; font-size:13px; line-height:1.35; }
-  .cat.ph { border-style:dashed; color:#5f7488; opacity:.55; cursor:default; }
-  .cat.ph:hover { border-color:#2c3e52; }
-  .map { order:1; min-width:0; position:relative; background:#13202e; border:1px solid #243343; border-radius:16px; padding:22px; min-height:0; }
-  .map-brief { display:grid; grid-template-columns:minmax(0,1fr) minmax(220px,300px); gap:18px; align-items:center; margin-bottom:10px; }
-  .maptitle { font-size:14px; color:#7f96ad; margin-bottom:6px; }
-  .maptopic { color:#f1f6fa; font-size:24px; font-weight:900; line-height:1.18; }
-  .map-progress { display:grid; gap:8px; }
-  .map-progress-row { display:flex; align-items:center; justify-content:space-between; gap:12px; color:#9fb4c8; font-size:13px; font-weight:800; }
-  .map-progress-row b { color:#8ee000; font-size:18px; }
-  .map-progress-bar { height:10px; border-radius:99px; background:#16202c; border:1px solid #2c3e52; overflow:hidden; }
-  .map-progress-bar i { display:block; height:100%; border-radius:99px; background:linear-gradient(90deg,#2ecc8f,#8ee000); }
-  .mapscroll { height:clamp(340px, calc(var(--map-levels, 6) * 24px + 220px), 640px); max-height:calc(100vh - 250px); overflow-y:auto; overflow-x:hidden; scrollbar-width:thin; scrollbar-color:#2c3e52 transparent; border-radius:14px; background:linear-gradient(180deg, rgba(15,31,43,.88), rgba(14,26,34,.7)); border:1px solid rgba(44,62,82,.62); }
-  .map-float-jump { position:absolute; right:38px; bottom:38px; z-index:4; width:48px; height:48px; display:grid; place-items:center; border-radius:999px; border:1px solid #5aa9ff; background:#13324a; color:#cfe6ff; cursor:pointer; box-shadow:0 14px 30px rgba(0,0,0,.28), 0 0 0 4px rgba(19,32,46,.58); transition:transform .12s ease, filter .12s ease, opacity .12s ease; }
+  .cat .catcoin { font-size:13px; color:#f4bd70; margin-top:0; font-weight:900; line-height:1.22; }
+  .catnote { color:#8fa5b9; font-size:12px; line-height:1.32; }
+  .cat-arrow { align-self:center; color:#4f6680; font-size:26px; line-height:1; }
+  .cat.ph { border-style:dashed; color:#5f7488; opacity:.52; cursor:default; }
+  .cat.ph:hover { border-color:#2c3e52; transform:none; box-shadow:inset 0 1px 0 rgba(255,255,255,.035); }
+  .map { order:1; min-width:0; position:relative; background:linear-gradient(180deg,#142131,#101c28); border:1px solid #2b4056; border-radius:18px; padding:18px 22px 20px; min-height:0; box-shadow:0 22px 55px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.035); overflow:hidden; }
+  .map::before { content:""; position:absolute; inset:0; pointer-events:none; background:linear-gradient(135deg,rgba(240,184,110,.08),transparent 28%,transparent 62%,rgba(90,169,255,.055)); opacity:.72; }
+  .map > * { position:relative; z-index:1; }
+  .map-brief { display:block; margin-bottom:10px; }
+  .map-stage-copy { display:grid; gap:6px; }
+  .maptitle { display:flex; flex-wrap:wrap; gap:7px; align-items:center; margin-bottom:4px; color:#8da8c2; font-size:12px; font-weight:900; }
+  .maptitle span { display:inline-flex; align-items:center; min-height:24px; border-radius:99px; padding:3px 9px; background:rgba(16,34,49,.74); border:1px solid rgba(77,105,132,.52); }
+  .maptopic { color:#f5f8fb; font-size:clamp(22px,2.05vw,29px); font-weight:950; line-height:1.1; }
+  .unit-chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:0; }
+  .unit-chip { min-height:30px; display:inline-flex; align-items:center; gap:6px; padding:5px 10px 5px 7px; border-radius:999px; background:#111f2d; border:1px solid #2a3f55; color:#d7e7f3; font-size:13px; font-weight:900; box-shadow:inset 0 1px 0 rgba(255,255,255,.035); }
+  .unit-chip em { font-style:normal; color:#8098af; font-size:12px; font-weight:800; }
+  .unit-summary { color:#b9cce0; background:rgba(17,31,45,.62); border-style:dashed; font-size:12px; }
+  .unit-summary-soft { color:#8fa5b9; font-weight:800; }
+  .unit-ico { width:18px; height:18px; flex-shrink:0; }
+  .unit-water { color:#77cdf2; }
+  .unit-tea { color:#d9b56b; }
+  .unit-coffee { color:#c18a63; }
+  .unit-sugar { color:#eee4bf; }
+  .unit-home { color:#9ed0a3; }
+  .unit-word { color:#9fb4c8; }
+  .map-progress { display:grid; gap:7px; padding:11px 12px; border-radius:14px; background:rgba(12,24,34,.62); border:1px solid rgba(54,76,98,.72); box-shadow:inset 0 1px 0 rgba(255,255,255,.035); }
+  .map-progress-row { display:flex; align-items:center; justify-content:space-between; gap:10px; color:#a8bbce; font-size:12px; font-weight:900; }
+  .map-progress-row b { color:#f0c36f; font-size:19px; line-height:1; }
+  .map-progress-bar { height:9px; border-radius:99px; background:#11202d; border:1px solid #2c3e52; overflow:hidden; }
+  .map-progress-bar i { display:block; height:100%; border-radius:99px; background:linear-gradient(90deg,#2ecc8f,#a4e300,#f0b86e); box-shadow:0 0 18px rgba(142,224,0,.16); }
+  .mapscroll { height:clamp(320px, calc(100vh - 300px), 470px); overflow-y:auto; overflow-x:hidden; display:block; box-sizing:border-box; padding:46px 0; border-radius:0; background:transparent; border:0; box-shadow:none; scrollbar-width:thin; scrollbar-color:#314760 transparent; overscroll-behavior:contain; }
+  .mapscroll svg { display:block; width:100%; height:auto; }
+  .map-theme text { paint-order:stroke; stroke:#101c28; stroke-width:3px; stroke-linejoin:round; }
+  .map-unit-ico { width:24px; height:24px; }
+  .mapstage { filter:drop-shadow(0 12px 16px rgba(0,0,0,.28)); }
+  .map-float-jump { position:absolute; right:42px; bottom:42px; z-index:4; width:50px; height:50px; display:grid; place-items:center; border-radius:999px; border:1px solid #70b6f5; background:#163554; color:#d8ecff; cursor:pointer; box-shadow:0 16px 34px rgba(0,0,0,.3), 0 0 0 5px rgba(16,28,40,.62); transition:transform .12s ease, filter .12s ease, opacity .12s ease; }
   .map-float-jump:hover { filter:brightness(1.1); transform:translateY(-1px); }
   .map-float-jump .ico { width:24px; height:24px; margin:0; stroke-width:2.2; }
-  .mapjump { display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:10px; align-items:center; justify-items:stretch; margin-bottom:12px; }
+  .mapjump { display:flex; align-items:center; justify-content:flex-start; gap:10px; margin-bottom:10px; }
   .mapjump.nudge { animation:mapNudge .34s ease; }
   @keyframes mapNudge { 0%,100%{ transform:translateX(0); } 30%{ transform:translateX(-5px); } 65%{ transform:translateX(5px); } }
   .branch-tabs, .map-status-row { display:flex; gap:10px; justify-content:center; flex-wrap:nowrap; }
-  .branch-tabs { background:#16202c; border:1px solid #243343; border-radius:99px; padding:4px; }
-  .mapjump button { background:#1d2c3a; border:1px solid #2c3e52; color:#9fb4c8; border-radius:99px; padding:6px 12px; cursor:pointer; font-size:13px; }
+  .branch-tabs { background:#101d2a; border:1px solid #2b4056; border-radius:99px; padding:3px; box-shadow:inset 0 1px 0 rgba(255,255,255,.035); }
+  .mapjump button { background:#1a2a3a; border:1px solid #31485f; color:#a9bed1; border-radius:99px; padding:6px 12px; cursor:pointer; font-size:13px; transition:transform .12s ease, background .12s ease, border-color .12s ease; }
+  .mapjump button:hover { transform:translateY(-1px); border-color:#54708c; background:#203348; }
   .mapjump button.cur { border-color:#5aa9ff; color:#cfe6ff; }
-  .mapjump .branch-tab { border-color:transparent; background:transparent; color:#cdd9e5; font-weight:800; font-size:15px; padding:10px 20px; min-width:134px; display:inline-flex; align-items:center; justify-content:center; }
-  .mapjump .branch-tab.cur { background:#13324a; border-color:#5aa9ff; color:#fff; }
+  .mapjump .branch-tab { border-color:transparent; background:transparent; color:#cdd9e5; font-weight:900; font-size:14px; padding:8px 16px; min-width:124px; display:inline-flex; align-items:center; justify-content:center; }
+  .mapjump .branch-tab.cur { background:#173956; border-color:#5aa9ff; color:#fff; box-shadow:0 8px 20px rgba(90,169,255,.08); }
   .map-lesson-meta { min-width:0; display:flex; justify-content:center; flex-wrap:wrap; gap:6px; color:#9fb4c8; font-size:12px; line-height:1.25; }
-  .map-lesson-meta span { min-height:26px; display:inline-flex; align-items:center; border:1px solid #243343; background:#16202c; border-radius:99px; padding:4px 10px; }
+  .map-lesson-meta span { min-height:28px; display:inline-flex; align-items:center; border:1px solid #2b4056; background:rgba(16,29,42,.82); border-radius:99px; padding:4px 11px; font-weight:800; }
   .map-status-row { align-items:center; }
-  .mapjump .map-status-row .map-primary-start, #workmapcurrent { background:#8ee000; border-color:#8ee000; border-bottom:4px solid #5fa900; color:#102016; font-weight:900; font-size:16px; padding:10px 24px; min-width:172px; box-shadow:0 10px 24px rgba(142,224,0,.12); }
+  .map-primary-start, #workmapcurrent { background:linear-gradient(180deg,#a8ef16,#7fd500); border:1px solid #a5ee10; border-bottom:4px solid #5fa900; border-radius:14px; color:#102016; cursor:pointer; font-weight:950; font-size:17px; padding:11px 22px; min-width:174px; box-shadow:0 14px 28px rgba(142,224,0,.18); transition:transform .12s ease, filter .12s ease, border-color .12s ease; }
+  .map-primary-start:hover, #workmapcurrent:hover { filter:brightness(1.06); border-color:#c4ff55; transform:translateY(-1px); }
   .map-info-pill { display:inline-flex; align-items:center; max-width:min(520px, 90%); min-height:34px; border-radius:99px; padding:6px 14px; background:#16202c; border:1px solid #2c3e52; color:#9fb4c8; font-size:13px; line-height:1.35; }
 
   /* 💼 工作英文:獨立聽說讀小課,不走主線默寫 */

@@ -7,7 +7,7 @@ function askSylFill(w) {
   const opts = shuffle([answer, ...shuffle(otherSyls).slice(0, 3)]);
   const shown = syls.map((s, i) => i === blankIdx
     ? `<span class="syl" id="blank" style="background:#1d3450;color:#5f7488;min-width:48px">?</span>`
-    : `<span class="syl">${s}</span>`).join('<span class="sep">·</span>');
+    : `<span class="syl">${s}</span>`).join('<span class="sep" aria-hidden="true"> </span>');
   shell('🔊 聽,選出缺的那一塊', `
     <button class="replay" id="replay">🔊</button>
     <div class="syllables" id="syls" style="font-size:34px">${shown}</div>
@@ -46,7 +46,7 @@ function askSylType(w) {
   const blank = new Set(blanks);
   const shown = syls.map((s, i) => blank.has(i)
     ? `<input class="sylinp" data-i="${i}" size="${s.length + 1}" autocomplete="off" autocapitalize="off" placeholder="?">`
-    : `<span class="syl">${s}</span>`).join('<span class="sep">·</span>');
+    : `<span class="syl">${s}</span>`).join('<span class="sep" aria-hidden="true"> </span>');
   shell('長字分段練 —— 打出缺的音節', `
     <div class="syllables" id="syls" style="font-size:30px">${shown}</div>
     <div class="sub2" style="margin-top:8px">${w.zh}　<button class="replay" id="hear" style="font-size:14px;padding:6px 12px">🔊 念</button></div>
@@ -85,7 +85,7 @@ function askSylType(w) {
           <div class="result-mark">!</div>
           <div class="result-main">
             <div class="result-word">${typeof annotatedWordHTML === 'function' ? annotatedWordHTML(w, { force:true }) : w.en}<span class="result-eq"> = ${w.zh}</span></div>
-            <div class="result-copy">差一點: ${syls.join(' · ')}${hi ? ` · ${hi}: ${SYL_HINT[hi]}` : ''}</div>
+            <div class="result-copy">差一點: ${syls.join(' ')}${hi ? `；${hi}: ${SYL_HINT[hi]}` : ''}</div>
           </div>
         </div>
         <button class="btn act" id="cont">繼續 →</button>`;
@@ -151,9 +151,9 @@ function speakSyllables(w, rate) {
 
 function teach(w) {
   const syls = sylOf(w);
-  const sylHTML = syls.map(s => `<span class="syl">${s}</span>`).join('<span class="sep">·</span>');
+  const sylHTML = syls.map(s => `<span class="syl">${s}</span>`).join('<span class="sep" aria-hidden="true"> </span>');
   const sylBlock = syls.length > 1
-    ? `<div class="syllables teach-syllables" id="syls">${sylHTML}</div><div class="syltip teach-tip">「·」只是音節分隔,拼字沒有點</div>`
+    ? `<div class="syllables teach-syllables" id="syls">${sylHTML}</div><div class="syltip teach-tip">分段只是幫你聽,拼字不用空格</div>`
     : `<div class="syllables teach-syllables" id="syls" hidden>${sylHTML}</div>`;
   shell('先認識這個字 👀', `
     <div class="teach-layout">

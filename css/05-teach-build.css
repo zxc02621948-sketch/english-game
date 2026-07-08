@@ -7,7 +7,7 @@
   .teach-word { margin:0; font-size:clamp(54px,8vh,78px); line-height:1; }
   .teach-syllables { margin:10px 0 4px; font-size:clamp(36px,6vh,58px); line-height:1.08; }
   .teach-tip { margin-bottom:0; }
-  .teach-zh { margin:12px 0 0; font-size:22px; }
+  .teach-zh { margin:18px 0 0; font-size:22px; }
   .teach-why { grid-area:why; align-self:end; width:100%; min-height:clamp(92px,14vh,132px); display:flex; align-items:center; background:#0e2a1f; border:1px solid #1f5c3f; border-radius:14px; padding:22px 24px; font-size:clamp(17px,2vh,20px); line-height:1.6; color:#d9f7e5; }
   .lesson-answer.build-answer { justify-content:flex-start; overflow:visible; }   /* 排詞/轉換題要一頁完成,不要在題目區冒出內部捲軸 */
   .buildzh { text-align:center; font-size:clamp(22px,3.3vh,28px); font-weight:700; margin:2px 0 10px; line-height:1.2; }

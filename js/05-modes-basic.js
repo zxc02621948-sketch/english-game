@@ -57,8 +57,7 @@ function askMatch(w) {
   const mk = (box, o, text, on) => {
     const el = document.createElement('div');
     el.className = 'opt';
-    if (o && text === o.en && typeof renderAnnotatedWord === 'function') el.appendChild(renderAnnotatedWord(o));
-    else el.textContent = text;
+    el.textContent = text;
     el.onclick = () => on(el, o);
     box.appendChild(el);
   };
@@ -100,8 +99,7 @@ function askCategoryPick(w) {
   q.options.forEach(o => {
     const el = document.createElement('div');
     el.className = 'opt';
-    if (typeof renderAnnotatedWord === 'function') el.appendChild(renderAnnotatedWord(o));
-    else el.textContent = o.en;
+    el.textContent = o.en;
     el.onclick = () => {
       if (box.classList.contains('locked')) return;
       if (selected.has(o.id)) { selected.delete(o.id); el.classList.remove('sel'); }
@@ -179,8 +177,8 @@ function renderSpeak(w, mode) {
                :                     '看著它,照音節念出來';
   const hearBtn = (mode === 'shadow' || mode === 'blind')
     ? `<div class="speakrow"><button class="replay" id="demo">🔊 ${mode === 'blind' ? '再聽一次' : '聽示範'}</button></div>` : '';
-  const sylHTML = sylOf(w).map(s => `<span class="syl">${s}</span>`).join('<span class="sep">·</span>');
-  const blindHTML = sylOf(w).map(s => `<span class="syl">${'＿'.repeat(s.length)}</span>`).join('<span class="sep">·</span>');   // 盲聽遮罩:照音節分塊、每塊長度=該音節字母數(揭曉時同結構填回真音節)
+  const sylHTML = sylOf(w).map(s => `<span class="syl">${s}</span>`).join('<span class="sep" aria-hidden="true"> </span>');
+  const blindHTML = sylOf(w).map(s => `<span class="syl">${'＿'.repeat(s.length)}</span>`).join('<span class="sep" aria-hidden="true"> </span>');   // 盲聽遮罩:照音節分塊、每塊長度=該音節字母數(揭曉時同結構填回真音節)
   const zhHint = mode === 'pic' ? '' : `<div class="sub2">${w.zh}</div>`;
   shell(prompt, `
     <div class="syllables" id="bigen" style="margin:6px 0">${mode === 'blind' ? blindHTML : mode === 'pic' ? picHTML(w) : sylHTML}</div>
@@ -270,7 +268,7 @@ function speakResult(w, ok) {
   ok ? sfx.correct() : sfx.wrong();
   clearBottomActions();   // 收掉特訓「我學會了」鈕,別跟結算列重疊
   const be = $('bigen');
-  if (be && be.textContent.includes('＿')) be.innerHTML = sylOf(w).map(s => `<span class="syl">${s}</span>`).join('<span class="sep">·</span>');  // 盲聽:結算時揭曉(用音節分塊)
+  if (be && be.textContent.includes('＿')) be.innerHTML = sylOf(w).map(s => `<span class="syl">${s}</span>`).join('<span class="sep" aria-hidden="true"> </span>');  // 盲聽:結算時揭曉(用音節分塊)
   speak(w.en);
   if ($('mic')) $('mic').style.display = 'none';
   ['demo', 'skipspeak'].forEach(id => { const el = $(id); if (el) (el.closest('.speakrow') || el.closest('.skipline') || el).style.display = 'none'; });  // 收掉題目原本的「聽示範」+「跳過」,別跟下面的「再聽」重複
@@ -289,7 +287,7 @@ function offerSelfAssess(w) {
   ['demo', 'skipspeak'].forEach(id => { const el = $(id); if (el) (el.closest('.speakrow') || el.closest('.skipline') || el).style.display = 'none'; });  // 收掉題目原本的「聽示範」+「跳過」,別跟自評的「再聽正解」重複
   { const sc = $('skipchoices'); if (sc) sc.style.display = 'none'; }
   const be = $('bigen');
-  if (be && be.textContent.includes('＿')) be.innerHTML = sylOf(w).map(s => `<span class="syl">${s}</span>`).join('<span class="sep">·</span>');
+  if (be && be.textContent.includes('＿')) be.innerHTML = sylOf(w).map(s => `<span class="syl">${s}</span>`).join('<span class="sep" aria-hidden="true"> </span>');
   speak(w.en);
   $('prompt').textContent = '辨識常抓不準單字發音 —— 你自己聽,念對了嗎?';
   $('body').insertAdjacentHTML('beforeend',
@@ -324,7 +322,7 @@ function askType(w) {
 
 // 5. 看 2 秒 → 默寫
 function askFlashType(w) {
-  shell('記住它…', `<div class="bigen" id="flash">${typeof annotatedWordHTML === 'function' ? annotatedWordHTML(w) : w.en}</div><div class="speakrow"><button class="replay" id="flashhear">${ICON.play}念</button><button class="replay" id="flashslow">慢念</button></div>`);
+  shell('記住它…', `<div class="bigen" id="flash">${w.en}</div><div class="speakrow"><button class="replay" id="flashhear">${ICON.play}念</button><button class="replay" id="flashslow">慢念</button></div>`);
   speakSyllables(w, 0.9);
   $('flashhear').onclick = () => speakSyllables(w, 0.9);
   $('flashslow').onclick = () => speakSyllables(w, 0.55);
