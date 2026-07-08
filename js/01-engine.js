@@ -176,7 +176,7 @@ function buildLevel() {
   if (recipe.role === 'sentence' || recipe.role === 'review')   // 3.5 句子應用/王前整理關 = 本階的應用場:本階字(含已學會的)先進場,別讓到期舊字把主角擠掉(2026-07-08 使用者:「本階單字練得比回顧少」)
     add(shuffle(BANK.filter(w => batchOf(w) === stage - 1 && w.pos !== 'function' && !isFresh(w))));
   add(needsWrite.slice(0, 2));         // 4. 補默寫:只穿插幾個;長字/第三階段字要先通過克漏字門檻
-  add(due.slice(0, 2));                // 4. 到期複習:只穿插幾個(舊字主要靠句子複習帶,別灌一堆已會的淹掉學習)
+  add(due.slice(0, Math.min(4, 2 + Math.floor((stage - 1) / 2))));   // 4. 到期複習:前期 ≤2,越後面複習池越大放寬到 ≤4(關卡才不會越玩越短;每個舊字單關仍最多 2 題,是「更多不同舊字」不是同字灌爆)
   if (picked.length < 4 && !fresh.length) add(shuffle(BANK.filter(w => isLearned(w) && w.pos !== 'function' && batchOf(w) < stage)));   // 5. 太少且「沒有新字可學了」(純鞏固期)才補學會的字回鍋
   if (!picked.length) add(fresh.length ? fresh : shuffle(BANK.filter(w => !isFresh(w) && w.pos !== 'function' && batchOf(w) < stage)));   // 極早期保險:還是空 → 有新字給新字,沒有(複習關/全學會)給已見過的字複習
   return shuffle(picked);
@@ -274,7 +274,12 @@ let combo = 0;                                                     // 🔥 連�
 let levelStartMastery = {};                                        // 本關開始時每字的熟練度快照 → 結算條「舊值 → 新值」長出來的動畫用
 function buildLessonQuota(words, recipe) {
   const q = {}, caps = {}, clock = meta.clock || 0;
-  const desired = Math.max(words.length, (recipe && recipe.questions) || words.length);
+  // ★ 關卡長度(2026-07-08 治「前面 18 題狂重複、越後面越短」):
+  //   ① 上限跟字數掛鉤(字數×3+2):4 個字別磨 18 題(L1 18→14,單字平均 ~3 次);
+  //   ② 階段加成:越後面複習池越大 → 每關 +(stage-1) 題、封頂 +4、總長封頂 16(後期關卡不再比前期短)。
+  const stageBonus = Math.min(4, Math.max(0, stageOfLevel(level) - 1));
+  const baseQ = (recipe && recipe.questions) || words.length;
+  const desired = Math.max(words.length, Math.min(baseQ + stageBonus, 16, words.length * 3 + 2));
   words.forEach(w => {
     const k = wordKey(w), c = rec(w);
     const freshReal = rungOf(w) === 0 && w.pos !== 'function';
