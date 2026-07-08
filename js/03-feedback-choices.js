@@ -17,13 +17,14 @@ const confuseNote = (w, picked) => {
 };
 
 const CATEGORY_SETS = [
+  // ★ 分類題只准考「真實世界的語意」(這個字是什麼意思)——那是學習的一部分。
+  //   句型模板的篩選 flag(ownable/sweetenable/countable…)是防怪句的工程手段,不是語言事實,拿來出題會教出假規則:
+  //   -「可數/加 a」已拆(a coffee、two sugars 都通,冤枉講得通的答案);
+  //   - 2026-07-08 拆「可以說 my ___」(my coffee/my tea 完全成立,Where's my coffee? 再正常不過);
+  //   - 同日拆「可以加糖的飲料」(water 被判錯,但糖水明明存在)。
   { id:'drinkable', flag:'drinkable', label:'飲料', prompt:'選出所有可以喝的東西' },
-  { id:'sweetenable', flag:'sweetenable', label:'可以加糖的飲料', prompt:'選出所有可以加糖的飲料' },
   { id:'eatable', flag:'eatable', label:'食物', prompt:'選出所有可以吃的東西' },
   { id:'emotion', flag:'emotion', label:'感受', prompt:'選出所有感受或心情' },
-  // 「可數/加 a」不做成分類題:英文可數性邊界太模糊(a sugar cube、two sugars、a coffee 都通),
-  // 抽成「選出所有可數的字」會冤枉講得通的答案。這個觀念改由句型自然帶:This is a cat.(加 a)vs I drink water.(不加 a)。
-  { id:'ownable', flag:'ownable', label:'可以說「我的...」的東西', prompt:'選出所有可以說成 my ___ 的東西' },
 ];
 const hasFlag = (w, flag) => asList(w && w.flags).includes(flag);
 function categorySourceWords(baseWords = levelWords) {
