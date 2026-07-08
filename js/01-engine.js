@@ -284,7 +284,19 @@ function buildLessonQuota(words, recipe) {
     if (recipe && (recipe.role === 'sentence' || recipe.role === 'review') && !isLearned(w)) cap += 1;
     caps[k] = cap;
   });
-  const totalTarget = Math.min(desired, words.reduce((sum, w) => sum + (caps[wordKey(w)] || 0), 0));
+  // ★ 2026-07-08 情境批(每批 3~5 字)後,字少/字都學會的關 sum(caps) 會塌到 4 題沒手感(句子應用關 14 題縮成 4)。
+  //   → caps 輪流 +1 補到 recipe 要的題數;每字仍封頂 HARD_CAP=5(單關別拿同一個字磨爛)。句子應用/王前整理「多練幾輪」本來就是目的。
+  const HARD_CAP = 5;
+  let capSum = words.reduce((sum, w) => sum + (caps[wordKey(w)] || 0), 0);
+  while (capSum < desired) {
+    let bumped = false;
+    for (const w of words) {
+      const k = wordKey(w);
+      if (caps[k] < HARD_CAP && capSum < desired) { caps[k]++; capSum++; bumped = true; }
+    }
+    if (!bumped) break;
+  }
+  const totalTarget = Math.min(desired, capSum);
   let total = words.reduce((sum, w) => sum + (q[wordKey(w)] || 0), 0);
   const priority = words.slice().sort((a, b) => {
     const score = w => (isFresh(w) ? 4 : 0) + (needsWriteProof(w) && w.pos !== 'function' ? 3 : 0) + (100 - pOf(w)) / 50;
