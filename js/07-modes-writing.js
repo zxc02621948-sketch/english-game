@@ -158,6 +158,8 @@ function teach(w) {
     ? `<div class="syllables teach-syllables" id="syls">${sylHTML}</div><div class="syltip teach-tip">分段只是幫你聽,拼字不用空格</div>`
     : `<div class="syllables teach-syllables" id="syls" hidden>${sylHTML}</div>`;
   const teachPic = typeof visualOf === 'function' && visualOf(w) ? `<div class="teach-pic">${picHTML(w, 96)}</div>` : '';   // 有圖的字:教卡先給圖(零基礎靠圖掛意思比翻譯黏;沒圖不硬放)
+  const ftp = typeof firstTimePhonicsFor === 'function' ? firstTimePhonicsFor(w) : null;   // 拼讀塊第一次亮相 → 教一次(之後同塊只剩虛線,不再打擾)
+  const phonicsBlock = ftp ? `<div class="teach-phonics"><span class="tp-kicker">🔍 發音積木</span><b class="tp-label">${ftp.label}</b><span class="tp-note">${ftp.note}</span></div>` : '';
   shell('先認識這個字 👀', `
     <div class="teach-layout">
       <div class="teach-main">
@@ -165,6 +167,7 @@ function teach(w) {
         <div class="fullword teach-word">${typeof annotatedWordHTML === 'function' ? annotatedWordHTML(w) : w.en}</div>
         ${sylBlock}
         <div class="sub2 teach-zh">${w.zh}</div>
+        ${phonicsBlock}
       </div>
       <div class="teach-tools">
         <button class="replay" id="play">${ICON.play}念</button>

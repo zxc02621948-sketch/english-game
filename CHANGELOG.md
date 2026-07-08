@@ -1513,3 +1513,19 @@ listen(→ music/to)、hear、say(→ hello/yes/no)、go/come(→ 地點 + home 
 ### 修
 - **ea 拆兩條**(js/04-annotate.js):`ea_short`(only:bread/head/dead/ready/heavy/weather/breakfast/sweater)標「ea → 這裡念短音 e(跟 bed 一樣)」;原 ea 規則 exclude 同一批。驗:bread/head 拿短音標籤、eat/tea/read 長音、marksForError(bread,'bared') 挑出短音那條。
 - **SPELL_HINT 加 bread**(js/07):「b + read —— 邊吃麵包邊讀書;br 是黏在一起的音,r 一定緊跟著 b(不是 bared)」。順手補 drink(dr+ink)。
+
+
+## 2026-07-08(5 / Claude Opus 4.8)— 發音積木「第一次見面教一次」(治「拼讀塊沒人教過」)
+
+### 使用者實玩推導出 phonics 本身
+「英文不是單獨某一個音怎麼念,是一塊一塊的發音區塊去拼湊的吧?ea 是一組的對吧?」—— 對,這就是自然發音。系統早有規則表+虛線標註,但**從來沒人跟玩家說過這件事**(虛線默默躺著,第一次見 ea 沒人講「這是一塊」)。
+
+### 修(維持「不開課、標註為主」的定案,只補「第一次要教一次」)
+- `phonicsMarks` 的 mark 加 `ruleId`(契約相容的新增欄位)。
+- 新函式 `firstTimePhonicsFor(w)`(js/04):教卡渲染時查這個字的拼讀塊,有「還沒亮相過」的規則 → 回傳那條並記進 `meta.phonicsSeen[ruleId]`;`annotMode==='off'` 不出。
+- 教卡(js/07)在中文下方放一次性說明卡 `.teach-phonics`(🔍 發音積木 + label + note;霧藍色系,css/05);同一條規則之後只剩虛線+hover,不再打擾。
+- 驗(五情境):tea 第一次出「ea→長音」/ eat 第二次不出 / bread 出「ea→短音」(不同規則)/ cat 沒拼讀塊不出 / annotMode off 不出。
+
+### 備註
+- 使用者說的「開頭只會有什麼、結尾只會有什麼」位置規則,規則表本來就用正則錨點編著(^dr、ck$、tion$),說明文字裡帶到即可。
+- meta.phonicsSeen 全域(拼讀不分軌)。

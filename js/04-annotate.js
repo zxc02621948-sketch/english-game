@@ -44,9 +44,20 @@ function phonicsMarks(en) {
     if (p.exclude && p.exclude.includes(low)) continue;
     const m = en.match(p.re);
     if (!m) continue;
-    out.push({ start: m.index, end: m.index + m[0].length, kind:'phonics', label:p.label, note:p.note, say:p.say });
+    out.push({ start: m.index, end: m.index + m[0].length, kind:'phonics', ruleId:p.id, label:p.label, note:p.note, say:p.say });
   }
   return out;
+}
+/* ── 拼讀塊「第一次見面教一次」(2026-07-08,使用者實玩點出「這些沒人教過」):
+   教卡渲染時查這個字的拼讀塊,有「還沒亮相過」的規則 → 回傳那條給教卡跳一次說明,並記進 meta.phonicsSeen。
+   之後同一塊只剩虛線+hover,不再打擾(維持「不開課、標註為主」的定案,只補『第一次要教一次』)。 ── */
+function firstTimePhonicsFor(w) {
+  if (!w || !w.en || (meta.annotMode === 'off')) return null;
+  meta.phonicsSeen = meta.phonicsSeen || {};
+  const fresh = phonicsMarks(w.en).find(m => m.ruleId && !meta.phonicsSeen[m.ruleId]);
+  if (!fresh) return null;
+  meta.phonicsSeen[fresh.ruleId] = true; saveMeta();
+  return { chunk: w.en.slice(fresh.start, fresh.end), label: fresh.label, note: fresh.note };
 }
 
 /* ── 字根表(逐字/逐根,漸進補;先放少量示範)──
