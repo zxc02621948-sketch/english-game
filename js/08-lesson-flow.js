@@ -40,7 +40,7 @@ const SKILL = new Map([
 ]);
 const skillOn = s => (meta.skills || {})[s] !== false;             // 預設開(使用者面板總開關)
 const trackSkillOn = s => skillOn(s) && !(TRACKS[currentTrack] && TRACKS[currentTrack].skills && TRACKS[currentTrack].skills[s] === false);   // 該軌是否練此技能(工作軌關掉 write → 不出默寫、王也不考打字)
-const wroteOk = w => !!rec(w).wrote || !trackSkillOn('write');     // 不練默寫的軌:視同已「會寫」,別卡階段完成 / 句子複習門檻
+const wroteOk = w => !!rec(w).wrote2 || !trackSkillOn('write');    // ★ 隔關再驗:階段門檻認 wrote2(隔關寫對第二次的章),不是一次性的 wrote。不練默寫的軌:視同已「會寫」
 function passRung(w) { onCorrect(w); updateBar(); nextQuestion(); } // 該技能關了 → 該階自動帶過
 let lastAsked = {}, lastAskedSkill = {}, lastAskedFormatId = {}, lastFormat = null, currentSkill = null, currentFormatId = null;   // 每字上次題型 + 技能 + 全域上一題格式 → 避免連續同題型(破單調)
 let transformsThisLevel = 0;                                        // 轉換題(位置互換)每關至多 1 次 → 當稀有「aha」不當常客(治前期一直重排同批字很沒誠意)
@@ -72,7 +72,7 @@ function ask(w) {
   // ★ 熟練度 = 出現頻率(不是 gate):靠近該字當前難度的題型抽中機率高,難的不會消失、只是變少;字越熟、難題出現越多。
   const fmtTier = f => f.tier || (f.skill === 'write' ? 3 : f.skill === 'speak' ? 2 : 1);   // 認/讀=1、說=2、寫=3;f.tier 可覆寫(句子=3)
   const target = tierOfMastery(rec(w).mastery || 0);   // 該字現在的難度階(1認 / 2說 / 3寫),跟 mastery 走
-  if (!rec(w).wrote && target >= 3 && trackSkillOn('write')) {   // 只在「已練到寫階」且該軌有練寫才強制補寫;工作軌不逼默寫
+  if (needsWriteProof(w) && target >= 3 && trackSkillOn('write')) {   // 只在「已練到寫階」且該軌有練寫才強制補寫(含隔關複驗;同關剛寫過的不會重逼);工作軌不逼默寫
     const writePool = pool.filter(f => f.skill === 'write');
     const pictureWritePool = visualOf(w) ? writePool.filter(f => f.id === 'pictype') : [];
     if (pictureWritePool.length) pool = pictureWritePool; // 有圖的字第一次硬默寫先看圖寫,避免被一般默寫抽掉
@@ -166,8 +166,18 @@ function trainingDone() {
 
 /* ---- 關卡面板 / 過關畫面(玩法層,之後可換成華麗地圖) ---- */
 function levelProgressHTML() {
-  return levelWords.map(w => `<div class="wordrow"><div class="en">${w.en}</div>
-    <div class="bar"><i style="width:${pOf(w)}%"></i></div><div class="pct">${pOf(w)}%</div></div>`).join('');
+  // 結算動畫:條先畫在「開關時的舊值」,渲染後 animateLevelProgress() 讓它長到新值(css transition);漲幅另標 +N。
+  return levelWords.map(w => {
+    const now = pOf(w), was = Math.min(levelStartMastery[wordKey(w)] ?? now, now), gain = now - was;
+    return `<div class="wordrow"><div class="en">${w.en}</div>
+    <div class="bar"><i class="growbar" style="width:${was}%" data-target="${now}"></i></div>
+    <div class="pct">${now}%${gain > 0 ? ` <span class="gain">+${gain}</span>` : ''}</div></div>`;
+  }).join('');
+}
+function animateLevelProgress() {
+  setTimeout(() => {                                                   // setTimeout 不用 rAF:背景分頁 rAF 不跑,會卡在舊值
+    document.querySelectorAll('.growbar').forEach(el => { void el.offsetWidth; el.style.width = el.dataset.target + '%'; });
+  }, 80);
 }
 function showStart() {
   screen.classList.remove('lesson-screen', 'boss-screen', 'done-screen');
@@ -219,17 +229,37 @@ function showDone() {
   sfx.done(); if (newly.length) setTimeout(() => sfx.coin(), 650);
   const sentenceWords = currentSentenceSourceWords(levelWords);
   const canBuildSentence = !!pickBuildSentence(sentenceWords);
+  const scen = ready ? scenarioOf(completedStage) : null;                       // 情境完成卡(日常軌才有;工作軌 scen=null 走通用文案)
+  const STAGE_BONUS = 3;
+  if (ready) { meta.coins += STAGE_BONUS; saveMeta(); setTimeout(() => sfx.coin(), 900); }   // 階段完成獎勵(ready 只會進一次:meta.stage 已推進)
+  if (scen) {                                                                   // ★ 情境完成卡:階段收尾的「時刻」——你完成了一個情境,句子秀給你、可點念
+    screen.innerHTML = `<main class="done-panel scenario-done">
+      <div class="scen-icon">${scen.icon}</div>
+      <h2 style="text-align:center">第 ${completedStage} 階完成 — ${scen.done}</h2>
+      <div class="sub" style="text-align:center">這些句子現在是你的了(點一下可以聽):</div>
+      <div class="scen-sents">${scen.sents.map(([en, zh]) => `<button class="scen-sent" data-say="${en}"><span class="sen">${en}</span><span class="szh">${zh}</span></button>`).join('')}</div>
+      <div class="scen-bonus">情境獎勵 +${STAGE_BONUS} 🪙</div>
+      <button class="btn" id="next" style="margin-top:14px">前往第 ${nextLevel} 關 →</button>
+      <button class="btn" id="challenge" style="margin-top:10px;background:#2a0e12;border-color:#e35b6a">🎮 去小遊戲賺金幣</button>
+      <button class="btn" id="tomap" style="margin-top:10px;background:#1d2c3a;border-color:#2c3e52">← 回地圖</button></main>`;
+    screen.querySelectorAll('.scen-sent').forEach(b => { b.onclick = () => speakSentence({ text: b.dataset.say }); });
+    $('challenge').onclick = showMinigames;
+    $('next').onclick = () => { level = nextLevel; showStart(); };
+    $('tomap').onclick = showHome;
+    return;
+  }
   screen.innerHTML = `<main class="done-panel"><div style="text-align:center;font-size:40px">🎉</div>
     <h2 style="text-align:center">${ready ? `第 ${completedStage} 階完成!` : '過關!'}</h2>
     <div class="sub" style="text-align:center">這關練的字,熟練度都疊上去了:</div>
     ${levelProgressHTML()}
     ${newly.length ? `<div class="sub" style="margin-top:12px">★ <b style="color:#9bd2ff">${newly.map(w=>w.en).join(', ')}</b> 已 100% 學會,存起來——之後關卡會隨機回鍋。</div>` : ''}
-    ${ready ? `<div class="sub" style="margin-top:12px;color:#6ee7a8">下一階已解鎖。王戰已放進小遊戲,想賺金幣再去玩。</div>` : ''}
-    ${blocked ? `<div class="sub" style="margin-top:12px;color:#ffd0d6">還有字沒默寫成功過,先補完這階才會進下一階。</div>` : ''}
+    ${ready ? `<div class="sub" style="margin-top:12px;color:#6ee7a8">下一階已解鎖(+${STAGE_BONUS} 🪙)。王戰已放進小遊戲,想賺金幣再去玩。</div>` : ''}
+    ${blocked ? `<div class="sub" style="margin-top:12px;color:#ffd0d6">還有字沒寫穩(默寫要隔關再對一次才算真的會),補完這階才會進下一階。</div>` : ''}
     ${canBuildSentence ? `<button class="btn" id="build" style="margin-top:14px;background:#0e2a1f;border-color:#1f5c3f">組句小練習 →</button>` : ''}
     ${ready ? `<button class="btn" id="challenge" style="margin-top:14px;background:#2a0e12;border-color:#e35b6a">🎮 去小遊戲</button>` : ''}
     <button class="btn" id="next" style="margin-top:${ready ? 10 : 14}px${ready ? ';background:#1d2c3a;border-color:#2c3e52' : ''}">${ready ? `前往第 ${nextLevel} 關 →` : blocked ? '補默寫 →' : '下一關 →'}</button>
     <button class="btn" id="tomap" style="margin-top:10px;background:#1d2c3a;border-color:#2c3e52">← 回地圖</button></main>`;
+  animateLevelProgress();
   if (canBuildSentence) $('build').onclick = () => askBuildSentence(sentenceWords, showDone);
   if ($('challenge')) $('challenge').onclick = showMinigames;
   $('next').onclick = () => {

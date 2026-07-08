@@ -155,9 +155,11 @@ function teach(w) {
   const sylBlock = syls.length > 1
     ? `<div class="syllables teach-syllables" id="syls">${sylHTML}</div><div class="syltip teach-tip">分段只是幫你聽,拼字不用空格</div>`
     : `<div class="syllables teach-syllables" id="syls" hidden>${sylHTML}</div>`;
+  const teachPic = typeof visualOf === 'function' && visualOf(w) ? `<div class="teach-pic">${picHTML(w, 96)}</div>` : '';   // 有圖的字:教卡先給圖(零基礎靠圖掛意思比翻譯黏;沒圖不硬放)
   shell('先認識這個字 👀', `
     <div class="teach-layout">
       <div class="teach-main">
+        ${teachPic}
         <div class="fullword teach-word">${typeof annotatedWordHTML === 'function' ? annotatedWordHTML(w) : w.en}</div>
         ${sylBlock}
         <div class="sub2 teach-zh">${w.zh}</div>

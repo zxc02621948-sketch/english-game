@@ -1463,3 +1463,29 @@ listen(→ music/to)、hear、say(→ hello/yes/no)、go/come(→ 地點 + home 
 1. 「學會」門檻改嚴:默寫成功要「隔關再驗」(wroteClock + 下一關 SRS 再考一次寫,過了才算真的會寫)。
 2. Step 2 動力迴圈:情境完成卡(「你會點飲料了 ☕」)、結算獎勵動畫、連擊。
 3. Step 3 關卡畫面微整:選項配圖、答對回饋動畫、地圖標情境名。
+
+
+## 2026-07-08(2 / Claude Opus 4.8)— ★ 隔關再驗 + 動力迴圈(情境完成卡/結算動畫/連擊)+ 教卡配圖
+
+### A. 「學會」門檻改嚴:默寫隔關再驗(js/01、js/08)
+- 使用者點破:「默寫過一次≠會 —— 失敗 10 次硬過 1 次只是短期記憶,下一題就忘」。
+- 規則:第一次整字默寫成功 → 只記 `wrote` + `wroteClock`(當下 SRS 時刻),**不算數**;**下一關以後**(clock 有前進)再寫對一次 → `wrote2` = 「真的會寫」章。
+- `wroteOk`(階段門檻/王門檻)改認 `wrote2`;`needsWriteProof()` 進補寫佇列(buildLevel needsWrite / ask 強制補寫 / completionRecipe / quota cap+score 全改吃它);同關剛寫過的不會被馬上重逼(clock 沒走 → false)。
+- 補考(inReview)寫對不算的既有防線不動;`markWordKnown`(我已經會了)直接給 wrote2;**舊存檔自癒**:只有 wrote 沒 wroteClock 的老資料視為已驗(別把老玩家整階卡回去)。
+- 過關 blocked 文案改「還有字沒寫穩(默寫要隔關再對一次才算真的會)」。
+- 驗過:同關第二次寫對不蓋章 → 隔關 needsProof=true → 寫對蓋章;補考不算;自癒;markWordKnown 全對。
+
+### B. 動力迴圈(js/01、js/03、js/08、css/02)
+- **SCENARIOS 表**(js/01,跟 BATCHES 一一對應):icon/情境名/完成文案/招牌句;跟軌走(applyTrackContent 換,工作軌空 → 通用文案)。js/11 註冊 daily 帶 scenarios。
+- **情境完成卡**:showDone 階段完成(ready)時改出情境卡 —— 大 icon +「第 N 階完成 — 你會點飲料了!」+ 這批招牌句(**點了會念**,speakSentence)+ 情境獎勵 +3 🪙。
+- **結算熟練度動畫**:startLevel 快照 levelStartMastery → 過關結算條從舊值**長到**新值(css transition)+ 綠色 +N 漲幅。⚠ 用 setTimeout 不用 rAF(背景分頁 rAF 不跑)。
+- **🔥 連擊**:主回合答對(教不算)combo+1、答錯歸零;≥2 顯示徽章(toprow 進度條旁)、每 5 連擊 +1 金幣(徽章帶 +1🪙 彈跳)。
+- 驗過:連擊 5 → 徽章「🔥5 +1🪙」+金幣;答錯藏徽章;情境卡 heading/句子/+3 金幣/stage 推進;工作軌 fallback;條 25%→50% 會動。
+
+### C. 關卡畫面微整(js/07、js/10、css/02、css/05)
+- **教卡配圖**:有圖的字(visualOf)教卡在單字上方放圖(img 96px / emoji ~51px,比例跟教字走);沒圖不硬放。零基礎靠圖掛意思比中文翻譯黏。
+- **答對回饋動畫**:.why 滑入 .26s + 打勾/驚嘆彈跳 .38s(短,每題播不吵)。
+- **首頁/任務卡標情境名**:地圖標題「第 1 階・☕ 點飲料」(scenarioOf,沒編情境的軌退回字列表);任務卡副標「☕ 點飲料・飲料短語導入」。
+
+### 沒動的
+- 選項卡不配圖(會讓答案用圖猜出來,傷學習)。王戰/小遊戲不變。

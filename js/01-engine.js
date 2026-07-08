@@ -25,6 +25,7 @@ const rec = w => {
     c.mastery = Math.round(got / (max * 2) * 100);
     delete c.reps; delete c.miss;
   }
+  if (c.wrote && c.wrote2 === undefined && c.wroteClock === undefined) c.wrote2 = true;   // 舊存檔自癒:隔關再驗上線前拿到的 wrote 視為已驗(既得權益,別把老玩家整階卡回去)
   return c;
 };
 // meta:金幣 + 解鎖到第幾關(跟字進度分開存)
@@ -60,6 +61,20 @@ let BATCHES = [
   ['word_listen','word_hear','word_music','word_to'],                                             // 批9 👂 用耳朵:I listen to music. / I hear a cat.
   ['word_make','word_good','word_bad','word_beautiful','word_read'],                              // 批10 🍞 在家的一天:I make tea. / I read a book. / This is good.(回收食物飲料/書)
 ];
+// 情境資訊(跟 BATCHES 一一對應):階段收尾的「情境完成卡」+ 首頁/地圖顯示用。sents = 這批的招牌句(手寫、可點念)。
+let SCENARIOS = [
+  { icon:'☕', title:'點飲料',     done:'你會點飲料了!',           sents:[['Coffee or tea?','咖啡還是茶?'],['Tea, please.','請給我茶。'],['Coffee with sugar.','咖啡加糖。']] },
+  { icon:'👉', title:'這是什麼',   done:'你會介紹眼前的東西了!',   sents:[['This is a cat.','這是一隻貓。'],['This is my book.','這是我的書。'],['Is this a cat?','這是一隻貓嗎?']] },
+  { icon:'🙂', title:'我的心情',   done:'你會說出自己的感覺了!',   sents:[['I am happy.','我很開心。'],['I am tired.','我很累。'],['Am I happy?','我開心嗎?']] },
+  { icon:'🍚', title:'肚子餓了',   done:'肚子餓會用英文講了!',     sents:[['I am hungry.','我很餓。'],['I eat rice.','我吃飯。'],['I am hungry. I eat bread.','我很餓,我吃麵包。']] },
+  { icon:'🥛', title:'口渴了',     done:'口渴也會講了!',           sents:[['I am thirsty.','我很渴。'],['I drink milk.','我喝牛奶。'],['I am thirsty. I drink tea.','我很渴,我喝茶。']] },
+  { icon:'🏠', title:'我的家',     done:'你會介紹自己的家了!',     sents:[['This is my home.','這是我的家。'],['This is big.','這很大。'],['I go home.','我回家。']] },
+  { icon:'🛒', title:'上街',       done:'上街會用的動作都會說了!', sents:[['I buy a book.','我買一本書。'],['I see a cat.','我看見一隻貓。'],['I look at a house.','我看著一棟房子。']] },
+  { icon:'👋', title:'開口說',     done:'你會用英文打招呼了!',     sents:[['I say hello.','我打招呼。'],['I speak English.','我會說英文。']] },
+  { icon:'👂', title:'用耳朵',     done:'耳朵的動詞都會了!',       sents:[['I listen to music.','我聽音樂。'],['I hear a cat.','我聽見貓的聲音。']] },
+  { icon:'🍞', title:'在家的一天', done:'日常軌全部完成!',         sents:[['I make tea.','我泡茶。'],['I read a book.','我讀一本書。'],['This is good.','這很好。']] },
+];
+const scenarioOf = stage => SCENARIOS[(stage || 1) - 1] || null;   // 沒編情境的軌(工作軌)回 null → 收尾卡走通用文案
 let _batchSet, _rest, _batchIndex, LEARN_ORDER;
 function rebuildCurriculum() {                                        // 依「當前軌」的 BANK+BATCHES 重算課程衍生表(切軌時要重跑)
   _batchSet = new Set(BATCHES.flat());
@@ -80,6 +95,7 @@ function applyTrackContent(name) {                                    // 整組�
   const t = TRACKS[name]; if (!t) return;
   BANK = t.bank; BATCHES = t.batches; PATTERNS = t.patterns;
   BUILD_SENTENCE_PATTERN_IDS = t.buildIds; TRANSFORM_PATTERN_IDS = t.transformIds;
+  SCENARIOS = t.scenarios || [];                                      // 情境卡資料跟軌走(工作軌沒編 → 空,收尾卡走通用文案)
   rebuildCurriculum();
 }
 function snapshotTrackMeta() {                                        // 把當前軌的進度存回 meta.tracks[currentTrack]
@@ -123,6 +139,16 @@ function microBatchReady(w) {
   return clozeReadyForDictation(w);
 }
 const isHardDictationFormatId = id => ['type', 'pictype', 'flashtype'].includes(id);
+// ★ 隔關再驗(2026-07-08):默寫成功一次不算「真的會寫」(失敗N次後硬過一次只是短期記憶)。
+//   第一次寫對 → 記 wroteClock;下一關以後(clock 有前進)再寫對一次 → wrote2 = 真的會寫章。階段門檻認 wrote2。
+//   needsWriteProof = 這個字現在還欠一次「算數的」默寫:沒寫過,或寫過但複驗時機到了還沒過。
+//   (同一關內 wrote 剛拿到、clock 還沒走 → 不逼著馬上重寫,回傳 false,下一關才排。)
+const needsWriteProof = w => {
+  const c = rec(w);
+  if (!c.wrote) return true;
+  if (c.wrote2) return false;
+  return (meta.clock || 0) > (c.wroteClock || 0);
+};
 
 function buildLevel() {
   // ★ 固定 5 關階段中的動態選字:關卡角色決定新字量/題數,內容仍按熟練度挑新字 + 學習中 + 到期複習。
@@ -134,7 +160,7 @@ function buildLevel() {
   const isReplay = (level || 1) < (meta.maxLevel || 1);   // 回去玩「已過的舊關」(不是最前線那關)= 純複習,不引新字(治「這階還沒學完時回舊關卻在學新字」)
   const fresh  = isReplay ? [] : LEARN_ORDER.filter(w => isFresh(w) && batchOf(w) < stage && w.pos !== 'function');   // 解鎖批內的新「實詞」(功能詞不走教卡);複習關不引新字
   const focus = LEARN_ORDER.filter(w => isAdvancedWord(w) && batchOf(w) < stage && !isFresh(w) && !microBatchReady(w));   // 第三階段後:小組沒練穩前,先專注這組,不再開下一組新字
-  const needsWrite = trackSkillOn('write') ? BANK.filter(w => !isFresh(w) && w.pos !== 'function' && !rec(w).wrote && batchOf(w) < stage && clozeReadyForDictation(w)) : [];   // 不練默寫的軌:不排補默寫
+  const needsWrite = trackSkillOn('write') ? BANK.filter(w => !isFresh(w) && w.pos !== 'function' && needsWriteProof(w) && batchOf(w) < stage && clozeReadyForDictation(w)) : [];   // 不練默寫的軌:不排補默寫。needsWriteProof:沒寫過 or 寫過待隔關複驗
   const active = shuffle(BANK.filter(w => !isFresh(w) && !isLearned(w) && w.pos !== 'function' && batchOf(w) < stage && !focus.some(f => f.id === w.id))); // 學習中(<100%),主力。功能詞排除 → 不單獨刷,只在句子裡練
   const due    = BANK.filter(w => isLearned(w) && w.pos !== 'function' && batchOf(w) < stage && (rec(w).due || 0) <= clock) // 到期該複習的學會字(功能詞除外,走句子)
                      .sort((a, b) => (rec(a).due || 0) - (rec(b).due || 0));              // 最逾期先
@@ -203,7 +229,7 @@ function stageSentencesReady(stage = meta.stage || 1) {
 function completionRecipe(pending) {
   const n = pending.length;
   if (!n || n > 2 || n >= stageWordsFor().length) return null;   // 只有整階原本就 1-2 字時,別一開始就當「補完最後幾個字」
-  const missingWrite = pending.some(w => rec(w).taught && !rec(w).wrote);
+  const missingWrite = pending.some(w => rec(w).taught && needsWriteProof(w));
   return {
     role:'completion',
     label:n === 1 ? '補完最後一個字' : '補完最後兩個字',
@@ -242,6 +268,8 @@ let quota = {}, lgot = {}, reviewQueue = [], inReview = false;     // 這關每�
 let reviewMiss = {};                                               // 每字「連續答錯次數」(答對歸零)→ 連錯 2 次補考強制走複習卡
 let inTraining = false, trainPool = [], trainTotal = 0, trainSkills = new Set(), trainMode = 'weak', lastTrainWordKey = '';   // 🎯 單字特訓:自選字 + 自選技能(trainSkills 可複選:空=混合,或任選 listen/read/speak/write 幾種);各題可「我學會了」移除;不走主回合 quota/SRS。trainTotal=原本選幾個字(進度條用)。trainMode:'weak'=練還不會的字(滿100畢業)/'review'=複習已學會的字(不畢業,靠「移除」退出)
 let currentRecipe = null;
+let combo = 0;                                                     // 🔥 連擊:主回合連續答對數(答錯/開新關歸零);每 5 連擊 +1 金幣
+let levelStartMastery = {};                                        // 本關開始時每字的熟練度快照 → 結算條「舊值 → 新值」長出來的動畫用
 function buildLessonQuota(words, recipe) {
   const q = {}, caps = {}, clock = meta.clock || 0;
   const desired = Math.max(words.length, (recipe && recipe.questions) || words.length);
@@ -251,7 +279,7 @@ function buildLessonQuota(words, recipe) {
     q[k] = freshReal ? 2 : 1;
     let cap = q[k];
     if (!isLearned(w)) cap += 2;                              // 還沒會:可以多練,撐起正常關卡長度
-    if (w.pos !== 'function' && !c.wrote) cap += 1;            // 缺默寫:補一點寫作機會
+    if (w.pos !== 'function' && needsWriteProof(w)) cap += 1;  // 缺默寫(含待隔關複驗):補一點寫作機會
     if (isLearned(w) && (c.due || 0) <= clock) cap += 1;       // 到期回顧:最多多抽一次,不要拿已會字硬湊題數
     if (recipe && (recipe.role === 'sentence' || recipe.role === 'review') && !isLearned(w)) cap += 1;
     caps[k] = cap;
@@ -259,7 +287,7 @@ function buildLessonQuota(words, recipe) {
   const totalTarget = Math.min(desired, words.reduce((sum, w) => sum + (caps[wordKey(w)] || 0), 0));
   let total = words.reduce((sum, w) => sum + (q[wordKey(w)] || 0), 0);
   const priority = words.slice().sort((a, b) => {
-    const score = w => (isFresh(w) ? 4 : 0) + (!rec(w).wrote && w.pos !== 'function' ? 3 : 0) + (100 - pOf(w)) / 50;
+    const score = w => (isFresh(w) ? 4 : 0) + (needsWriteProof(w) && w.pos !== 'function' ? 3 : 0) + (100 - pOf(w)) / 50;
     return score(b) - score(a);
   });
   while (priority.length && total < totalTarget) {
@@ -284,7 +312,9 @@ function startLevel() {
   levelWords = (remedialWords && remedialWords.length) ? remedialWords : buildLevel();   // 惡補關:用打輸王時卡住的字
   remedialWords = null;
   quota = {}; lgot = {}; reviewQueue = []; inReview = false; reviewMiss = {}; transformsThisLevel = 0;
+  combo = 0;
   quota = buildLessonQuota(levelWords, currentRecipe);
+  levelStartMastery = {}; levelWords.forEach(w => { levelStartMastery[wordKey(w)] = pOf(w); });   // 結算動畫的起點
   levelWords.forEach(w => { lgot[wordKey(w)] = 0; }); // 新字至少教+馬上考;其餘題數由本關 recipe 分配
   queue = shuffle([...levelWords]);
   nextQuestion();
@@ -295,7 +325,10 @@ function onCorrect(w) {
   else if (!inReview) {                          // ★ 補考(剛看過答案的重答)答對「不補熟練度、不算 wrote」→ 要下次主回合真的一次過才補(治「答錯→補考硬過→分數補回但其實沒會」)
     const c = rec(w);
     c.mastery = Math.min(LEARNED, (c.mastery || 0) + MASTERY_OK);   // 認/說/寫答對 → 熟練度 +MASTERY_OK
-    if (currentSkill === 'write' && isHardDictationFormatId(currentFormatId)) c.wrote = true;   // 王考默寫前,至少要真的「整字/聽寫/看圖寫」對過;克漏字只算鷹架,不直接算 wrote
+    if (currentSkill === 'write' && isHardDictationFormatId(currentFormatId)) {                 // 整字聽寫/看圖寫/默寫對了(克漏字只算鷹架)
+      if (!c.wrote) { c.wrote = true; c.wroteClock = meta.clock || 0; }                         // 第一次寫對:記時刻,還不算「真的會寫」
+      else if (!c.wrote2 && (meta.clock || 0) > (c.wroteClock || 0)) c.wrote2 = true;           // ★ 隔關再寫對一次 → 蓋「真的會寫」章(階段門檻認這個)
+    }
   }
   save();
   if (!wasLearned && isLearned(w) && !rec(w).coined) { meta.coins++; rec(w).coined = true; saveMeta(); save(); }   // 第一次學會 → +1 金幣(coined 標記:扣分後重新學會不重複給)
@@ -305,6 +338,11 @@ function onCorrect(w) {
     c.due = (meta.clock || 0) + c.ivl; save();
   }
   if (inTraining) return;                                    // 🎯 特訓:熟練度 / 金幣 / SRS 照加,但不碰主回合 quota/queue
+  if (currentRung >= 1) {                                    // 🔥 連擊:答對(教不算)+1;每 5 連擊 +1 金幣
+    combo++;
+    if (combo % 5 === 0) { meta.coins++; saveMeta(); }
+    if (typeof updateCombo === 'function') updateCombo();
+  }
   const k = wordKey(w);
   reviewMiss[k] = 0;                                          // 答對 → 連錯次數歸零
   if (inReview) { lgot[k] = quota[k]; }                       // 回顧重答答對 → 這題清掉(本關視為完成)
@@ -324,13 +362,14 @@ function onWrong(w) {                              // 答錯 → 熟練度 −MA
     save();
   }
   if (inTraining) return;                                      // 🎯 特訓:答錯只扣熟練度,不進 reviewQueue(它自己循環)
+  combo = 0; if (typeof updateCombo === 'function') updateCombo();   // 🔥 連擊中斷
   reviewMiss[wordKey(w)] = (reviewMiss[wordKey(w)] || 0) + 1;   // 連續答錯 +1(補考時 ≥2 就強制走複習卡)
   reviewQueue.push({ w, run: lastAsked[wordKey(w)], skill: lastAskedSkill[wordKey(w)], formatId: lastAskedFormatId[wordKey(w)] });   // 連同剛剛的題型一起記 → 補考用「同一種題型」再考(錯默寫就補默寫,不是換簡單的)
 }
 // 「我已經會了」:把字直接標成學會(taught + 100% + wrote)→ 不再單獨考,但仍進句子 / SRS;本關這格視為完成。整階都標會 → stageReadyAt 直接放行打王。
 function markWordKnown(w) {
   const c = rec(w), wasLearned = isLearned(w);
-  c.taught = true; c.mastery = LEARNED; c.wrote = true;
+  c.taught = true; c.mastery = LEARNED; c.wrote = true; c.wrote2 = true;   // 「我已經會了」= 你說了算 → 免隔關複驗
   if (!wasLearned && !c.coined) { meta.coins++; c.coined = true; saveMeta(); }   // 第一次算會 → 給金幣(known 也是會)
   c.ivl = 8; c.due = (meta.clock || 0) + 8;   // 你都說會了 → 停遠一點(別下一關馬上又抓回來複習);之後再用句子輕度抽查
   save();

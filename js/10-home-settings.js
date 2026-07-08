@@ -90,7 +90,8 @@ function homeStageSummary() {
   const pct = Math.round(step / stageSize * 100);
   const recipe = typeof lessonRecipeForLevel === 'function' ? lessonRecipeForLevel(lv) : null;
   const words = homeStageWords(stage);
-  const topic = words.slice(0, 6).map(w => w.zh || w.en).join('・') || (currentTrack === 'work' ? '職場高頻' : '高頻日常');
+  const scen = typeof scenarioOf === 'function' ? scenarioOf(stage) : null;   // 情境名(☕ 點飲料)取代純字列表;沒編情境的軌退回字列表
+  const topic = scen ? `${scen.icon} ${scen.title}` : (words.slice(0, 6).map(w => w.zh || w.en).join('・') || (currentTrack === 'work' ? '職場高頻' : '高頻日常'));
   const keyOf = typeof wordKey === 'function' ? wordKey : w => w.id || w.en;
   const learnedAt = typeof LEARNED === 'number' ? LEARNED : 100;
   const stat = w => store[keyOf(w)] || {};
@@ -233,7 +234,7 @@ function showHome() {
         <div class="mission-card">
           <div class="mission-kicker">目前任務</div>
           <div class="mission-title">第 ${homeInfo.lv} 關</div>
-          <div class="mission-sub">${homeInfo.nextLabel}</div>
+          <div class="mission-sub">${homeInfo.topic}・${homeInfo.nextLabel}</div>
           <div class="mission-progress">
             <div class="map-progress-row"><span>本階 ${homeInfo.step}/${homeInfo.stageSize}</span><b>${homeInfo.pct}%</b></div>
             <div class="map-progress-bar"><i style="width:${homeInfo.pct}%"></i></div>

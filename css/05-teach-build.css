@@ -4,6 +4,9 @@
   .teach-main { grid-area:word; text-align:center; min-width:0; }
   .teach-tools { grid-area:tools; display:flex; flex-direction:column; gap:12px; align-self:center; }
   .teach-tools .replay { width:100%; margin:0; padding:14px 18px; white-space:nowrap; }
+  .teach-pic { display:flex; justify-content:center; margin-bottom:clamp(4px,1.2vh,12px); }
+  .teach-pic > div { font-size:clamp(44px,7vh,64px) !important; line-height:1.1; }   /* emoji 版視覺跟教字比例走 */
+  .teach-pic img { width:clamp(64px,10vh,96px); height:clamp(64px,10vh,96px); }
   .teach-word { margin:0; font-size:clamp(54px,8vh,78px); line-height:1; }
   .teach-syllables { margin:10px 0 4px; font-size:clamp(36px,6vh,58px); line-height:1.08; }
   .teach-tip { margin-bottom:0; }

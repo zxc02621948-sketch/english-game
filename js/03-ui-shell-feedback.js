@@ -5,6 +5,7 @@ function shell(promptText, bodyHTML) {
     <div class="toprow">
       <button class="xexit" id="xexit" aria-label="離開">✕</button>
       <div class="bar"><i id="bar"></i></div>
+      <div class="combo" id="combo" hidden></div>
       <button class="lesson-music-toggle" id="lessonbgmtoggle" aria-label="背景音樂開關" title="背景音樂">${bgm.isOn() ? ICON.play : ICON.mute}</button>
     </div>
     <div class="count" id="count"></div>
@@ -16,6 +17,15 @@ function shell(promptText, bodyHTML) {
   $('xexit').onclick = confirmExit;
   bindLessonBgmToggle();
   updateBar();
+  updateCombo();
+}
+// 🔥 連擊徽章:2 連擊起顯示;每 5 連擊(拿金幣那下)彈一下。答錯/開新關歸零就藏起來。
+function updateCombo() {
+  const el = $('combo'); if (!el) return;
+  if (typeof combo === 'undefined' || combo < 2) { el.hidden = true; el.classList.remove('pop'); return; }
+  el.hidden = false;
+  el.innerHTML = `🔥${combo}${combo % 5 === 0 ? ' <span class="combocoin">+1🪙</span>' : ''}`;
+  el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');   // 重觸發動畫
 }
 function bindBgmToggleButton(id, mode = 'normal') {
   const btn = $(id);
