@@ -1489,3 +1489,15 @@ listen(→ music/to)、hear、say(→ hello/yes/no)、go/come(→ 地點 + home 
 
 ### 沒動的
 - 選項卡不配圖(會讓答案用圖猜出來,傷學習)。王戰/小遊戲不變。
+
+
+## 2026-07-08(3 / Claude Opus 4.8)— 拆掉教假規則的分類題(my ___ / 可以加糖)
+
+### 使用者實玩點破
+分類題「選出所有可以說成 my ___ 的東西」把 coffee/tea/sugar 判錯 —— 但 my coffee / my tea 在英文完全成立(Where's my coffee? 再正常不過)。這題在教假文法;而且這種句型考題也沒教過就出。
+
+### 修(js/03 CATEGORY_SETS)
+- 定原則:**分類題只准考「真實世界的語意」**(這個字是什麼意思);句型模板的篩選 flag(ownable/sweetenable/countable…)是防怪句的工程手段、不是語言事實,**不得出題**。
+- 拆掉 ownable(my ___)與 sweetenable(可以加糖的飲料;water 會被判錯,但糖水明明存在)兩題;留 drinkable/eatable/emotion(考字義,正當)。
+- flag 本身不動(This is my {x} 等句型照用)。跟先前拆「可數/加 a」是同一個判例。
+- 驗:全字庫抽 60 次分類題,只出 drinkable/eatable/emotion。
