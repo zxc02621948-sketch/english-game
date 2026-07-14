@@ -511,7 +511,7 @@ function askTransform(w, done) {
   mountArrange({
     promptText: '改成問句 —— 同一批字,重新排',
     zh: `<span class="q-badge">❓ 問句</span>${s.questionZh}`,
-    introHTML: `<div class="transform-intro"><div class="transform-stmt">${hintedEnglish(s.text)}</div><div class="transform-stmt-zh">${s.zh}</div><div class="transform-arrow">↓ 改成問句</div></div>`,
+    introHTML: `<div class="transform-intro"><div class="transform-stmt">${hintedEnglish(s.text)}</div><div class="transform-stmt-zh">${s.zh}</div></div>`,   // 「↓改成問句」箭頭行拿掉:跟標題重複,白佔一行(答題帶還有 ❓問句 徽章當第三保險)
     cards: qTok.map((text, i) => ({ id: `c${i}`, text })),   // 用問句本身的大小寫當字塊(Is/this…)→ 排對就讀成「Is this a cat」,不會出現「is This a cat」那種看起來像排錯的怪樣
     targetTokens: qTok,
     caseInsensitive: true,

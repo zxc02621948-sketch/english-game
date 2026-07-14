@@ -24,12 +24,12 @@
   .teach-phonics .tp-note { display:block; margin-top:2px; color:#9fb9d9; }
   @keyframes tpin { from { transform:translateY(6px); opacity:0; } to { transform:translateY(0); opacity:1; } }
   .teach-why { grid-area:why; align-self:end; width:100%; min-height:clamp(92px,14vh,132px); display:flex; align-items:center; background:#0e2a1f; border:1px solid #1f5c3f; border-radius:14px; padding:22px 24px; font-size:clamp(17px,2vh,20px); line-height:1.6; color:#d9f7e5; }
-  .lesson-answer.build-answer { justify-content:safe center; overflow:visible; }   /* 排句內容不高 → 垂直置中(治「上面一小條、下面一大片空」);safe:真的太高時退回頂端不切頭 */
+  .lesson-answer.build-answer { justify-content:safe center; overflow-y:auto; }   /* 垂直置中(治「上面一小條、下面全空」);safe=太高退回頂端;overflow auto=保險,寧可內部捲也不被動作列切掉 */
   .buildzh { text-align:center; font-size:clamp(22px,3.3vh,28px); font-weight:700; margin:2px 0 10px; line-height:1.2; }
   /* 轉換題:上面顯示已會的直述句,下面重排成問句 */
   .transform-intro { text-align:center; margin:0 auto; }   /* 不放卡片 box:原句直接寫在題目帶,不用一整塊框佔高度(治轉換題還要捲) */
-  .transform-stmt { font-size:clamp(20px,2.6vh,26px); font-weight:800; letter-spacing:.5px; color:#cfe6ff; }
-  .transform-stmt-zh { font-size:14px; color:#9fb4c8; margin-top:1px; }
+  .transform-stmt { font-size:clamp(18px,2.2vh,23px); font-weight:800; letter-spacing:.5px; color:#cfe6ff; }
+  .transform-stmt-zh { font-size:13px; color:#9fb4c8; margin-top:1px; }
   .transform-arrow { font-size:13px; color:#6ee7a8; margin-top:3px; font-weight:700; }
   .sentence-speak-card { width:min(920px,100%); margin:0 auto 18px; padding:18px 20px; border:1px solid #243343; border-radius:14px; background:#11202c; text-align:center; }
   .sentence-speak-line { display:inline-flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:.25em; max-width:100%; color:#e8f1f8; font-size:clamp(28px,5vh,48px); line-height:1.18; font-weight:900; }
@@ -43,7 +43,7 @@
   .sentence-cloze-line .clozeinp:focus { border-color:#5aa9ff; box-shadow:0 0 0 3px rgba(90,169,255,.14); }
   .sentence-cloze-line .clozeinp.right { border-color:#2ecc8f; color:#6ee7a8; }
   .sentence-cloze-line .clozeinp.wrong { border-color:#e35b6a; color:#ffd0d6; }
-  .sentence-slots { width:100%; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:10px; padding:clamp(10px,1.8vh,16px) 8px; margin:0 0 clamp(12px,2.2vh,20px); border-top:1px solid #2c3e52; border-bottom:1px solid #2c3e52; }
+  .sentence-slots { width:100%; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:10px; padding:clamp(8px,1.4vh,12px) 8px; margin:0 0 clamp(10px,1.8vh,14px); border-top:1px solid #2c3e52; border-bottom:1px solid #2c3e52; }
   .sentence-endmark { align-self:center; min-height:54px; display:flex; align-items:center; font-size:34px; font-weight:900; color:#6b7f92; padding:0 2px; user-select:none; }
   .sentence-endmark.q { color:#ffcf5a; font-size:46px; text-shadow:0 0 16px rgba(255,207,90,.35); }   /* 問句「?」放大變亮 → 排字時就知道要排問句 */
   .q-badge { display:inline-block; margin-right:8px; padding:2px 10px; border-radius:999px; font-size:15px; font-weight:800; color:#3a2a00; background:#ffcf5a; vertical-align:middle; }

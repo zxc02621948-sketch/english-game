@@ -428,6 +428,7 @@ function reviewThenAsk(w, run, skill, formatId) {
 }
 // 在補考題目下方塞一顆「我要複習」鈕(可選);點了走重看卡,看完回來繼續補考
 function injectReviewButton(w, r) {
+  if ((currentFormatId || '').startsWith('sentence_')) return;   // 句子題補考不塞:複習卡是「單字卡」對句子題幫助小,又把題目帶撐高(轉換題被擠到切底);連錯2次的強制複習卡照走
   const host = document.querySelector('.lesson-stage');
   if (!host || document.getElementById('wantreview')) return;
   const b = document.createElement('button');
