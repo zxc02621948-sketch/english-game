@@ -233,16 +233,19 @@ function showDone() {
   const STAGE_BONUS = 3;
   if (ready) { meta.coins += STAGE_BONUS; saveMeta(); setTimeout(() => sfx.coin(), 900); }   // 階段完成獎勵(ready 只會進一次:meta.stage 已推進)
   if (scen) {                                                                   // ★ 情境完成卡:階段收尾的「時刻」——你完成了一個情境,句子秀給你、可點念
+    const st = typeof storyForStage === 'function' ? storyForStage(completedStage) : null;   // 這階有收尾故事 → 給大鈕(第一次)或已讀標記
     screen.innerHTML = `<main class="done-panel scenario-done">
       <div class="scen-icon">${scen.icon}</div>
       <h2 style="text-align:center">第 ${completedStage} 階完成 — ${scen.done}</h2>
       <div class="sub" style="text-align:center">這些句子現在是你的了(點一下可以聽):</div>
       <div class="scen-sents">${scen.sents.map(([en, zh]) => `<button class="scen-sent" data-say="${en}"><span class="sen">${en}</span><span class="szh">${zh}</span></button>`).join('')}</div>
       <div class="scen-bonus">情境獎勵 +${STAGE_BONUS} 🪙</div>
-      <button class="btn" id="next" style="margin-top:14px">前往第 ${nextLevel} 關 →</button>
+      ${st ? `<button class="btn" id="story" style="margin-top:14px;background:#241a2e;border-color:#7b5ea7">${st.icon} 讀收尾故事:${st.title}${storyDone(st.id) ? ' ✓' : ''}</button>` : ''}
+      <button class="btn" id="next" style="margin-top:${st ? 10 : 14}px">前往第 ${nextLevel} 關 →</button>
       <button class="btn" id="challenge" style="margin-top:10px;background:#2a0e12;border-color:#e35b6a">🎮 去小遊戲賺金幣</button>
       <button class="btn" id="tomap" style="margin-top:10px;background:#1d2c3a;border-color:#2c3e52">← 回地圖</button></main>`;
     screen.querySelectorAll('.scen-sent').forEach(b => { b.onclick = () => speakSentence({ text: b.dataset.say }); });
+    if (st) $('story').onclick = () => startStory(st, showHome);
     $('challenge').onclick = showMinigames;
     $('next').onclick = () => { level = nextLevel; showStart(); };
     $('tomap').onclick = showHome;

@@ -1620,3 +1620,21 @@ listen(→ music/to)、hear、say(→ hello/yes/no)、go/come(→ 地點 + home 
 
 ### 需要重來
 批次動了(膠水詞加入批2/3/4/6、want 進批7)→ 舊進度對應會亂,🔄 重來。
+
+
+## 2026-07-08(12 / Claude Opus 4.8)— 📖 故事關轉正:「誰吃了蛋糕」進遊戲(B 案落地第一步)
+
+### 使用者:「情境好像之前有做好一個了?狗.寶寶偷吃蛋糕,沒有放進去對吧?」
+對 —— `protoStory()` 一直躺在 console 沒接進遊戲。這輪轉正:
+
+### 做了什麼
+- **新檔 `js/09-story.js`**:故事引擎(從 proto 搬,逐句點開+hover 查生字+讀懂測驗+重組+結算)+ `STORIES` 登錄表。**加新故事 = 往 STORIES 加一筆**(id/stage/title/icon/intro/script),引擎不動。
+- **掛法**:蛋糕故事掛第 4 階(肚子餓了,主題剛好);情境完成卡出「🍰 讀收尾故事」鈕(`storyForStage`);小遊戲 hub 新增「📖 情境故事」區(完成該階或讀過 → 可重讀)。
+- **完成記錄**:`meta.storiesDone[id]`,第一次讀完 +2 🪙。
+- **刪 `js/proto-respond.js`** + index.html 換掛 09-story(protoRespond 早已轉正成 sentence_respond、DEMO 腳本不再需要)。
+- 驗(console 全流程):情境卡故事鈕 → 開故事 → 自動走完(4/4 題)→ 結算 +2 🪙 → storiesDone 記錄 → hub 顯示 ✓ 讀過。
+
+### 下一步(故事關的擴充路)
+- 每個情境批補一個收尾故事(往 STORIES 加 script 就好);目前只有第 4 階有。
+- 之後可把「本階句型」織進故事的 reorder/ask(現在蛋糕故事是獨立劇本)。
+- 視覺是 inline style(從 proto 帶來的),要好看交 Codex。

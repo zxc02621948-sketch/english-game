@@ -408,12 +408,22 @@ function showMinigames() {
       <div class="sub2" style="margin:2px 0 12px">限時答題打倒關主,挑你完成過的任一階。</div>
       <div id="mgstages" style="display:grid;gap:8px">${bossList}</div>
     </div>
+    ${(typeof STORIES !== 'undefined' && STORIES.some(s => storyUnlocked(s))) ? `
+    <div style="background:#1c1626;border:1px solid #3a2c52;border-radius:14px;padding:14px 16px;margin-top:12px">
+      <div style="font-weight:800;font-size:18px">📖 情境故事</div>
+      <div class="sub2" style="margin:2px 0 12px">讀過的收尾故事,隨時回來重讀。</div>
+      <div id="mgstories" style="display:grid;gap:8px">${STORIES.filter(s => storyUnlocked(s)).map(s =>
+        `<button class="mgstory" data-story="${s.id}" style="width:100%;text-align:left;padding:12px 16px;border-radius:12px;border:1px solid #3a2c52;background:#1c1626;color:#e8eef5;font-size:17px;font-weight:600">${s.icon} ${s.title}${storyDone(s.id) ? ' <span style="color:#6ee7a8;font-weight:400">✓ 讀過</span>' : ''}</button>`).join('')}</div>
+    </div>` : ''}
     <div style="text-align:center;color:#5f7488;margin-top:14px;font-size:15px">更多小遊戲開發中…</div>
     <button class="btn" id="mgback" style="margin-top:14px;background:#1d2c3a;border-color:#2c3e52">← 回主畫面</button>
   </main>`;
   screen.querySelectorAll('.mgstage').forEach(b => b.onclick = () => startChallenge(+b.dataset.stage));
+  screen.querySelectorAll('.mgstory').forEach(b => b.onclick = () => { const s = STORIES.find(x => x.id === b.dataset.story); if (s) startStory(s, showMinigames); });
   $('mgback').onclick = showHome;
 }
+// 故事解鎖:完成該階(進度已超過)或讀過 → 小遊戲 hub 可重讀
+const storyUnlocked = s => (meta.stage || 1) > s.stage || storyDone(s.id);
 function showSettings() {
   screen.classList.remove('lesson-screen', 'boss-screen', 'done-screen', 'start-screen');
   homeEl.hidden = true; screen.hidden = false;
