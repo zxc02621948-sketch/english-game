@@ -1674,3 +1674,15 @@ listen(→ music/to)、hear、say(→ hello/yes/no)、go/come(→ 地點 + home 
 - **排句/轉換/回應題內容垂直置中**:`.build-answer` justify-content flex-start → `safe center`(safe = 內容真的太高時退回頂端,不切頭);格子/字塊放大一階(slot minH 54→54~62、chunk padding/字級 clamp 上調)+ slots 列 padding/margin 用 vh 呼吸。
 - **分類題作答區也 safe center**(原本 flex-start + 可捲)。
 - 驗(computed style;背景分頁量不到像素):分類容器 flex/wrap/maxW 720、選項 radius 999px/minH 46px;build-answer justify = safe center。實際觀感待使用者目視。
+
+
+## 2026-07-08(16 / Claude Opus 4.8)— 聽力題點選項不再念(洩題)
+
+### 使用者實玩點破
+聽選意思題:「點了下方的單字他會講發音…那不就直接講答案了?」—— 對。mountChoices 點選項一律念英文(手感設計),但聽力題的題目就是一段音:逐個點選項、聽哪個跟題目一樣就選哪個,完全不用聽懂,直接洩題。
+
+### 修(js/03 + js/05)
+- 定原則:**考聽辨的題,選項不念;考認讀的題,照念**(念了幫音形連結,也不洩題)。
+- `mountChoices` 加 `speakOnPick` 參數(預設 true);`askListenPick`(聽選意思)、`askListenWord`(聽選字)傳 false。
+- 看中選英/看圖選字/克漏字選填(題目是文字或圖,不洩)維持點了會念。
+- 驗(speak spy):聽選意思/聽選字 進題念 1 次(題目)、點選項 +0 次;看中選英點選項 +1 次。

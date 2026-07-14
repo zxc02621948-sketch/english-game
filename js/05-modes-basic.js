@@ -3,7 +3,7 @@ function askListenPick(w) {
   $('body').classList.add('choice-answer');
   speak(w.en);
   $('replay').onclick = () => speak(w.en);
-  mountChoices($('opts'), fourOptions(w), o => o.zh, w, w.zh);
+  mountChoices($('opts'), fourOptions(w), o => o.zh, w, w.zh, { speakOnPick: false });   // 聽力題:點選項不念(念了=逐個點對音洩題)
 }
 
 // 2. 看中文 → 選英文
@@ -19,7 +19,7 @@ function askListenWord(w) {
   $('body').classList.add('choice-answer');
   speak(w.en);
   $('replay').onclick = () => speak(w.en);
-  mountChoices($('opts'), fourOptions(w), o => o.en, w, w.en);
+  mountChoices($('opts'), fourOptions(w), o => o.en, w, w.en, { speakOnPick: false });   // 聽力題:點選項不念(念了=逐個點對音洩題)
 }
 
 // 2d. 看圖選英文字(認階,Duolingo 經典)。優先用自製圖、其次 emoji;沒視覺 → 退回看中選英,不硬出圖。

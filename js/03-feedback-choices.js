@@ -148,7 +148,7 @@ function pickAnswer(box, el, right, w, correctText, picked = null) {
 
 // 選擇題共用:點 = 選定(高亮 .sel),按「確認」才判分 → 治手滑點到就送出。確認前可改選。
 // getText(o) 取選項顯示字;correctText = 正解顯示字(答錯時標綠用)。
-function mountChoices(box, opts, getText, w, correctText) {
+function mountChoices(box, opts, getText, w, correctText, { speakOnPick = true } = {}) {
   let sel = null;
   opts.forEach(o => {
     const el = document.createElement('div'); el.className = 'opt';
@@ -158,7 +158,8 @@ function mountChoices(box, opts, getText, w, correctText) {
       if (box.classList.contains('locked')) return;
       [...box.children].forEach(c => c.classList.remove('sel'));
       el.classList.add('sel'); sel = { el, o };
-      if (o && o.en) speak(SPEAK_AS[o.id] || o.en);     // 選了就念那個字(套 SPEAK_AS:a→uh 不念字母 A)
+      // 選了就念那個字(套 SPEAK_AS)—— 只在「認讀題」:聽力題(listenpick/listenword)點選項會念英文 = 逐個點就能跟題目音對答案,直接洩題 → 傳 speakOnPick:false
+      if (speakOnPick && o && o.en) speak(SPEAK_AS[o.id] || o.en);
       const sb = $('submit'); if (sb) sb.disabled = false;
     };
     box.appendChild(el);
