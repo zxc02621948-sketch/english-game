@@ -1662,3 +1662,15 @@ listen(→ music/to)、hear、say(→ hello/yes/no)、go/come(→ 地點 + home 
 - **字塊改用問句大小寫**:轉換題 cards 從直述句 token(This/is)改成問句 token(Is/this)→ 排對讀成「Is this a house」而非「is This a house」,不再像排錯。
 - **中文加「❓ 問句」徽章**:轉換題 buildzh 前面掛琥珀 pill,雙保險。
 - 驗:轉換題 endmark「?」放大變亮=true、字塊=this/Is/a/house(問句大小寫)、徽章在;排句陳述句 endmark「.」、問句 endmark「?」放大。
+
+
+## 2026-07-08(15 / Claude Opus 4.8)— 版面平衡:排句太空 / 分類題太大壓底
+
+### 使用者實玩
+「有的很空有的又很擠 —— 排句題上面一小條下面一大片空;多選題 6~8 個選項太寬太大,快壓到下方區塊。」
+
+### 修(css/03 + css/05,純 CSS)
+- **分類題選項改「置中自動寬度膠囊」**:原本兩欄格、每格半版寬(一個單字佔 ~470px);改 flex-wrap 置中、自動寬(min 104px)、圓角 999、容器上限 720px → 6~8 個選項只佔兩三行,不再逼近底部列。✓ 勾勾改垂直置中、選中時 padding-right 讓位。
+- **排句/轉換/回應題內容垂直置中**:`.build-answer` justify-content flex-start → `safe center`(safe = 內容真的太高時退回頂端,不切頭);格子/字塊放大一階(slot minH 54→54~62、chunk padding/字級 clamp 上調)+ slots 列 padding/margin 用 vh 呼吸。
+- **分類題作答區也 safe center**(原本 flex-start + 可捲)。
+- 驗(computed style;背景分頁量不到像素):分類容器 flex/wrap/maxW 720、選項 radius 999px/minH 46px;build-answer justify = safe center。實際觀感待使用者目視。
