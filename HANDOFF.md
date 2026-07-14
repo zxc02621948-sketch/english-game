@@ -24,6 +24,12 @@
 - ★ 使用者接下來要**實測試玩**整條新曲線 → 有回饋逐點修。
 - 前一輪的劃重點標註收尾(Codex 視覺 pass)已 commit(`47ba70c`);記號說明圖例等項仍在 CODEX_TODO。
 
+### 同日追加(實玩回饋逐點修 + 句型大擴充,CHANGELOG 3~11)
+- 實玩修了:假規則分類題拆掉(my ___/加糖)、ea 長短音拆兩條+bread 記法、發音積木「第一次教一次」+答錯註解拆 isLearned 門檻、教卡交疊(圖跟字同排)、關卡長度(字數×3+2 上限+階段加成)、本階字優先(選字/quota/句子挑選三層)、分類題正解數隨機化、克漏字精準打全字算 wrote、補寫佇列洗牌。
+- **★ 句型大擴充(CHANGELOG 11)**:19 → **40 條句型**,每階一個新「句子形狀」(wh 問句/be 否定/you+are 轉換/do 問句+do not 否定/形容詞前置/where/want)。新功能詞 what/it/not/you/are/do/where + 實詞 want。**掛新句型的三張清單**(BUILD/TRANSFORM/RESPOND)記在 CURRICULUM —— 前次 go/say/listen/hear 四條就是漏掛 BUILD 從沒出現過。
+- 驗證:52 字全編批無孤兒、每階新句型 2~7 條、句子分布最大宗 ≤27% 且為本階句、50 關曝光 40 實詞全練到。
+- ⚠ console 模擬要清記憶體 store(`Object.keys(store).forEach(k=>delete store[k])`),localStorage.clear() 不夠,髒狀態會造出假 bug。
+
 ---
 
 ## 交接快照（2026-07-05 / Claude Opus 4.8）— 劃重點標註系統做出來了（Claude 邏輯 + Codex 視覺,收尾中）

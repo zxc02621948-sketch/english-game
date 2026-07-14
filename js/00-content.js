@@ -35,6 +35,16 @@ let BANK = [
   { id:"word_a",          en:"a",          zh:"一個",   pos:"function", flags:[], syl:["a"], why:"a 放在單數可數名詞前面,表示一個。" },
   { id:"word_my",         en:"my",         zh:"我的",   pos:"function", flags:[], syl:["my"], why:"my 表示我的,後面接名詞:my book。" },
   { id:"word_to",         en:"to",         zh:"向",     pos:"function", flags:[], syl:["to"], why:"to 把動作指向目標:listen to music 就是把耳朵對準音樂。" },
+  // 2026-07-08 句型大擴充的膠水詞:疑問(what/where/do)、否定(not)、第二人稱(you/are)、代名詞(it)
+  { id:"word_what",       en:"what",       zh:"什麼",   pos:"function", flags:[], syl:["what"], why:"what 問「什麼」,放句子開頭:What is this? 這是什麼?" },
+  { id:"word_it",         en:"it",         zh:"它",     pos:"function", flags:[], syl:["it"], why:"it 指「那個東西」(不是人):It is a cat. 回答 What is this? 就用它。" },
+  { id:"word_not",        en:"not",        zh:"不",     pos:"function", flags:[], syl:["not"], why:"not 放在 am/is/are 後面,句子就變「不」:I am not hungry. 我不餓。" },
+  { id:"word_you",        en:"you",        zh:"你",     pos:"function", flags:[], syl:["you"], why:"you 是「你」,跟 I(我)相對。" },
+  { id:"word_are",        en:"are",        zh:"是",     pos:"function", flags:[], syl:["are"], why:"are 跟 you 搭配:You are happy. 它跟 I am 的 am 是同一家人,換人就換形。" },
+  { id:"word_do",         en:"do",         zh:"(發問用)", pos:"function", flags:[], syl:["do"], why:"do 放在問句開頭,自己沒有意思,它是「發問的引擎」:Do you eat rice? 你吃飯嗎?加 not 就變否定:I do not eat bread." },
+  { id:"word_where",      en:"where",      zh:"哪裡",   pos:"function", flags:[], syl:["where"], why:"where 問「哪裡」:Where is my cat? 我的貓在哪裡?" },
+  // 批7「上街」的新實詞:want(逛街的靈魂動詞)
+  { id:"word_want",       en:"want",       zh:"想要",   pos:"verb", flags:[], syl:["want"], why:"want 是想要、想拿到:I want a book. 買東西、點餐都靠它。" },
   { id:"word_or",         en:"or",         zh:"或",     pos:"function", flags:[], syl:["or"], why:"or 表示二選一:water or tea 是水還是茶。" },
   { id:"word_with",       en:"with",       zh:"加",     pos:"function", flags:[], syl:["with"], why:"with 表示和某個東西一起;coffee with sugar 是咖啡加糖。" },
   { id:"word_please",     en:"please",     zh:"請",     pos:"function", flags:[], syl:["please"], why:"please 放在請求裡,讓語氣更有禮貌。" },
@@ -207,6 +217,138 @@ let PATTERNS = [
     requires: ["word_i", "word_hear"],
     slots: { x: { pos: "noun", flags: ["audible"] } }
   },
+  // ── 2026-07-08 句型大擴充:每階至少一個新「句子形狀」,生活文法核心一次補齊 ──
+  // 階2 新形狀:疑問詞 what + it 回答(一問一答)
+  {
+    id: "pat_what_is_this",
+    text: "What is this?",
+    zh: "這是什麼?",
+    requires: ["word_what", "word_is", "word_this"],
+    slots: {}
+  },
+  {
+    id: "pat_it_is_a_noun",
+    text: "It is a {x}.",
+    zh: "它是一個{x}。",
+    q: "Is it a {x}?",
+    qzh: "它是一個{x}嗎?",
+    requires: ["word_it", "word_is", "word_a"],
+    slots: { x: { pos: "noun", flags: ["countable", "presentable"] } }
+  },
+  // 階3 新形狀:否定 not + 第二人稱 you/are(am↔are 的規則浮現;You are→Are you 是純重排,可轉換)
+  {
+    id: "pat_i_am_not_adj",
+    text: "I am not {x}.",
+    zh: "我不{x}。",
+    requires: ["word_i", "word_am", "word_not"],
+    slots: { x: { pos: "adj", flags: ["emotion"] } }
+  },
+  {
+    id: "pat_you_are_adj",
+    text: "You are {x}.",
+    zh: "你很{x}。",
+    q: "Are you {x}?",
+    qzh: "你{x}嗎?",
+    requires: ["word_you", "word_are"],
+    slots: { x: { pos: "adj", flags: ["emotion"] } }
+  },
+  // 階4/5 新形狀:do 問句 + do not 否定(動詞句的問/否跟 be 動詞不一樣 —— 這個對比本身就是 aha)
+  {
+    id: "pat_do_you_eat",
+    text: "Do you eat {x}?",
+    zh: "你吃{x}嗎?",
+    requires: ["word_do", "word_you", "word_eat"],
+    slots: { x: { pos: "noun", flags: ["eatable"] } }
+  },
+  {
+    id: "pat_i_do_not_eat",
+    text: "I do not eat {x}.",
+    zh: "我不吃{x}。",
+    requires: ["word_i", "word_do", "word_not", "word_eat"],
+    slots: { x: { pos: "noun", flags: ["eatable"] } }
+  },
+  {
+    id: "pat_do_you_drink",
+    text: "Do you drink {x}?",
+    zh: "你喝{x}嗎?",
+    requires: ["word_do", "word_you", "word_drink"],
+    slots: { x: { pos: "noun", flags: ["drinkable"] } }
+  },
+  {
+    id: "pat_i_do_not_drink",
+    text: "I do not drink {x}.",
+    zh: "我不喝{x}。",
+    requires: ["word_i", "word_do", "word_not", "word_drink"],
+    slots: { x: { pos: "noun", flags: ["drinkable"] } }
+  },
+  // 階6 新形狀:形容詞前置(a big house,中文語序剛好一樣)+ where 問句(找東西)
+  {
+    id: "pat_this_is_a_adj_noun",
+    text: "This is a {a} {x}.",
+    zh: "這是一個{a}的{x}。",
+    requires: ["word_this", "word_is", "word_a"],
+    slots: { a: { pos: "adj", flags: ["descriptive"] }, x: { pos: "noun", flags: ["countable", "presentable"] } }
+  },
+  {
+    id: "pat_where_is_my_noun",
+    text: "Where is my {x}?",
+    zh: "我的{x}在哪裡?",
+    requires: ["word_where", "word_is", "word_my"],
+    slots: { x: { pos: "noun", flags: ["ownable"] } }
+  },
+  // 階7 新形狀:want(逛街/點餐的靈魂)
+  {
+    id: "pat_i_want_a_noun",
+    text: "I want a {x}.",
+    zh: "我想要一個{x}。",
+    requires: ["word_i", "word_want", "word_a"],
+    slots: { x: { pos: "noun", flags: ["buyable"] } }
+  },
+  {
+    id: "pat_do_you_want_drink",
+    text: "Do you want {x}?",
+    zh: "你要{x}嗎?",
+    requires: ["word_do", "word_you", "word_want"],
+    slots: { x: { pos: "noun", flags: ["drinkable"] } }
+  },
+  // 階8:do 形狀套進 speak(旅行金句)
+  {
+    id: "pat_do_you_speak",
+    text: "Do you speak {x}?",
+    zh: "你會說{x}嗎?",
+    requires: ["word_do", "word_you", "word_speak"],
+    slots: { x: { pos: "noun", flags: ["language"] } }
+  },
+  {
+    id: "pat_i_do_not_speak",
+    text: "I do not speak {x}.",
+    zh: "我不會說{x}。",
+    requires: ["word_i", "word_do", "word_not", "word_speak"],
+    slots: { x: { pos: "noun", flags: ["language"] } }
+  },
+  // 階9:do 形狀套進 hear
+  {
+    id: "pat_do_you_hear",
+    text: "Do you hear a {x}?",
+    zh: "你有聽到{x}的聲音嗎?",
+    requires: ["word_do", "word_you", "word_hear"],
+    slots: { x: { pos: "noun", flags: ["audible"] } }
+  },
+  // 階10 收尾形狀:this 的否定 + what/do 合體(用學過的積木疊出最長的問句)
+  {
+    id: "pat_this_is_not_adj",
+    text: "This is not {x}.",
+    zh: "這不{x}。",
+    requires: ["word_this", "word_is", "word_not"],
+    slots: { x: { pos: "adj", flags: ["descriptive"] } }
+  },
+  {
+    id: "pat_what_do_you_want",
+    text: "What do you want?",
+    zh: "你想要什麼?",
+    requires: ["word_what", "word_do", "word_you", "word_want"],
+    slots: {}
+  },
   // 複合句(兩子句)—— 給「你呢?」回應題(sentence_respond)用。用現有的 感受+喝/吃 就組得出,不必加新字。
   // ★ 感受固定配對到合理的動作(渴→喝 / 餓→吃),句子才講得通;tired/sad 不自然接吃喝,不放進來。
   {
@@ -222,6 +364,13 @@ let PATTERNS = [
     zh: "我很餓,我吃{f}。",
     requires: ["word_i", "word_am", "word_hungry", "word_eat"],
     slots: { f: { pos: "noun", flags: ["eatable"] } }
+  },
+  {
+    id: "pat_resp_feel_music",
+    text: "I am tired. I listen to music.",
+    zh: "我累了,我聽音樂。",
+    requires: ["word_i", "word_am", "word_tired", "word_listen", "word_to", "word_music"],
+    slots: {}
   }
 ];
 

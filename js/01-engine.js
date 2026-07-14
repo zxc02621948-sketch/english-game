@@ -51,28 +51,28 @@ const pOf = w => rec(w).mastery || 0;
 // ★ 2026-07-08 重編:10 個「情境批」,每批 = 一個可完成的生活情境,實詞 ≤5、進來當下就有句子可用、後面的批持續回收前面的字。
 let BATCHES = [
   ['word_water','word_tea','word_coffee','word_sugar','word_or','word_with','word_please'],       // 批1 ☕ 點飲料:Coffee or tea? / Tea, please. / Coffee with sugar.
-  ['word_cat','word_book','word_friend','word_this','word_is','word_a','word_my'],                // 批2 👉 這是什麼:This is a cat. / This is my book. / Is this…?
-  ['word_happy','word_sad','word_tired','word_i','word_am'],                                      // 批3 🙂 我的心情:I am happy. / Am I…?
-  ['word_hungry','word_eat','word_rice','word_bread'],                                            // 批4 🍚 肚子餓了:I eat rice. / I am hungry. I eat bread.
-  ['word_thirsty','word_drink','word_milk'],                                                      // 批5 🥛 口渴了:I drink milk.(回收批1飲料)
-  ['word_home','word_house','word_go','word_big','word_small'],                                   // 批6 🏠 我的家:This is my home. / I go home. / This is big.
-  ['word_buy','word_get','word_see','word_look','word_at'],                                       // 批7 🛒 上街:I buy a book. / I see a cat. / I look at a house.
-  ['word_speak','word_say','word_hello','word_english','word_chinese'],                           // 批8 👋 開口說:I speak English. / I say hello.
-  ['word_listen','word_hear','word_music','word_to'],                                             // 批9 👂 用耳朵:I listen to music. / I hear a cat.
-  ['word_make','word_good','word_bad','word_beautiful','word_read'],                              // 批10 🍞 在家的一天:I make tea. / I read a book. / This is good.(回收食物飲料/書)
+  ['word_cat','word_book','word_friend','word_this','word_is','word_a','word_my','word_what','word_it'],   // 批2 👉 這是什麼:This is a cat. / What is this? / It is a cat.(一問一答)
+  ['word_happy','word_sad','word_tired','word_i','word_am','word_not','word_you','word_are'],     // 批3 🙂 我的心情:I am happy. / I am not tired. / Are you happy?(否定+第二人稱)
+  ['word_hungry','word_eat','word_rice','word_bread','word_do'],                                  // 批4 🍚 肚子餓了:I eat rice. / Do you eat bread? / I do not eat rice.(do 問句/否定)
+  ['word_thirsty','word_drink','word_milk'],                                                      // 批5 🥛 口渴了:I drink milk. / Do you drink tea?(回收批1飲料)
+  ['word_home','word_house','word_go','word_big','word_small','word_where'],                      // 批6 🏠 我的家:This is a big house. / Where is my cat? / I go home.
+  ['word_buy','word_get','word_see','word_look','word_want','word_at'],                           // 批7 🛒 上街:I want a book. / Do you want tea? / I buy a book.
+  ['word_speak','word_say','word_hello','word_english','word_chinese'],                           // 批8 👋 開口說:Do you speak English? / I say hello.
+  ['word_listen','word_hear','word_music','word_to'],                                             // 批9 👂 用耳朵:I listen to music. / Do you hear a cat?
+  ['word_make','word_good','word_bad','word_beautiful','word_read'],                              // 批10 🍞 在家的一天:I make tea. / What do you want? / This is not bad.
 ];
 // 情境資訊(跟 BATCHES 一一對應):階段收尾的「情境完成卡」+ 首頁/地圖顯示用。sents = 這批的招牌句(手寫、可點念)。
 let SCENARIOS = [
   { icon:'☕', title:'點飲料',     done:'你會點飲料了!',           sents:[['Coffee or tea?','咖啡還是茶?'],['Tea, please.','請給我茶。'],['Coffee with sugar.','咖啡加糖。']] },
-  { icon:'👉', title:'這是什麼',   done:'你會介紹眼前的東西了!',   sents:[['This is a cat.','這是一隻貓。'],['This is my book.','這是我的書。'],['Is this a cat?','這是一隻貓嗎?']] },
-  { icon:'🙂', title:'我的心情',   done:'你會說出自己的感覺了!',   sents:[['I am happy.','我很開心。'],['I am tired.','我很累。'],['Am I happy?','我開心嗎?']] },
-  { icon:'🍚', title:'肚子餓了',   done:'肚子餓會用英文講了!',     sents:[['I am hungry.','我很餓。'],['I eat rice.','我吃飯。'],['I am hungry. I eat bread.','我很餓,我吃麵包。']] },
-  { icon:'🥛', title:'口渴了',     done:'口渴也會講了!',           sents:[['I am thirsty.','我很渴。'],['I drink milk.','我喝牛奶。'],['I am thirsty. I drink tea.','我很渴,我喝茶。']] },
-  { icon:'🏠', title:'我的家',     done:'你會介紹自己的家了!',     sents:[['This is my home.','這是我的家。'],['This is big.','這很大。'],['I go home.','我回家。']] },
-  { icon:'🛒', title:'上街',       done:'上街會用的動作都會說了!', sents:[['I buy a book.','我買一本書。'],['I see a cat.','我看見一隻貓。'],['I look at a house.','我看著一棟房子。']] },
-  { icon:'👋', title:'開口說',     done:'你會用英文打招呼了!',     sents:[['I say hello.','我打招呼。'],['I speak English.','我會說英文。']] },
-  { icon:'👂', title:'用耳朵',     done:'耳朵的動詞都會了!',       sents:[['I listen to music.','我聽音樂。'],['I hear a cat.','我聽見貓的聲音。']] },
-  { icon:'🍞', title:'在家的一天', done:'日常軌全部完成!',         sents:[['I make tea.','我泡茶。'],['I read a book.','我讀一本書。'],['This is good.','這很好。']] },
+  { icon:'👉', title:'這是什麼',   done:'你會問「這是什麼」也會回答了!', sents:[['What is this?','這是什麼?'],['It is a cat.','它是一隻貓。'],['This is my book.','這是我的書。']] },
+  { icon:'🙂', title:'我的心情',   done:'心情會說、會問、也會否認了!',   sents:[['I am happy.','我很開心。'],['I am not tired.','我不累。'],['Are you happy?','你開心嗎?']] },
+  { icon:'🍚', title:'肚子餓了',   done:'吃的會講、會問、也會拒絕了!',   sents:[['I eat rice.','我吃飯。'],['Do you eat bread?','你吃麵包嗎?'],['I do not eat bread.','我不吃麵包。']] },
+  { icon:'🥛', title:'口渴了',     done:'口渴也會講了!',           sents:[['I drink milk.','我喝牛奶。'],['Do you drink tea?','你喝茶嗎?'],['I am thirsty. I drink tea.','我很渴,我喝茶。']] },
+  { icon:'🏠', title:'我的家',     done:'你會介紹自己的家了!',     sents:[['This is a big house.','這是一棟大房子。'],['Where is my cat?','我的貓在哪裡?'],['I go home.','我回家。']] },
+  { icon:'🛒', title:'上街',       done:'想要什麼都說得出口了!',   sents:[['I want a book.','我想要一本書。'],['Do you want tea?','你要茶嗎?'],['I buy a book.','我買一本書。']] },
+  { icon:'👋', title:'開口說',     done:'你會用英文打招呼了!',     sents:[['Do you speak English?','你會說英文嗎?'],['I say hello.','我打招呼。'],['I do not speak Chinese.','我不會說中文。']] },
+  { icon:'👂', title:'用耳朵',     done:'耳朵的動詞都會了!',       sents:[['I listen to music.','我聽音樂。'],['Do you hear a cat?','你有聽到貓叫嗎?'],['I am tired. I listen to music.','我累了,我聽音樂。']] },
+  { icon:'🍞', title:'在家的一天', done:'日常軌全部完成!',         sents:[['I make tea.','我泡茶。'],['What do you want?','你想要什麼?'],['This is not bad.','這不壞。']] },
 ];
 const scenarioOf = stage => SCENARIOS[(stage || 1) - 1] || null;   // 沒編情境的軌(工作軌)回 null → 收尾卡走通用文案
 let _batchSet, _rest, _batchIndex, LEARN_ORDER;

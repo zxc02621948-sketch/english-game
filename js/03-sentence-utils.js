@@ -47,7 +47,14 @@ function buildSentenceFromPattern(pattern, sourceWords = BANK, mustInclude = nul
   };
 }
 
-let BUILD_SENTENCE_PATTERN_IDS = ["pat_drink_or_drink", "pat_drink_please", "pat_drink_with_sugar", "pat_this_is_a_noun", "pat_this_is_my_noun", "pat_this_is_adj", "pat_i_am_adj", "pat_i_see_a_noun", "pat_i_buy_a_noun", "pat_i_read_noun", "pat_i_drink_noun", "pat_i_eat_noun", "pat_i_look_at_noun", "pat_i_make_noun", "pat_i_get_noun", "pat_i_speak_language"];
+let BUILD_SENTENCE_PATTERN_IDS = ["pat_drink_or_drink", "pat_drink_please", "pat_drink_with_sugar", "pat_this_is_a_noun", "pat_this_is_my_noun", "pat_this_is_adj", "pat_i_am_adj", "pat_i_see_a_noun", "pat_i_buy_a_noun", "pat_i_read_noun", "pat_i_drink_noun", "pat_i_eat_noun", "pat_i_look_at_noun", "pat_i_make_noun", "pat_i_get_noun", "pat_i_speak_language",
+  // 救活孤兒動詞那批(2026-07-08 補掛 —— 之前做了句型卻忘了掛進排句清單,從沒出現過)
+  "pat_i_go_home", "pat_i_say_hello", "pat_i_listen_to_music", "pat_i_hear_a_noun",
+  // 句型大擴充(2026-07-08):每階新形狀 —— wh 問句/否定/第二人稱/do 問句/形容詞前置/want
+  "pat_what_is_this", "pat_it_is_a_noun", "pat_i_am_not_adj", "pat_you_are_adj",
+  "pat_do_you_eat", "pat_i_do_not_eat", "pat_do_you_drink", "pat_i_do_not_drink",
+  "pat_this_is_a_adj_noun", "pat_where_is_my_noun", "pat_i_want_a_noun", "pat_do_you_want_drink",
+  "pat_do_you_speak", "pat_i_do_not_speak", "pat_do_you_hear", "pat_this_is_not_adj", "pat_what_do_you_want"];
 const buildSentencePatterns = () => PATTERNS.filter(p => BUILD_SENTENCE_PATTERN_IDS.includes(p.id));
 
 function learnedByRecord(c) {
@@ -165,7 +172,7 @@ const hasFreshBuildSentence = (sourceWords = sentenceSourceWords()) =>
   sentenceCandidates(buildSentencePatterns(), sourceWords).some(s => !recentSentences.includes(s.text));
 
 // ── 複合句「你呢?」回應題(sentence_respond)── 用複合板模(兩子句),不進 build 池;工作軌沒這些板模 → 自然不出。
-let RESPOND_PATTERN_IDS = ["pat_resp_feel_drink", "pat_resp_feel_eat"];
+let RESPOND_PATTERN_IDS = ["pat_resp_feel_drink", "pat_resp_feel_eat", "pat_resp_feel_music"];   // 2026-07-08 +累了聽音樂
 const respondPatterns = () => PATTERNS.filter(p => RESPOND_PATTERN_IDS.includes(p.id));
 function pickRespondSentence(sourceWords = sentenceSourceWords(), avoidText) {
   // 用 pickSentenceByPattern:先均勻挑板模(drink/eat)再挑句 → 兩種都會出,不被變化多的 drink 稀釋掉 eat。

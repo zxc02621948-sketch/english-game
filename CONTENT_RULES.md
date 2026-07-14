@@ -91,6 +91,14 @@
 - `with`
 - `please`
 - `at`（`look at` 用；把視線對準某個東西）
+- `to`（`listen to` 用；把動作指向目標）
+- `what`（問「什麼」：What is this?）
+- `it`（指東西不指人：It is a cat.）
+- `not`（be 動詞後的否定：I am not hungry.）
+- `you`（你）
+- `are`（跟 you 搭配：You are happy.）
+- `do`（問句開頭的「發問引擎」/ 配 not 否定動詞句：Do you eat rice? / I do not eat bread. 沒有自己的意思，不是動詞「做」）
+- `where`（問「哪裡」：Where is my cat?）
 
 功能詞 `pos` 用 `function`。除非句型模板真的需要，不要替功能詞亂加 flags。
 

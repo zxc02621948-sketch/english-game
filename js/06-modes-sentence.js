@@ -484,7 +484,7 @@ function offerSentenceSelfAssess(sentence, done, retry, lastHeard = '') {
 
 // ★ 轉換題(招牌:this is ↔ is this):先給排好的直述句 → 把「同一批字」重排成問句,戳「換順序就變問句」的 aha。
 // 只用 be 動詞 This is 家族(純重排成立;I see a cat 變問句要 do,不能純重排 → 不放進來)。
-let TRANSFORM_PATTERN_IDS = ["pat_this_is_a_noun", "pat_this_is_my_noun", "pat_this_is_adj", "pat_i_am_adj"];
+let TRANSFORM_PATTERN_IDS = ["pat_this_is_a_noun", "pat_this_is_my_noun", "pat_this_is_adj", "pat_i_am_adj", "pat_you_are_adj", "pat_it_is_a_noun"];   // 2026-07-08 +You are→Are you / It is→Is it(都是純 be 動詞調頭)
 function pickTransformSentence(sourceWords = sentenceSourceWords()) {
   const pats = PATTERNS.filter(p => TRANSFORM_PATTERN_IDS.includes(p.id) && p.q && patMastery(p.id) > 0);   // 直述句練過(patMastery>0)才轉換 → 有「我會這句、現在改問句」的對照
   return pickSentenceByPattern(pats, sourceWords, s => s && s.question);   // 依句型平均取(不被 This is a 的多名詞稀釋掉 I am happy);避開最近出過的句子

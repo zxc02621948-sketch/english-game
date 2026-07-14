@@ -1598,3 +1598,25 @@ listen(→ music/to)、hear、say(→ hello/yes/no)、go/come(→ 地點 + home 
 
 ### 記錄:句子重複感(「二十幾關只出我吃什麼/這是我的什麼/我很累」)
 機制修完後這是**內容量**問題:每階只解鎖 1~4 條新句型、slot 池小(eatable 只有 rice/bread)。下一個最高槓桿 = 擴 PATTERNS/字(HANDOFF 待辦 #1 的本體),不是再調權重。
+
+
+## 2026-07-08(11 / Claude Opus 4.8)— ★ 句型大擴充:每階一個新「句子形狀」,生活文法核心一次補齊
+
+### 為什麼(使用者定調「一次擴足」)
+玩到 22 關點破:「到第四階句子形狀只有四種(名詞短語/This is/I am/I+動詞),轉換題不算新句型,好沒新意」+「每次擴一點點就要重玩一次太拖」。→ 一次把生活常用句型補齊,塞進現有 10 階(關卡量足夠)。
+
+### 加了什麼(19 → 40 條句型)
+- **新形狀按階分佈**:階2 wh 問句+回答(What is this? / It is a {x}.,it 可轉換 Is it…?)/ 階3 be 否定(I am not {x}.)+ 第二人稱(You are {x}. → Are you…? 純調頭可轉換)/ 階4 **do 問句 + do not 否定**(Do you eat {x}? / I do not eat {x}. —— 跟 be 動詞「調頭變問句」的對比是大 aha)/ 階5 do 形狀套 drink / 階6 **形容詞前置**(This is a {a} {x}.,中文語序相同)+ where 問句(Where is my {x}?)/ 階7 want(I want a {x}. / Do you want {x}?)/ 階8 Do you speak {x}? + 否定 / 階9 Do you hear a {x}? + 回應句「累了聽音樂」/ 階10 This is not {x}. + What do you want?(積木合體收尾)。
+- **新字**:功能詞 what/it/not/you/are/do/where(靜默教,批2/3/4/6)+ 實詞 want(批7)。do 以功能詞身分回歸(發問引擎,不是動詞「做」)。
+- **★ 補掛前次漏洞**:I go home / I say hello / I listen to music / I hear a {x} 四條**當初沒掛進 BUILD_SENTENCE_PATTERN_IDS,從沒出現在排句題**。這次連新句型一起掛齊;轉換清單 +you_are/it_is;回應清單 +resp_feel_music。CURRICULUM 記了「掛新句型的三張清單」防再犯。
+
+### 驗證(console,零 error)
+- 結構:52 字全編批、無孤兒字、40 條句型 requires/slot/token 全通、三張清單雙向檢查(掛的都存在、該掛的都掛了)。
+- 每階新句型:階1~10 = 3/4/3/4/4/2/7/4/4/2 條(形容詞前置類在批6 slot 齊才浮出,不在此計)。
+- 抽樣分布(每階句子應用關 150 抽):可用句型幾乎全抽得到,最大宗 ≤27% 且都是本階新句型(偏重本階生效)。
+- 全程 50 關曝光:40 實詞**全部有練到**,中位數 9 題直接曝光(句子題另會帶到);批1 偏高(water 66)= 第一階 4 個字撐 5 關的結構性現象,教學階可接受。
+- 新句型生成抽查 15 條全對;轉換 It is a cat. → Is it a cat? ✓。
+- ⚠ 模擬時踩的坑記著:`localStorage.clear()` 不清記憶體的 `store`,連續 console 模擬要 `Object.keys(store).forEach(k=>delete store[k])`,不然上一輪的髒狀態會造成假 bug(這次差點誤判成「第5階後新字進不來」)。
+
+### 需要重來
+批次動了(膠水詞加入批2/3/4/6、want 進批7)→ 舊進度對應會亂,🔄 重來。
