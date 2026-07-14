@@ -7,7 +7,30 @@
  * script 格式:{type:'line', who, side?, words:[[en,zh,{fresh?,why?}]...]} / {type:'ask', q, options:[{t,ok?}]} / {type:'reorder', answer, tiles}
  * ============================================================ */
 
+// ★ 彩蛋設定:那隻狗(🐶)是貫穿全季的角色 —— 階1 上錯飲料的店員 → 階4 偷吃蛋糕嫁禍寶寶 → 階6 背上藏了貓 → 階8 開口說話嚇跑路人。
 const STORIES = [
+  {
+    id: 'story_drink', stage: 1, title: '狗狗咖啡店', icon: '☕',
+    intro: '用你剛學的字讀第一個故事 —— 不會的字有橘色虛線,游標移上去看中文。',
+    script: [
+      { type: 'line', who: 'N', words: [['Sam', '山姆(人名)', { fresh: 1 }], ['is', '是', { fresh: 1 }], ['thirsty', '口渴', { fresh: 1 }], ['.', '']] },
+      { type: 'line', who: 'S', side: 'L', words: [['Coffee', '咖啡'], [',', ''], ['please', '請'], ['.', '']] },
+      { type: 'line', who: 'N', words: [['The', '那隻', { fresh: 1 }], ['dog', '狗', { fresh: 1 }], ['gives', '端來', { fresh: 1 }], ['tea', '茶'], ['.', '']] },
+      { type: 'ask', q: 'Sam 拿到了什麼?', options: [{ t: '茶', ok: true }, { t: '咖啡' }, { t: '水' }] },
+      { type: 'line', who: 'S', side: 'L', words: [['Tea', '茶'], ['?', ''], ['No', '不', { fresh: 1 }], ['.', ''], ['Coffee', '咖啡'], [',', ''], ['please', '請'], ['.', '']] },
+      { type: 'line', who: 'N', words: [['The', '那隻'], ['dog', '狗', { fresh: 1 }], ['gives', '端來', { fresh: 1 }], ['water', '水'], ['.', '']] },
+      { type: 'line', who: 'S', side: 'L', words: [['Water', '水'], ['?!', '']] },
+      { type: 'line', who: '🐶', side: 'R', words: [['Sorry', '對不起', { fresh: 1 }], ['!', '']] },
+      { type: 'line', who: 'S', side: 'L', words: [['Coffee', '咖啡'], ['with', '加'], ['sugar', '糖'], [',', ''], ['please', '請'], ['.', '']] },
+      { type: 'reorder', answer: 'Coffee with sugar', tiles: ['Coffee', 'with', 'sugar'] },
+      { type: 'line', who: 'N', words: [['The', '那隻'], ['dog', '狗', { fresh: 1 }], ['gives', '端來', { fresh: 1 }], ['coffee', '咖啡'], ['with', '加'], ['salt', '鹽', { fresh: 1, why: 'salt(鹽)跟 sugar(糖)長得像,店員最怕拿錯的兩罐' }], ['!', '']] },
+      { type: 'line', who: 'S', side: 'L', words: [['...', ''], ['Water', '水'], [',', ''], ['please', '請'], ['.', '']] },
+      { type: 'line', who: '🐶', side: 'R', words: [['OK', '好', { fresh: 1 }], ['!', '']] },
+      { type: 'line', who: 'N', words: [['The', '那隻'], ['dog', '狗', { fresh: 1 }], ['gives', '端來', { fresh: 1 }], ['tea', '茶'], ['.', '']] },
+      { type: 'line', who: 'S', side: 'L', words: [['...', '']] },
+      { type: 'ask', q: '這間店最大的問題是?', options: [{ t: '店員永遠上錯飲料', ok: true }, { t: '咖啡太貴' }, { t: '沒有位子' }] },
+    ],
+  },
   {
     id: 'story_cake', stage: 4, title: '誰吃了蛋糕?', icon: '🍰',
     intro: '用你會的字讀一個真的故事 —— 不會的字有橘色虛線,游標移上去看中文。',
@@ -35,6 +58,47 @@ const STORIES = [
         { t: '只有寶寶吃,狗是無辜的' },
         { t: '蛋糕自己不見了' },
       ] },
+    ],
+  },
+  {
+    id: 'story_home', stage: 6, title: '貓不見了', icon: '🐱',
+    intro: '用這階的句型讀一個找貓的故事 —— 橘色虛線的字,游標移上去看中文。',
+    script: [
+      { type: 'line', who: 'N', words: [['Mia', '米亞(人名)', { fresh: 1 }], ['has', '有', { fresh: 1 }], ['a', '一隻'], ['cat', '貓'], ['.', '']] },
+      { type: 'line', who: 'N', words: [['The', '那隻', { fresh: 1 }], ['cat', '貓'], ['is', '是'], ['small', '小的'], ['.', ''], ['The', '那棟', { fresh: 1 }], ['house', '房子'], ['is', '是'], ['big', '大的'], ['.', '']] },
+      { type: 'line', who: 'M', side: 'L', words: [['Where', '哪裡'], ['is', '是'], ['my', '我的'], ['cat', '貓'], ['?', '']] },
+      { type: 'reorder', answer: 'Where is my cat', tiles: ['Where', 'is', 'my cat'] },
+      { type: 'line', who: 'N', words: [['Mia', '米亞'], ['looks', '看', { fresh: 1 }], ['at', '向'], ['the', '那棟', { fresh: 1 }], ['big', '大的'], ['house', '房子'], ['.', '']] },
+      { type: 'line', who: 'M', side: 'L', words: [['Cat', '貓'], ['?', ''], ['Cat', '貓'], ['!', '']] },
+      { type: 'line', who: 'N', words: [['The', '那隻'], ['dog', '狗', { fresh: 1 }], ['comes', '走過來', { fresh: 1, why: 'come=往這裡來;go=往別處去,方向相反' }], ['.', '']] },
+      { type: 'line', who: 'M', side: 'L', words: [['You', '你'], ['!', ''], ['Where', '哪裡'], ['is', '是'], ['my', '我的'], ['cat', '貓'], ['?', '']] },
+      { type: 'line', who: '🐶', side: 'R', words: [['Look', '看'], ['!', '']] },
+      { type: 'ask', q: '狗要米亞做什麼?', options: [{ t: '看某個地方', ok: true }, { t: '回家' }, { t: '給牠點心' }] },
+      { type: 'line', who: 'N', words: [['The', '那隻'], ['cat', '貓'], ['is', '在'], ['on', '在...上面', { fresh: 1 }], ['the', '那隻'], ['dog', '狗', { fresh: 1 }], ['!', '']] },
+      { type: 'line', who: 'M', side: 'L', words: [['Bad', '壞'], ['cat', '貓'], ['!', ''], ['Good', '好'], ['dog', '狗', { fresh: 1 }], ['!', '']] },
+      { type: 'line', who: '🐶', side: 'R', words: [['...!', '(第一次被稱讚,嚇到)']] },
+      { type: 'ask', q: '貓到底在哪裡?', options: [{ t: '在狗的背上', ok: true }, { t: '在大房子外面' }, { t: '真的不見了' }] },
+    ],
+  },
+  {
+    id: 'story_speak', stage: 8, title: '會說話的狗', icon: '🗣️',
+    intro: '用這階的句型讀一個問路的故事 —— 橘色虛線的字,游標移上去看中文。',
+    script: [
+      { type: 'line', who: 'N', words: [['A', '一個'], ['man', '男人', { fresh: 1 }], ['comes', '走向', { fresh: 1 }], ['Bea', '貝雅(蛋糕故事的主人)', { fresh: 1 }], ['.', '']] },
+      { type: 'line', who: 'M', side: 'L', words: [['Do', '(發問)'], ['you', '你'], ['speak', '說'], ['English', '英文'], ['?', '']] },
+      { type: 'line', who: 'B', side: 'R', words: [['Yes', '會', { fresh: 1 }], ['!', ''], ['...a', '一', { fresh: 1 }], ['little', '點點', { fresh: 1, why: 'little=小;a little=一點點' }], ['.', '']] },
+      { type: 'line', who: 'N', words: [['The', '那個'], ['man', '男人', { fresh: 1 }], ['speaks', '說話', { fresh: 1 }], ['fast', '很快', { fresh: 1 }], ['!', '']] },
+      { type: 'line', who: 'B', side: 'R', words: [['...', '']] },
+      { type: 'ask', q: 'Bea 聽得懂嗎?', options: [{ t: '聽不太懂,他講太快了', ok: true }, { t: '全部聽懂' }, { t: '她不會英文' }] },
+      { type: 'line', who: 'B', side: 'R', words: [['Sorry', '對不起', { fresh: 1 }], ['.', ''], ['I', '我'], ['do', '(否定用)'], ['not', '不'], ['speak', '說'], ['fast', '很快的', { fresh: 1 }], ['English', '英文'], ['!', '']] },
+      { type: 'reorder', answer: 'Do you speak English', tiles: ['Do you', 'speak', 'English'] },
+      { type: 'line', who: 'N', words: [['The', '那個'], ['man', '男人', { fresh: 1 }], ['looks', '看', { fresh: 1 }], ['at', '向'], ['the', '那隻'], ['dog', '狗', { fresh: 1 }], ['.', '']] },
+      { type: 'line', who: 'M', side: 'L', words: [['Do', '(發問)'], ['YOU', '你(對狗開玩笑)'], ['speak', '說'], ['English', '英文'], ['?', '']] },
+      { type: 'line', who: '🐶', side: 'R', words: [['Hello', '哈囉'], ['!', '']] },
+      { type: 'line', who: 'N', words: [['The', '那個'], ['man', '男人', { fresh: 1 }], ['goes', '跑', { fresh: 1 }], ['home', '回家'], ['!', '']] },
+      { type: 'ask', q: '那個人為什麼跑走了?', options: [{ t: '狗真的開口說話了', ok: true }, { t: 'Bea 罵他' }, { t: '他趕時間' }] },
+      { type: 'line', who: 'B', side: 'R', words: [['Good', '好'], ['dog', '狗', { fresh: 1 }], ['.', '']] },
+      { type: 'line', who: '🐶', side: 'R', words: [['I', '我'], ['speak', '會說'], ['English', '英文'], ['!', '']] },
     ],
   },
 ];
@@ -211,6 +275,7 @@ const storyDone = id => !!(meta.storiesDone && meta.storiesDone[id]);
   }
 
   function finish() {
+    const ctrl = document.getElementById('dlgctrl'); if (ctrl) ctrl.innerHTML = '';   // 清掉殘留的「看結果」鈕,結局只留 why 的完成鈕
     const first = !storyDone(story.id);
     if (first) {
       meta.storiesDone = meta.storiesDone || {};
