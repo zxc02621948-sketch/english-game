@@ -149,6 +149,14 @@ const needsWriteProof = w => {
   if (c.wrote2) return false;
   return (meta.clock || 0) > (c.wroteClock || 0);
 };
+// 整字產出成功 → 推 wrote/wrote2(隔關再驗)。聽寫/默寫/看圖寫走 onCorrect;句子克漏字「精準打出目標整字」也算(那就是產出,
+// 跟聽寫同級 —— 治「明明打過很多次還說不會寫」;容錯過的 typo 不算,寫的證明要精準)。
+function creditWrite(w) {
+  const c = rec(w);
+  if (!c.wrote) { c.wrote = true; c.wroteClock = meta.clock || 0; }
+  else if (!c.wrote2 && (meta.clock || 0) > (c.wroteClock || 0)) c.wrote2 = true;
+  save();
+}
 
 function buildLevel() {
   // ★ 固定 5 關階段中的動態選字:關卡角色決定新字量/題數,內容仍按熟練度挑新字 + 學習中 + 到期複習。
@@ -160,7 +168,7 @@ function buildLevel() {
   const isReplay = (level || 1) < (meta.maxLevel || 1);   // 回去玩「已過的舊關」(不是最前線那關)= 純複習,不引新字(治「這階還沒學完時回舊關卻在學新字」)
   const fresh  = isReplay ? [] : LEARN_ORDER.filter(w => isFresh(w) && batchOf(w) < stage && w.pos !== 'function');   // 解鎖批內的新「實詞」(功能詞不走教卡);複習關不引新字
   const focus = LEARN_ORDER.filter(w => isAdvancedWord(w) && batchOf(w) < stage && !isFresh(w) && !microBatchReady(w));   // 第三階段後:小組沒練穩前,先專注這組,不再開下一組新字
-  const needsWrite = trackSkillOn('write') ? BANK.filter(w => !isFresh(w) && w.pos !== 'function' && needsWriteProof(w) && batchOf(w) < stage && clozeReadyForDictation(w)) : [];   // 不練默寫的軌:不排補默寫。needsWriteProof:沒寫過 or 寫過待隔關複驗
+  const needsWrite = trackSkillOn('write') ? shuffle(BANK.filter(w => !isFresh(w) && w.pos !== 'function' && needsWriteProof(w) && batchOf(w) < stage && clozeReadyForDictation(w))) : [];   // 不練默寫的軌:不排補默寫。needsWriteProof:沒寫過 or 寫過待隔關複驗。★ shuffle:不然固定 BANK 順序 → 永遠補同兩個字,其他字排不到(補寫不平均)
   const active = shuffle(BANK.filter(w => !isFresh(w) && !isLearned(w) && w.pos !== 'function' && batchOf(w) < stage && !focus.some(f => f.id === w.id))); // 學習中(<100%),主力。功能詞排除 → 不單獨刷,只在句子裡練
   const due    = BANK.filter(w => isLearned(w) && w.pos !== 'function' && batchOf(w) < stage && (rec(w).due || 0) <= clock) // 到期該複習的學會字(功能詞除外,走句子)
                      .sort((a, b) => (rec(a).due || 0) - (rec(b).due || 0));              // 最逾期先
@@ -350,10 +358,7 @@ function onCorrect(w) {
   else if (!inReview) {                          // ★ 補考(剛看過答案的重答)答對「不補熟練度、不算 wrote」→ 要下次主回合真的一次過才補(治「答錯→補考硬過→分數補回但其實沒會」)
     const c = rec(w);
     c.mastery = Math.min(LEARNED, (c.mastery || 0) + MASTERY_OK);   // 認/說/寫答對 → 熟練度 +MASTERY_OK
-    if (currentSkill === 'write' && isHardDictationFormatId(currentFormatId)) {                 // 整字聽寫/看圖寫/默寫對了(克漏字只算鷹架)
-      if (!c.wrote) { c.wrote = true; c.wroteClock = meta.clock || 0; }                         // 第一次寫對:記時刻,還不算「真的會寫」
-      else if (!c.wrote2 && (meta.clock || 0) > (c.wroteClock || 0)) c.wrote2 = true;           // ★ 隔關再寫對一次 → 蓋「真的會寫」章(階段門檻認這個)
-    }
+    if (currentSkill === 'write' && isHardDictationFormatId(currentFormatId)) creditWrite(w);   // 整字聽寫/看圖寫/默寫對了 → 推 wrote/wrote2(隔關再驗;句子克漏字打全字另在 js/06 credit)
   }
   save();
   if (!wasLearned && isLearned(w) && !rec(w).coined) { meta.coins++; rec(w).coined = true; saveMeta(); save(); }   // 第一次學會 → +1 金幣(coined 標記:扣分後重新學會不重複給)

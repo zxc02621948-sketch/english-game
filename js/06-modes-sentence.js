@@ -611,6 +611,12 @@ function askSentenceCloze(w) {
     } else if (typeof clearAnnotationErrorHTML === 'function') clearAnnotationErrorHTML();
     $('submit').disabled = true;
     recordSentenceClozeResult(w, q, right);
+    // ★ 句子克漏字「精準打出目標整字」= 真的產出 → 也推 wrote/wrote2(治「打過很多次還說不會寫」)。
+    //   條件:整題對 + 目標字那格是精準(typo 容錯過的不算)+ 不在補考(剛看過答案不算)。
+    if (right && !inReview && typeof creditWrite === 'function') {
+      const ti = q.answers.findIndex(ans => ans.toLowerCase() === w.en.toLowerCase());
+      if (ti >= 0 && slot[ti] === true) creditWrite(w);
+    }
     bumpPat(q.patternId, right ? 20 : -15);
     finish(right, w);
   };

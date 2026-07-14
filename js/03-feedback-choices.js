@@ -41,13 +41,19 @@ function buildCategoryQuestion(mustInclude = null, sourceWords = categorySourceW
     const positives = shuffle(sourceWords.filter(w => hasFlag(w, cat.flag)));
     const negatives = shuffle(sourceWords.filter(w => !hasFlag(w, cat.flag)));
     if (positives.length < minCorrect || negatives.length < 2) continue;
-    const correct = positives.slice(0, Math.min(4, positives.length));
+    // ★ 正解數隨機(minCorrect..4,不再「全部正解都上場」):別讓「一定選滿 N 個、一定是那幾個」變成可背的(2026-07-08 使用者點破)
+    const kMax = Math.min(4, positives.length);
+    const k = minCorrect + Math.floor(Math.random() * (kMax - minCorrect + 1));
+    const correct = positives.slice(0, k);
     if (mustInclude && hasFlag(mustInclude, cat.flag) && !correct.some(w => w.id === mustInclude.id)) {
       correct.pop();
       correct.unshift(mustInclude);
     }
-    const wrong = negatives.slice(0, Math.max(2, maxOptions - correct.length));
-    const options = shuffle([...correct, ...wrong]).slice(0, maxOptions);
+    // 干擾數也隨機 → 總選項數浮動,「數格子湊數量」的後設解法失效
+    const wrongMax = Math.max(2, maxOptions - correct.length);
+    const wrongN = Math.min(negatives.length, 2 + Math.floor(Math.random() * (wrongMax - 1)));
+    const wrong = negatives.slice(0, wrongN);
+    const options = shuffle([...correct, ...wrong]);
     const correctIds = new Set(correct.map(w => w.id));
     if (options.filter(w => correctIds.has(w.id)).length < minCorrect) continue;
     return { category:cat, options, correct, correctIds:[...correctIds] };
