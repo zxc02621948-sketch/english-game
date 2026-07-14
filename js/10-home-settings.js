@@ -137,6 +137,7 @@ function mapSVG() {
   const donePath = curvePath(pts.slice(0, Math.max(1, Math.min(meta.maxLevel, total))));
   const H = pad + (total-1)*gap + pad;
   let stageBackdrops = '';
+  const chipBoxes = [];   // 記錄各階字塊叢的佔用範圍(rect)→ 故事節點避開它
   for (let stg = 1, guard = 0; guard < 30; stg++, guard++) {
     const start = defaultStageStartLevel(stg);
     if (start > total) break;
@@ -168,6 +169,12 @@ function mapSVG() {
     }
     // Topic badges describe the whole stage, not one word per level.
     const themeIcons = showTopicBadges ? mapTopicCluster(topicWords, clusterX, clusterY, false, routePin.x, routePin.y, accent, compact, side) : '';
+    if (showTopicBadges && topicWords.length) {   // 字塊實際佔用範圍(badges 都在 clusterX 的 side 側,見 mapTopicCluster):給故事節點避讓用
+      const items = Math.min(topicWords.length, 6), rows = Math.ceil(items / 2);
+      const colGap = compact ? 186 : 208, rowGap = compact ? 56 : 58, badgeW = 190;
+      const nearOffset = items > 4 ? (compact ? 160 : 172) : (compact ? 92 : 106);
+      chipBoxes.push({ x: clusterX + side * (nearOffset + colGap / 2), y: clusterY, hw: (colGap + badgeW) / 2 + 26, hh: (rows * rowGap) / 2 + 42 });
+    }
     stageBackdrops += `<g opacity="${opacity}">
       <path d="M${contourX} ${Math.round(y1 + 34)} C${contourX + 96} ${Math.round(y1 + 10)} ${contourX + 206} ${Math.round(y1 + 34)} ${contourX + 318} ${Math.round(y1 + 2)}" fill="none" stroke="${accent}" stroke-width="2.2" opacity=".2"/>
       <path d="M${contourX - 34} ${Math.round(y2 - 34)} C${contourX + 70} ${Math.round(y2 - 76)} ${contourX + 184} ${Math.round(y2 - 42)} ${contourX + 318} ${Math.round(y2 - 82)}" fill="none" stroke="#8fa5b9" stroke-width="2" opacity=".13"/>
@@ -193,23 +200,33 @@ function mapSVG() {
   // 📖 故事節點:掛在該階第 5 關旁(主線岔出去的一小站)。完成該階解鎖、讀過打勾;沒解鎖前灰著吊胃口(治「結算卡沒點之後地圖上就找不到」)
   let storyNodes = '';
   if (typeof STORIES !== 'undefined' && currentTrack === 'daily') {
+    const r2 = compact ? 30 : 34;
+    const lvCircles = pts.map((p, i) => ({ x: p.x, y: p.y, r: (i + 1 === meta.maxLevel) ? (compact ? 48 : 52) : (compact ? 38 : 42) }));
+    const clearOf = (nx, ny) => {                           // 這個位置離「最近的關卡節點 / 字塊叢」多遠(負=重疊)
+      let m = Infinity;
+      lvCircles.forEach(c => { m = Math.min(m, Math.hypot(nx - c.x, ny - c.y) - c.r - r2); });
+      chipBoxes.forEach(bx => {
+        const dxr = Math.max(Math.abs(nx - bx.x) - bx.hw, 0), dyr = Math.max(Math.abs(ny - bx.y) - bx.hh, 0);
+        m = Math.min(m, Math.hypot(dxr, dyr) - r2);
+      });
+      return m;
+    };
     STORIES.forEach(s => {
       const afterLv = s.stage * 5;
       if (afterLv > total) return;                          // 那段地圖還沒展開就不畫
       const a = pts[afterLv - 1], b = pts[afterLv] || a;
-      const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-      // ★ 垂直於路徑方向把節點推出去(不是水平推 → 斜線段才不會壓到相鄰關卡);往地圖外側的空白邊推
+      const mx0 = Math.round((a.x + b.x) / 2), my0 = Math.round((a.y + b.y) / 2);
       let dx = b.x - a.x, dy = b.y - a.y; const len = Math.hypot(dx, dy) || 1;
-      let px = -dy / len, py = dx / len;                    // 路徑的法線單位向量
-      const outward = mx < W / 2 ? -1 : 1;                  // 往較近的邊(外側空白)推
-      if (Math.abs(px) > 0.3) { if (Math.sign(px) !== outward) { px = -px; py = -py; } }
-      else if (py < 0) { px = -px; py = -py; }              // 近水平的路段 → 往下推
-      const dist = compact ? 104 : 116;
-      const x = clamp(Math.round(mx + px * dist), 64, W - 64), y = Math.round(my + py * dist);
-      const mx0 = Math.round(mx), my0 = Math.round(my);
+      const px = -dy / len, py = dx / len;                  // 路徑法線單位向量
+      // ★ 四個候選點(法線兩側 × 兩段距離)+ 往下 → 挑「離關卡跟字塊都最遠」的,避開字塊叢(治疊到 friend 字塊)
+      const D = compact ? 108 : 122;
+      const cands = [
+        [px, py, D], [-px, -py, D], [px, py, D * 1.6], [-px, -py, D * 1.6], [px, py, D * 2.3], [-px, -py, D * 2.3], [0, 1, D * 1.4], [0, -1, D * 1.4],
+      ].map(([ux, uy, d]) => ({ x: clamp(Math.round(mx0 + ux * d), 74, W - 74), y: clamp(Math.round(my0 + uy * d), 44, H - 44) }));
+      const best = cands.reduce((bestC, c) => (clearOf(c.x, c.y) > clearOf(bestC.x, bestC.y) ? c : bestC), cands[0]);
+      const x = best.x, y = best.y;
       const unlocked = (meta.stage || 1) > s.stage || storyDone(s.id);
       const done = storyDone(s.id);
-      const r2 = compact ? 30 : 34;
       storyNodes += `<g class="mapstorygroup" opacity="${unlocked ? 1 : .38}">
         <line x1="${mx0}" y1="${my0}" x2="${x}" y2="${y}" stroke="#7b5ea7" stroke-width="2.5" stroke-dasharray="3 7" opacity=".5"/>
         <circle cx="${x}" cy="${y + 5}" r="${r2}" fill="#06131f" opacity=".42"/>
