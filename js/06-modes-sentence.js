@@ -31,7 +31,7 @@ function teachPattern(sentence, then, onKnown) {
 
 // 共用拖曳排序引擎:給 cards + 正解 token 順序,渲染 slots/bank + 拖曳/點擊 + 確定;判對錯交給 onCheck 出回饋。
 // 排詞造句、轉換題(直述↔問句)都複用這個,拖曳邏輯不重寫。caseInsensitive:轉換題 This↔this 只是大小寫、重點在順序。
-function mountArrange({ promptText, zh, introHTML = '', cards, targetTokens, caseInsensitive = false, onCheck }) {
+function mountArrange({ promptText, zh, introHTML = '', cards, targetTokens, caseInsensitive = false, endMark = '', onCheck }) {
   shell(promptText, `
     ${introHTML}
     <div class="buildzh">${zh}</div>
@@ -105,6 +105,13 @@ function mountArrange({ promptText, zh, introHTML = '', cards, targetTokens, cas
       if (card) slot.appendChild(makeCard(card, 'slot', idx));
       slotBox.appendChild(slot);
     });
+    if (endMark) {                                                         // 句尾標點放進格子列尾端:問句「?」放大變亮 → 一眼看出這題要排問句(治「沒看清是不是疑問句」)
+      const em = document.createElement('div');
+      em.className = 'sentence-endmark' + (endMark === '?' ? ' q' : '');
+      em.textContent = endMark;
+      em.setAttribute('aria-hidden', 'true');
+      slotBox.appendChild(em);
+    }
     bankBox.ondragover = allowDrop;
     bankBox.ondrop = e => { e.preventDefault(); returnToBank(droppedId(e)); draggingId = null; render(); };
     bank.forEach(card => bankBox.appendChild(makeCard(card, 'bank')));
@@ -237,11 +244,13 @@ function askBuildSentence(sourceWords = sentenceSourceWords(), done = showDone, 
   }
   rememberSentence(sentence.text);   // 記下這句 → 接下來幾題避開重複
   const target = sentence.text.replace(/[.?!,]/g, '').split(/\s+/).filter(Boolean);
+  const endMark = (sentence.text.match(/[.?!]$/) || [''])[0];   // 句尾標點跟著句子:陳述句「.」問句「?」→ 排句時就看得出這句是問是述
   const arrange = () => mountArrange({
     promptText: '看中文,排出英文',
     zh: sentence.zh,
     cards: target.map((text, i) => ({ id: `c${i}`, text })),
     targetTokens: target,
+    endMark,
     onCheck: (right, { retry }) => {
       const why = $('why');
       speakSentence(sentence);
@@ -501,11 +510,12 @@ function askTransform(w, done) {
   const sayQ = () => speakSentence({ text: s.question });
   mountArrange({
     promptText: '改成問句 —— 同一批字,重新排',
-    zh: s.questionZh,
+    zh: `<span class="q-badge">❓ 問句</span>${s.questionZh}`,
     introHTML: `<div class="transform-intro"><div class="transform-stmt">${hintedEnglish(s.text)}</div><div class="transform-stmt-zh">${s.zh}</div><div class="transform-arrow">↓ 改成問句</div></div>`,
-    cards: stmt.map((text, i) => ({ id: `c${i}`, text })),
+    cards: qTok.map((text, i) => ({ id: `c${i}`, text })),   // 用問句本身的大小寫當字塊(Is/this…)→ 排對就讀成「Is this a cat」,不會出現「is This a cat」那種看起來像排錯的怪樣
     targetTokens: qTok,
     caseInsensitive: true,
+    endMark: '?',
     onCheck: (right, { retry }) => {
       const why = $('why');
       sayQ();

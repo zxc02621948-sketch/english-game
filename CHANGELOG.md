@@ -1650,3 +1650,15 @@ listen(→ music/to)、hear、say(→ hello/yes/no)、go/come(→ 地點 + home 
 - 小修:finish() 清掉殘留的「看結果」鈕。
 - 驗:四個故事自動走完(3/3、4/4、3/3、3/3 題)、各 +2 🪙、storiesDone 記錄、hub 列出。
 - 現況:階 1/4/6/8 有故事;階 2/3/5/7/9/10 之後補(往 STORIES 加劇本即可)。
+
+
+## 2026-07-08(14 / Claude Opus 4.8)— 轉換題「看不出是問句」三修
+
+### 使用者實玩
+轉換題(This is a cat → Is this a cat?)跟一般排句題長太像,「時常沒看清楚是不是疑問句」。查出三個原因疊在一起:① 答題區沒有任何「這是問句」的標記(只有標題小字+中文一個小「嗎」);② 字塊沿用直述句大小寫,排對後顯示成「is This a cat」看起來像排錯;③ 中文問句提示不夠醒目。
+
+### 修(js/06 + css/05)
+- **句尾標點進格子列**:`mountArrange` 加 `endMark` 參數,把句尾標點放在字塊列尾端 —— 問句「?」放大變亮(琥珀色 46px + glow),陳述句「.」低調。排句/轉換題都吃:一眼看出這句要排問還是述。endMark 從句子本身的結尾標點取(轉換題固定「?」;排句題 What is this?/Do you eat bread? 等問句也會亮「?」)。
+- **字塊改用問句大小寫**:轉換題 cards 從直述句 token(This/is)改成問句 token(Is/this)→ 排對讀成「Is this a house」而非「is This a house」,不再像排錯。
+- **中文加「❓ 問句」徽章**:轉換題 buildzh 前面掛琥珀 pill,雙保險。
+- 驗:轉換題 endmark「?」放大變亮=true、字塊=this/Is/a/house(問句大小寫)、徽章在;排句陳述句 endmark「.」、問句 endmark「?」放大。
