@@ -197,14 +197,21 @@ function mapSVG() {
       const afterLv = s.stage * 5;
       if (afterLv > total) return;                          // 那段地圖還沒展開就不畫
       const a = pts[afterLv - 1], b = pts[afterLv] || a;
-      const mx = Math.round((a.x + b.x) / 2), my = Math.round((a.y + b.y) / 2);
-      const side = mx < W / 2 ? 1 : -1;
-      const x = clamp(mx + side * (compact ? 100 : 112), 64, W - 64), y = my;
+      const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      // ★ 垂直於路徑方向把節點推出去(不是水平推 → 斜線段才不會壓到相鄰關卡);往地圖外側的空白邊推
+      let dx = b.x - a.x, dy = b.y - a.y; const len = Math.hypot(dx, dy) || 1;
+      let px = -dy / len, py = dx / len;                    // 路徑的法線單位向量
+      const outward = mx < W / 2 ? -1 : 1;                  // 往較近的邊(外側空白)推
+      if (Math.abs(px) > 0.3) { if (Math.sign(px) !== outward) { px = -px; py = -py; } }
+      else if (py < 0) { px = -px; py = -py; }              // 近水平的路段 → 往下推
+      const dist = compact ? 104 : 116;
+      const x = clamp(Math.round(mx + px * dist), 64, W - 64), y = Math.round(my + py * dist);
+      const mx0 = Math.round(mx), my0 = Math.round(my);
       const unlocked = (meta.stage || 1) > s.stage || storyDone(s.id);
       const done = storyDone(s.id);
       const r2 = compact ? 30 : 34;
       storyNodes += `<g class="mapstorygroup" opacity="${unlocked ? 1 : .38}">
-        <line x1="${mx}" y1="${my}" x2="${x}" y2="${y}" stroke="#7b5ea7" stroke-width="2.5" stroke-dasharray="3 7" opacity=".5"/>
+        <line x1="${mx0}" y1="${my0}" x2="${x}" y2="${y}" stroke="#7b5ea7" stroke-width="2.5" stroke-dasharray="3 7" opacity=".5"/>
         <circle cx="${x}" cy="${y + 5}" r="${r2}" fill="#06131f" opacity=".42"/>
         <circle class="mapstorynode" data-story="${s.id}" cx="${x}" cy="${y}" r="${r2}" fill="${done ? '#241a2e' : '#1c1626'}" stroke="${done ? '#8f6ec9' : '#7b5ea7'}" stroke-width="4" style="cursor:${unlocked ? 'pointer' : 'default'}"/>
         <text x="${x}" y="${y + 9}" text-anchor="middle" font-size="26" style="pointer-events:none">${s.icon}</text>
