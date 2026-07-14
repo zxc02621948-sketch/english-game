@@ -190,6 +190,29 @@ function mapSVG() {
         <text x="${p.x}" y="${p.y+12}" text-anchor="middle" font-size="${st==='cur'?34:30}" font-weight="900" fill="${tc}" style="pointer-events:none">${lv}</text>
       </g>`;
   }
+  // 📖 故事節點:掛在該階第 5 關旁(主線岔出去的一小站)。完成該階解鎖、讀過打勾;沒解鎖前灰著吊胃口(治「結算卡沒點之後地圖上就找不到」)
+  let storyNodes = '';
+  if (typeof STORIES !== 'undefined' && currentTrack === 'daily') {
+    STORIES.forEach(s => {
+      const afterLv = s.stage * 5;
+      if (afterLv > total) return;                          // 那段地圖還沒展開就不畫
+      const a = pts[afterLv - 1], b = pts[afterLv] || a;
+      const mx = Math.round((a.x + b.x) / 2), my = Math.round((a.y + b.y) / 2);
+      const side = mx < W / 2 ? 1 : -1;
+      const x = clamp(mx + side * (compact ? 100 : 112), 64, W - 64), y = my;
+      const unlocked = (meta.stage || 1) > s.stage || storyDone(s.id);
+      const done = storyDone(s.id);
+      const r2 = compact ? 30 : 34;
+      storyNodes += `<g class="mapstorygroup" opacity="${unlocked ? 1 : .38}">
+        <line x1="${mx}" y1="${my}" x2="${x}" y2="${y}" stroke="#7b5ea7" stroke-width="2.5" stroke-dasharray="3 7" opacity=".5"/>
+        <circle cx="${x}" cy="${y + 5}" r="${r2}" fill="#06131f" opacity=".42"/>
+        <circle class="mapstorynode" data-story="${s.id}" cx="${x}" cy="${y}" r="${r2}" fill="${done ? '#241a2e' : '#1c1626'}" stroke="${done ? '#8f6ec9' : '#7b5ea7'}" stroke-width="4" style="cursor:${unlocked ? 'pointer' : 'default'}"/>
+        <text x="${x}" y="${y + 9}" text-anchor="middle" font-size="26" style="pointer-events:none">${s.icon}</text>
+        ${done ? `<text x="${x + r2 - 8}" y="${y - r2 + 12}" text-anchor="middle" font-size="16" fill="#6ee7a8" style="pointer-events:none">✓</text>` : ''}
+        <text x="${x}" y="${y + r2 + 18}" text-anchor="middle" font-size="13" font-weight="700" fill="${unlocked ? '#b79ce0' : '#5f7488'}" style="pointer-events:none">${unlocked ? s.title : '🔒 ' + s.title}</text>
+      </g>`;
+    });
+  }
   const mapBgId = `mapgrid-${total}-${meta.maxLevel}`;
   const trail = `<defs>
       <pattern id="${mapBgId}" width="64" height="64" patternUnits="userSpaceOnUse">
@@ -202,7 +225,7 @@ function mapSVG() {
     <path d="${path}" fill="none" stroke="#2a4963" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" opacity=".76"/>
     ${meta.maxLevel > 1 ? `<path d="${donePath}" fill="none" stroke="#1f8b6c" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" opacity=".76"/>` : ''}
     <path d="${path}" fill="none" stroke="#87a8c7" stroke-width="3.4" stroke-dasharray="3 18" stroke-linecap="round" opacity=".58"/>`;
-  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMin meet">${trail}${circles}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMin meet">${trail}${circles}${storyNodes}</svg>`;
 }
 function showHome() {
   inTraining = false;                    // 從任何地方回主畫面都結束特訓
@@ -281,6 +304,10 @@ function showHome() {
   document.getElementById('catTrain').onclick = showTrainPicker;
   document.getElementById('catDeriv').onclick = () => { homeEl.querySelector('#catDeriv .catcoin').textContent = '金幣不夠,之後開放'; };
   homeEl.querySelectorAll('.mapnode').forEach(c => { const lv = +c.dataset.lv; if (lv <= meta.maxLevel) c.onclick = () => enterLevel(lv); });
+  homeEl.querySelectorAll('.mapstorynode').forEach(c => {   // 📖 故事節點:解鎖了才可點,讀完回地圖
+    const s = (typeof STORIES !== 'undefined') ? STORIES.find(x => x.id === c.dataset.story) : null;
+    if (s && ((meta.stage || 1) > s.stage || storyDone(s.id))) c.onclick = () => startStory(s, showHome);
+  });
   // 關卡鏡頭:固定視窗 + 進場置中在目前關 + 滑鼠/觸控捲動 + 回目前關定位鈕
   const mapscroll = document.getElementById('mapscroll'), mapsvg = mapscroll && mapscroll.querySelector('svg');
   const mapFloatJump = document.getElementById('mapfloatjump');
@@ -487,4 +514,4 @@ function showMusic() {
 }
 
 // 點任何按鈕 / 選項都來個輕「嗒」聲(UI 回饋;事件委派,不用每個按鈕手動接)
-document.addEventListener('click', e => { if (e.target.closest('button, .opt, .cat, .mapnode')) sfx.tap(); }, true);
+document.addEventListener('click', e => { if (e.target.closest('button, .opt, .cat, .mapnode, .mapstorynode')) sfx.tap(); }, true);
