@@ -1761,3 +1761,14 @@ listen(→ music/to)、hear、say(→ hello/yes/no)、go/come(→ 地點 + home 
 - **加畫面內夾邊**(mapTopicCluster 收 mapW,每顆 clamp 在 `[badgeW/2+6, W-badgeW/2-6]`)→ 寬字塊(咖啡/糖)排到奇數位也不出框。
 - 驗(掃 1~32 關):零重疊、零出框。
 - ⚠ 截圖工具逾時 → 「好不好看」量不到,待使用者目視。錯落幅度(zig 24 / y±7)是保守值,嫌太拘謹可加大(但別讓奇數 badge 往中間偏,會撞路徑)。
+
+
+## 2026-07-08(23 / Claude Opus 4.8)— 回應題情境卡把字卡擠到要往下拉
+
+### 使用者實玩
+回應題(sentence_respond)的情境卡(朋友那句 + And you?)佔掉太多高度,格子跟字卡被擠到作答區下面、要往下捲才看得到。
+
+### 修(js/06)
+- mountArrange 的 intro 搬移邏輯從只搬 .transform-intro 擴到也搬 .respond-scenario → 情境卡從作答帶搬到題目帶(stage),作答帶只剩格子+字卡+確定,不用捲(跟轉換題同招)。
+- 情境卡瘦身(padding 12→8、字級縮一階、限寬 680 置中)。
+- 驗:情境卡在題目帶、作答帶不捲、6 張字卡都在。

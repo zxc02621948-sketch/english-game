@@ -39,7 +39,7 @@ function mountArrange({ promptText, zh, introHTML = '', cards, targetTokens, cas
     <div class="chunks sentence-bank" id="bank"></div>
     <div class="buildactions" id="bactions" style="grid-template-columns:1fr"><button class="btn act" id="check">確定</button></div>`);
   $('body').classList.add('build-answer');
-  const _intro = $('body').querySelector('.transform-intro');   // 轉換題:把「原句參考卡」從作答帶搬到題目帶(stage)→ 作答帶只剩「格子+字塊」,跟一般排詞一樣塞得下、不用上下捲
+  const _intro = $('body').querySelector('.transform-intro, .respond-scenario');   // 轉換題原句卡 / 回應題情境卡:從作答帶搬到題目帶(stage)→ 作答帶只剩「格子+字塊」,不用上下捲(治情境卡把字卡擠到要往下拉)
   if (_intro) document.querySelector('.lesson-stage').appendChild(_intro);
   let slots = Array(cards.length).fill(null);
   const _norm = t => caseInsensitive ? (t || '').toLowerCase() : t;
@@ -313,10 +313,10 @@ function askRespond(sourceWords = sentenceSourceWords(), done = showDone, onMiss
   const friend = pickRespondSentence(sourceWords, mine.text) || mine;
   rememberSentence(mine.text);
   const target = mine.text.replace(/[.?!,]/g, '').split(/\s+/).filter(Boolean);
-  const intro = `<div class="respond-scenario" style="background:#14202e;border:1px solid #26384a;border-radius:12px;padding:12px 16px;margin-bottom:14px;text-align:center">
-    <div style="font-size:19px;font-weight:700">${friend.text}</div>
-    <div style="font-size:15px;color:#9fb4c8;margin-top:2px">${friend.zh}</div>
-    <div style="margin-top:8px;font-size:17px">👉 <b>And you? 你呢?</b></div>
+  const intro = `<div class="respond-scenario" style="background:#14202e;border:1px solid #26384a;border-radius:12px;padding:8px 16px;margin:6px auto 0;max-width:680px;text-align:center">
+    <div style="font-size:17px;font-weight:700">${friend.text}</div>
+    <div style="font-size:13px;color:#9fb4c8;margin-top:1px">${friend.zh}</div>
+    <div style="margin-top:4px;font-size:15px">👉 <b>And you? 你呢?</b></div>
   </div>`;
   const arrange = () => mountArrange({
     promptText: '你呢?看中文,排出你的回答',
