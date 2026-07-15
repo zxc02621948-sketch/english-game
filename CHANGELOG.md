@@ -1837,3 +1837,21 @@ listen(→ music/to)、hear、say(→ hello/yes/no)、go/come(→ 地點 + home 
 - literalConcatZh(js/06):逐字直翻跳過「zh 是括號註解」的文法助詞(do 的「(問句/否定)」)→ 不再串出括號亂碼。
 - word_do zh(js/00):「(發問用)」→「(問句/否定)」(do 問句、否定都用,標註要準)。
 - 驗:含 do 的句子直翻出正常中文(我不喝水/你吃麵包)、零括號殘留。
+
+
+## 2026-07-08(30 / Claude Opus 4.8)— ★ 字庫再重排「由簡到難」(11 階):基礎字提前
+
+### 使用者點破
+「非常基礎的字反而在 25 關後才教(go/big/small)」+「前期順序根本沒理由」。查證:上一版按情境分批,把最基礎的描述詞卡進後段——big/small 到第 26 關、good/bad 到第 46 關。
+
+### 修:難度梯度優先(js/01 BATCHES+SCENARIOS、js/09 STORIES stage)
+- 重排成 11 階「由簡到難」:最短最具體有圖的名詞(cat/book/house)→ 我的東西 → **大小好壞(big/small/good/bad 提前到階3=第11~15關)** → 心情 → 吃 → 喝 → 咖啡店(茶咖啡都會了才點單)→ 出門(go)→ 想要做 → 開口說 → 用耳朵。
+- 文法梯度:This is → I am → I 動詞 → 問句/否定 → 形容詞前置 → wh 問句。功能詞放進第一個需要它的批。
+- SCENARIOS 11 張全重寫對應新主題;STORIES stage 跟著移(drink→7/cake→5/home→8/speak→10)。
+- 表在 CURRICULUM.md。
+
+### 驗(console)
+- 52 字全編批、無孤兒字、每階生得出句子(階3:This is big / This is a good house)。
+- 55 關全曲線:引擎無爆、每階字全教到、40 實詞全練到。
+- 四個故事在新階都走得完、地圖故事節點 4 個。
+- ⚠ 批次大動 → 舊進度要 🔄 重來。

@@ -58,22 +58,33 @@
 ## 字的分批(★ 2026-07-08 重編:10 個「情境批」,在 `js/01-engine.js` 的 `BATCHES`)
 > 原則:每批 = 一個**可完成的生活情境**、實詞 ≤5、**每個字進來當下就有句子可用**(不准孤兒字)、後面的批持續回收前面的字。階段 N 解鎖批 0..N-1(`batchOf(w) < meta.stage`)。全部字都要編批,**不留「未編批自動接最後」的字**(那會在後段一次倒出一面牆)。
 
-| 批 | 情境 | 實詞 | 膠水 | 解鎖句(含 2026-07-08 句型大擴充的新形狀) |
-|---|------|------|------|--------|
-| 1 | ☕ 點飲料 | water, tea, coffee, sugar | or, with, please | Coffee or tea? / Tea, please. / Coffee with sugar. |
-| 2 | 👉 這是什麼 | cat, book, friend | this, is, a, my, **what, it** | This is a cat. / **What is this? / It is a cat.**(一問一答)/ Is this…? Is it…?(轉換) |
-| 3 | 🙂 我的心情 | happy, sad, tired | I, am, **not, you, are** | I am happy. / **I am not tired.**(否定)/ **You are happy. / Are you…?**(第二人稱+轉換) |
-| 4 | 🍚 肚子餓了 | hungry, eat, rice, bread | **do** | I eat rice. / **Do you eat bread? / I do not eat rice.**(do 問句/否定)/ 回應句 |
-| 5 | 🥛 口渴了 | thirsty, drink, milk | — | I drink milk. / **Do you drink tea? / I do not drink coffee.**(回收批1飲料) |
-| 6 | 🏠 我的家 | home, house, go, big, small | **where** | **This is a big house.**(形容詞前置)/ **Where is my cat?** / I go home. |
-| 7 | 🛒 上街 | buy, get, see, look, **want** | at | **I want a book. / Do you want tea?** / I buy a book. / I see a cat. |
-| 8 | 👋 開口說 | speak, say, hello, English, Chinese | — | **Do you speak English? / I do not speak Chinese.** / I say hello. |
-| 9 | 👂 用耳朵 | listen, hear, music | to | I listen to music. / **Do you hear a cat?** / **I am tired. I listen to music.**(回應句) |
-| 10 | 🍞 在家的一天 | make, good, bad, beautiful, read | — | I make tea. / **What do you want? / This is not bad.**(積木合體收尾) |
+### ★★ 2026-07-08 再重排「由簡到難」(11 階)—— 使用者點破「前期順序沒理由,基礎字反而在後面」
+> 上一版按「情境完整」分批,副作用是最基礎的描述詞(大小好壞)卡進後段情境(big/small 到第 26 關、good/bad 到第 46 關)。改成**難度梯度優先**:最短最具體的名詞 + 最基礎形容詞提前,情境完整性讓位。
 
-- **移出日常軌**(2026-07-08):`project` `experience`(工作軌的料)、`come` `bring` `take` `and`(零基礎給不出自然句子,等有句型再回來)。CONFUSE_PAIRS 相關對照一併清掉。`do` 以**功能詞**(問句/否定的引擎)身分回歸,不是動詞「做」。
+| 階 | 主題 | 實詞 | 膠水 | 招牌句 |
+|---|------|------|------|--------|
+| 1 | 👉 這是什麼 | cat, book, house | this, is, a | This is a cat.(最短具體、有圖的名詞) |
+| 2 | 🪪 我的東西 | friend, home | my, what, it | This is my friend. / What is this? It is a house. |
+| 3 | 📏 大小好壞 | **big, small, good, bad** | — | This is big. / This is a big cat.(基礎形容詞,只需 This is ___,提前!) |
+| 4 | 🙂 我的心情 | happy, sad, tired | I, am, not, you, are | I am happy. / I am not sad. / Are you tired? |
+| 5 | 🍚 肚子餓 | eat, rice, bread, hungry | do | I eat rice. / I am hungry. / Do you eat bread? |
+| 6 | 🥛 口渴 | drink, water, milk, thirsty | — | I drink water. / I am thirsty. |
+| 7 | ☕ 咖啡店 | tea, coffee, sugar | or, with, please | Coffee or tea? / Coffee with sugar. / Tea, please.(茶咖啡都會了才點單) |
+| 8 | 🚶 出門 | **go**, see, buy, look | where, at | I go home. / I see a cat. / Where is my house? |
+| 9 | 🛒 想要·做 | want, get, make, read, beautiful | — | I want a book. / I make tea. / I read a book. |
+| 10 | 👋 開口說 | speak, hello, say, English, Chinese | — | I speak English. / I say hello. |
+| 11 | 👂 用耳朵 | listen, hear, music | to | I listen to music. / I hear a cat. |
+
+- **排序原則**:短字/具體/有圖/高頻先;文法梯度 This is → I am → I 動詞 → 問句/否定 → 形容詞前置 → wh 問句。功能詞放進「第一個需要它」的批。
+- 故事節點跟著移:誰喝咖啡→階7、誰吃蛋糕→階5、貓不見了→階8、會說話的狗→階10。
+- 驗:11 階、55 關無爆、每階字全教到、40 實詞全練到、每階生得出句子、四個故事都走得完。
+
+### (歷史)上一版:10 個「情境批」
+> 下表是被上面「由簡到難」取代的舊情境順序,留作脈絡。新字/句型/flags 說明仍有效。
+
+- **移出日常軌**:`project` `experience`(工作軌的料)、`come` `bring` `take` `and`(零基礎給不出自然句子)。`do` 以**功能詞**身分回歸。
 - **新字**:`hello` `music` `want` + 功能詞 `to` `what` `it` `not` `you` `are` `do` `where`;新 flags `audible`/`listenable`。
-- **句型大擴充(2026-07-08,40 條)**:每階至少一個新「句子形狀」——wh 問句(what/where)、be 否定(not)、第二人稱(you/are,可轉換)、do 問句/do not 否定、形容詞前置(a big house)、want。變體(q 轉換)不算新形狀。**掛新句型記得三張清單**:`BUILD_SENTENCE_PATTERN_IDS`(js/03,漏掛=永遠不出現)、有 q 的加 `TRANSFORM_PATTERN_IDS`(js/06)、複合回應加 `RESPOND_PATTERN_IDS`(js/03)。
+- **句型 40 條**:wh 問句、be 否定、第二人稱(可轉換)、do 問句/否定、形容詞前置、want。**掛新句型記得三張清單**:`BUILD_SENTENCE_PATTERN_IDS`(js/03)、有 q 的加 `TRANSFORM_PATTERN_IDS`(js/06)、複合回應加 `RESPOND_PATTERN_IDS`(js/03)。
 
 ## 變體 / 句型擴充(L16-20 起)
 - 問句:`Is this a {x}?`(直述 `This is a {x}.` 的重排)→ 排詞題「排成問句」。

@@ -10,7 +10,7 @@
 // ★ 彩蛋設定:那隻狗(🐶)是貫穿全季的角色 —— 階1 上錯飲料的店員 → 階4 偷吃蛋糕嫁禍寶寶 → 階6 背上藏了貓 → 階8 開口說話嚇跑路人。
 const STORIES = [
   {
-    id: 'story_drink', stage: 1, title: '誰喝了我的咖啡?', icon: '☕',
+    id: 'story_drink', stage: 7, title: '誰喝了我的咖啡?', icon: '☕',
     intro: '用你剛學的字讀第一個故事 —— 不會的字有橘色虛線,游標移上去看中文。',
     script: [
       { type: 'line', who: 'N', words: [['Sam', '山姆(人名)', { fresh: 1 }], ['has', '有', { fresh: 1 }], ['a', '一隻'], ['dog', '狗', { fresh: 1 }], ['.', '']] },
@@ -30,7 +30,7 @@ const STORIES = [
     ],
   },
   {
-    id: 'story_cake', stage: 4, title: '誰吃了蛋糕?', icon: '🍰',
+    id: 'story_cake', stage: 5, title: '誰吃了蛋糕?', icon: '🍰',
     intro: '用你會的字讀一個真的故事 —— 不會的字有橘色虛線,游標移上去看中文。',
     script: [
       { type: 'line', who: 'N', words: [['Bea', '貝雅(人名)', { fresh: 1 }], ['has', '有', { fresh: 1 }], ['a', '一個'], ['big', '大的'], ['cake', '蛋糕', { fresh: 1 }], ['.', '']] },
@@ -59,7 +59,7 @@ const STORIES = [
     ],
   },
   {
-    id: 'story_home', stage: 6, title: '貓不見了', icon: '🐱',
+    id: 'story_home', stage: 8, title: '貓不見了', icon: '🐱',
     intro: '用這階的句型讀一個找貓的故事 —— 橘色虛線的字,游標移上去看中文。',
     script: [
       { type: 'line', who: 'N', words: [['Mia', '米亞(人名)', { fresh: 1 }], ['has', '有', { fresh: 1 }], ['a', '一隻'], ['cat', '貓'], ['.', '']] },
@@ -79,7 +79,7 @@ const STORIES = [
     ],
   },
   {
-    id: 'story_speak', stage: 8, title: '會說話的狗', icon: '🗣️',
+    id: 'story_speak', stage: 10, title: '會說話的狗', icon: '🗣️',
     intro: '用這階的句型讀一個問路的故事 —— 橘色虛線的字,游標移上去看中文。',
     script: [
       { type: 'line', who: 'N', words: [['A', '一個'], ['man', '男人', { fresh: 1 }], ['comes', '走向', { fresh: 1 }], ['Bea', '貝雅(蛋糕故事的主人)', { fresh: 1 }], ['.', '']] },
