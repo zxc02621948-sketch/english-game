@@ -1772,3 +1772,13 @@ listen(→ music/to)、hear、say(→ hello/yes/no)、go/come(→ 地點 + home 
 - mountArrange 的 intro 搬移邏輯從只搬 .transform-intro 擴到也搬 .respond-scenario → 情境卡從作答帶搬到題目帶(stage),作答帶只剩格子+字卡+確定,不用捲(跟轉換題同招)。
 - 情境卡瘦身(padding 12→8、字級縮一階、限寬 680 置中)。
 - 驗:情境卡在題目帶、作答帶不捲、6 張字卡都在。
+
+
+## 2026-07-08(24 / Claude Opus 4.8)— 單音節字別顯示「念到哪一塊就亮哪一塊」
+
+### 使用者實玩
+說題(bread)秀「念到哪一塊就亮哪一塊」,但 bread 是單音節(syl=[bread]),只有一塊、根本沒有多塊可亮 → 提示誤導。逐塊高亮本來就只對多音節字有意義。
+
+### 修(js/05 renderSpeak)
+- syltip 顯示條件加 sylOf(w).length < 2 → 不顯示:單音節字(bread/cat/milk/tea…)不出這行(答題+結算沿用同一 body,一起修掉)。
+- 驗:bread(1音節)無提示、coffee(2音節)有提示。

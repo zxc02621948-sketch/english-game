@@ -182,7 +182,7 @@ function renderSpeak(w, mode) {
   const zhHint = mode === 'pic' ? '' : `<div class="sub2">${w.zh}</div>`;
   shell(prompt, `
     <div class="syllables" id="bigen" style="margin:6px 0">${mode === 'blind' ? blindHTML : mode === 'pic' ? picHTML(w) : sylHTML}</div>
-    ${mode === 'blind' || mode === 'pic' ? '' : '<div class="syltip">念到哪一塊就亮哪一塊</div>'}
+    ${mode === 'blind' || mode === 'pic' || sylOf(w).length < 2 ? '' : '<div class="syltip">念到哪一塊就亮哪一塊</div>'}
     ${zhHint}
     ${hearBtn}
     <button class="btn act" id="mic">🎤 ${mode === 'shadow' ? '換我念' : '我念'}</button>
