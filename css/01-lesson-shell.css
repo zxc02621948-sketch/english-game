@@ -8,6 +8,7 @@
   /* 補考畫面的「我要複習」可選鈕(放題目下方,非固定操作列;手滑打錯的人忽略它直接重答即可) */
   .reviewlink { background:none; border:1px solid #2c3e52; color:#9fb4c8; border-radius:99px; padding:7px 18px; font-size:14px; cursor:pointer; }
   .reviewlink:hover { border-color:#5aa9ff; color:#cfe6ff; }
+  .review-badge { align-self:center; margin-bottom:2px; padding:4px 14px; border-radius:99px; font-size:14px; font-weight:800; color:#3a2a00; background:#ffcf5a; animation:whyup .3s cubic-bezier(.22,.9,.35,1); }   /* 補考標記:一眼看出「剛剛答錯的回來了」 */
   .lesson-answer { width:100%; max-width:760px; min-height:0; margin:0 auto; display:flex; flex-direction:column; justify-content:center; gap:10px; overflow:visible; }   /* 固定答案帶:不同題型不要自己漂位置 */
   #screen #body { flex:initial; }
   #screen.lesson-screen > .why { position:fixed; left:0; right:0; bottom:0; transform:none; width:100%; max-width:none; height:var(--action-bar-h); max-height:none; overflow:hidden; margin:0; z-index:35; border:0; border-top:1px solid #1f5c3f; border-radius:0; padding:24px max(28px, calc((100vw - 960px) / 2)); display:flex; align-items:center; gap:24px; background:#0e2a1f; }   /* 答題回饋直接吃底部操作列:左說明、右繼續,不擠動題目/選項 */

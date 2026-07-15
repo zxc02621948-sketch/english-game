@@ -423,8 +423,18 @@ function reviewThenAsk(w, run, skill, formatId) {
     showReviewCard(w, r);
   } else {                                     // 第一次錯 → 直接補考(手滑不被罰),畫面留「我要複習」可選鈕
     r(w);
+    injectReviewBadge();                       // 標明「這是剛剛答錯的重考」→ 補考題本來跟一般題長一樣,玩家看不出答錯的有回來
     injectReviewButton(w, r);
   }
+}
+// 補考題頂端插一條「🔁 複習:剛剛答錯的」→ 讓玩家看得出答錯的題被抓回來重考(治「以為答錯就沒再考了」)
+function injectReviewBadge() {
+  const host = document.querySelector('.lesson-stage');
+  if (!host || document.getElementById('reviewbadge')) return;
+  const b = document.createElement('div');
+  b.id = 'reviewbadge'; b.className = 'review-badge';
+  b.textContent = '🔁 複習 · 剛剛答錯的,再來一次';
+  host.insertBefore(b, host.firstChild);
 }
 // 在補考題目下方塞一顆「我要複習」鈕(可選);點了走重看卡,看完回來繼續補考
 function injectReviewButton(w, r) {
@@ -459,7 +469,7 @@ function showReviewCard(w, r) {
   document.querySelector('.lesson').classList.add('teach-lesson');
   speakSyllables(w, 0.9);
   $('rplay').onclick = () => speakSyllables(w, 0.9);
-  $('rback').onclick = () => { r(w); injectReviewButton(w, r); };
+  $('rback').onclick = () => { r(w); injectReviewBadge(); injectReviewButton(w, r); };
 }
 
 /* ============================================================================
