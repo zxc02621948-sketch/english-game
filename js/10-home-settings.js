@@ -57,7 +57,7 @@ function mapTopicCluster(words, x, y, dim, ax, ay, accent, compact, side = 1, ma
   if (!items.length) return '';
   const badgeH = compact ? 46 : 48;
   const baseW = compact ? 160 : 176;
-  const rowGap = compact ? 54 : 56;
+  const rowGap = compact ? 58 : 62;   // 必須 > badgeH,不然膠囊上下相疊
   const topY = -((items.length - 1) * rowGap) / 2;
   const stem = Number.isFinite(ax) && Number.isFinite(ay)
     ? `<path d="M${Math.round(ax)} ${Math.round(ay)} C${Math.round((ax + x) / 2)} ${Math.round(ay)} ${Math.round((ax + x) / 2)} ${Math.round(y)} ${Math.round(x)} ${Math.round(y)}" fill="none" stroke="${accent}" stroke-width="2.2" stroke-dasharray="4 10" stroke-linecap="round" opacity="${dim ? .18 : .3}"/>
@@ -69,10 +69,9 @@ function mapTopicCluster(words, x, y, dim, ax, ay, accent, compact, side = 1, ma
     const label = `${w.zh || ''}${w.zh && w.en ? ' ' : ''}${w.en || ''}` || (w.id || '');
     const type = homeTopicType(w);
     const badgeW = baseW + (type === 'coffee' ? 20 : type === 'sugar' ? 8 : 0);
-    const xj = (idx % 2 ? side * zig : 0);                       // 偶數貼基準線、奇數往外側凸(-side 是路徑方向,不用)
+    const xj = (idx % 2 ? side * zig : 0);                       // 偶數貼基準線、奇數往外側凸 → 左右錯落(橫向 zigzag 就夠有機,不做上下微錯:那會害相鄰膠囊垂直間距變小相疊)
     const bx = Math.max(badgeW / 2 + 6, Math.min(mapW - badgeW / 2 - 6, x + xj));   // 夾在畫面內,寬字塊(咖啡/糖)排到奇數也不出框
-    const yj = topY + idx * rowGap + (idx % 2 ? (compact ? 6 : 7) : -(compact ? 6 : 7));
-    return mapThemeIcon(type, bx, y + yj, label, dim, badgeW, badgeH);
+    return mapThemeIcon(type, bx, y + topY + idx * rowGap, label, dim, badgeW, badgeH);
   }).join('');
   return `<g class="map-topic-cluster">${stem}${badges}</g>`;
 }
@@ -153,7 +152,7 @@ function mapSVG() {
     const routePin = seg.reduce((acc, p) => ({ x: acc.x + p.x / seg.length, y: acc.y + p.y / seg.length }), { x: 0, y: 0 });
     const side = routePin.x < W * .52 ? 1 : -1;   // 路徑偏左 → 字塊放右邊,反之
     // ★ 單欄字塊:釘在地圖邊緣(路徑在 18%~82% 中央帶,字塊在邊 → 不壓關卡節點);高度隨字數,地圖可捲
-    const rowGap = compact ? 54 : 56, badgeHalfW = compact ? 92 : 100;
+    const rowGap = compact ? 58 : 62, badgeHalfW = compact ? 92 : 100;
     const clusterHalfH = ((Math.max(1, topicWords.length) - 1) * rowGap) / 2 + (compact ? 30 : 32);
     const clusterX = side > 0 ? (W - badgeHalfW - 14) : (badgeHalfW + 14);
     const clusterMinY = clusterHalfH + 12, clusterMaxY = Math.max(clusterMinY, H - clusterHalfH - 12);
