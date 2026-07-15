@@ -52,7 +52,7 @@ function mapThemeIcon(type, x, y, label, dim, width = 174, height = 48) {
   </g>`;
 }
 // 字塊叢:單欄(窄),釘在地圖邊緣。路徑被限制在畫面中央帶(18%~82%),字塊在邊緣 → 天生不壓到關卡節點。地圖可垂直捲,單欄變高沒問題。
-function mapTopicCluster(words, x, y, dim, ax, ay, accent, compact, side = 1) {
+function mapTopicCluster(words, x, y, dim, ax, ay, accent, compact, side = 1, mapW = 960) {
   const items = words.slice(0, 6).filter(Boolean);
   if (!items.length) return '';
   const badgeH = compact ? 46 : 48;
@@ -63,11 +63,16 @@ function mapTopicCluster(words, x, y, dim, ax, ay, accent, compact, side = 1) {
     ? `<path d="M${Math.round(ax)} ${Math.round(ay)} C${Math.round((ax + x) / 2)} ${Math.round(ay)} ${Math.round((ax + x) / 2)} ${Math.round(y)} ${Math.round(x)} ${Math.round(y)}" fill="none" stroke="${accent}" stroke-width="2.2" stroke-dasharray="4 10" stroke-linecap="round" opacity="${dim ? .18 : .3}"/>
        <circle cx="${Math.round(ax)}" cy="${Math.round(ay)}" r="5" fill="${accent}" opacity="${dim ? .18 : .32}"/>`
     : '';
+  // 錯落有致:一顆顆膠囊左右 zigzag(只往邊緣外側偏,不往路徑那側 → 不會再壓到關卡)+ 上下微錯,做出有機的一叢
+  const zig = compact ? 20 : 24;
   const badges = items.map((w, idx) => {
     const label = `${w.zh || ''}${w.zh && w.en ? ' ' : ''}${w.en || ''}` || (w.id || '');
     const type = homeTopicType(w);
     const badgeW = baseW + (type === 'coffee' ? 20 : type === 'sugar' ? 8 : 0);
-    return mapThemeIcon(type, x, y + topY + idx * rowGap, label, dim, badgeW, badgeH);
+    const xj = (idx % 2 ? side * zig : 0);                       // 偶數貼基準線、奇數往外側凸(-side 是路徑方向,不用)
+    const bx = Math.max(badgeW / 2 + 6, Math.min(mapW - badgeW / 2 - 6, x + xj));   // 夾在畫面內,寬字塊(咖啡/糖)排到奇數也不出框
+    const yj = topY + idx * rowGap + (idx % 2 ? (compact ? 6 : 7) : -(compact ? 6 : 7));
+    return mapThemeIcon(type, bx, y + yj, label, dim, badgeW, badgeH);
   }).join('');
   return `<g class="map-topic-cluster">${stem}${badges}</g>`;
 }
@@ -154,7 +159,7 @@ function mapSVG() {
     const clusterMinY = clusterHalfH + 12, clusterMaxY = Math.max(clusterMinY, H - clusterHalfH - 12);
     const clusterY = clamp(routePin.y, clusterMinY, clusterMaxY);
     // Topic badges describe the whole stage, not one word per level.
-    const themeIcons = showTopicBadges ? mapTopicCluster(topicWords, clusterX, clusterY, false, routePin.x, routePin.y, accent, compact, side) : '';
+    const themeIcons = showTopicBadges ? mapTopicCluster(topicWords, clusterX, clusterY, false, routePin.x, routePin.y, accent, compact, side, W) : '';
     if (showTopicBadges && topicWords.length) {   // 字塊佔用範圍(單欄)→ 給故事節點避讓用
       chipBoxes.push({ x: clusterX, y: clusterY, hw: badgeHalfW + 12, hh: clusterHalfH });
     }
