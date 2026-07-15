@@ -1,6 +1,7 @@
   #screen.lesson-screen { height:100vh; overflow:hidden; }   /* 關卡內固定一頁,不靠往下滾才看得到內容 */
   #screen.lesson-screen::after { content:""; position:fixed; left:0; right:0; bottom:0; height:var(--action-bar-h); background:#101d22; border-top:1px solid #334751; z-index:30; pointer-events:none; }   /* Duo 式底部操作列背景 */
   #screen > * { width:100%; max-width:960px; margin-left:auto; margin-right:auto; }   /* 寬版舞台:空間既然夠,就讓題目真的展開 */
+  #screen > .lesson { max-width:1240px; }   /* 關卡舞台放寬:長句(複合句 6~7 字塊)在寬螢幕排得下一排,不折行變高往下捲。字塊是置中固定寬 → 放寬只防折行、不會攤太開。窄型答題(選擇/克漏/配對/教卡)各自 cap 960 不受影響 */
   .lesson { flex:1; min-height:0; display:grid; grid-template-rows:auto minmax(0,1fr); align-content:stretch; gap:clamp(10px,3vh,24px); padding:clamp(10px,3vh,26px) 0 calc(var(--action-bar-h) + var(--action-gap)); }   /* 共用題型骨架:上題目帶、下作答帶 */
   .lesson-stage { min-height:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:10px; }
   .lesson-stage .prompt { width:100%; text-align:center; }
