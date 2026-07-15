@@ -51,22 +51,14 @@ function mapThemeIcon(type, x, y, label, dim, width = 174, height = 48) {
     <text x="${left + 50}" y="7" text-anchor="start" font-size="${fontSize}" font-weight="900" fill="${stroke}" opacity=".94">${name}</text>
   </g>`;
 }
+// 字塊叢:單欄(窄),釘在地圖邊緣。路徑被限制在畫面中央帶(18%~82%),字塊在邊緣 → 天生不壓到關卡節點。地圖可垂直捲,單欄變高沒問題。
 function mapTopicCluster(words, x, y, dim, ax, ay, accent, compact, side = 1) {
   const items = words.slice(0, 6).filter(Boolean);
   if (!items.length) return '';
-  const badgeH = compact ? 48 : 50;
-  const baseW = compact ? 168 : 184;
-  const rows = Math.ceil(items.length / 2);
-  const rowGap = compact ? 56 : 58;
-  const colGap = compact ? 186 : 208;
-  const nearOffset = items.length > 4 ? (compact ? 160 : 172) : (compact ? 92 : 106);
-  const topY = -((rows - 1) * rowGap) / 2;
-  const loose = items.map((_, idx) => {
-    const row = Math.floor(idx / 2);
-    const col = idx % 2;
-    const inner = side * (nearOffset + col * colGap);
-    return { x: inner, y: topY + row * rowGap + (col ? 12 : -8) };
-  });
+  const badgeH = compact ? 46 : 48;
+  const baseW = compact ? 160 : 176;
+  const rowGap = compact ? 54 : 56;
+  const topY = -((items.length - 1) * rowGap) / 2;
   const stem = Number.isFinite(ax) && Number.isFinite(ay)
     ? `<path d="M${Math.round(ax)} ${Math.round(ay)} C${Math.round((ax + x) / 2)} ${Math.round(ay)} ${Math.round((ax + x) / 2)} ${Math.round(y)} ${Math.round(x)} ${Math.round(y)}" fill="none" stroke="${accent}" stroke-width="2.2" stroke-dasharray="4 10" stroke-linecap="round" opacity="${dim ? .18 : .3}"/>
        <circle cx="${Math.round(ax)}" cy="${Math.round(ay)}" r="5" fill="${accent}" opacity="${dim ? .18 : .32}"/>`
@@ -74,9 +66,8 @@ function mapTopicCluster(words, x, y, dim, ax, ay, accent, compact, side = 1) {
   const badges = items.map((w, idx) => {
     const label = `${w.zh || ''}${w.zh && w.en ? ' ' : ''}${w.en || ''}` || (w.id || '');
     const type = homeTopicType(w);
-    const badgeW = baseW + (type === 'coffee' ? 22 : type === 'sugar' ? 10 : 0);
-    const p = loose[idx] || { x:0, y:idx * (badgeH + 8) };
-    return mapThemeIcon(type, x + p.x, y + p.y, label, dim, badgeW, badgeH);
+    const badgeW = baseW + (type === 'coffee' ? 20 : type === 'sugar' ? 8 : 0);
+    return mapThemeIcon(type, x, y + topY + idx * rowGap, label, dim, badgeW, badgeH);
   }).join('');
   return `<g class="map-topic-cluster">${stem}${badges}</g>`;
 }
@@ -155,25 +146,17 @@ function mapSVG() {
     const showTopicBadges = isActive || isDone;
     const topicWords = showTopicBadges ? homeStageWords(stg).slice(0, 6) : [];
     const routePin = seg.reduce((acc, p) => ({ x: acc.x + p.x / seg.length, y: acc.y + p.y / seg.length }), { x: 0, y: 0 });
-    const side = routePin.x < W * .52 ? 1 : -1;
-    const clusterHalfW = topicWords.length > 4 ? (compact ? 392 : 432) : (compact ? 318 : 356);
-    const clusterHalfH = topicWords.length > 4 ? (compact ? 178 : 194) : (compact ? 132 : 144);
-    const badgeAnchorOffset = topicWords.length > 4 ? (compact ? 76 : 88) : (compact ? 58 : 68);
-    const clusterX = clamp(routePin.x + side * (compact ? 320 : 370), clusterHalfW + 24, W - clusterHalfW - 24) - side * badgeAnchorOffset;
-    const clusterMinY = Math.min(H - clusterHalfH - 18, y1 + clusterHalfH + 18);
-    const clusterMaxY = Math.max(clusterMinY, Math.min(H - clusterHalfH - 18, y2 - clusterHalfH - 18));
-    let clusterY = clamp(routePin.y, clusterMinY, clusterMaxY);
-    const currentPt = pts[Math.max(0, Math.min(total - 1, (meta.maxLevel || 1) - 1))];
-    if (isActive && currentPt && topicWords.length > 4) {
-      clusterY = clamp(Math.min(clusterY, currentPt.y - (compact ? 132 : 146)), clusterMinY, clusterMaxY);
-    }
+    const side = routePin.x < W * .52 ? 1 : -1;   // 路徑偏左 → 字塊放右邊,反之
+    // ★ 單欄字塊:釘在地圖邊緣(路徑在 18%~82% 中央帶,字塊在邊 → 不壓關卡節點);高度隨字數,地圖可捲
+    const rowGap = compact ? 54 : 56, badgeHalfW = compact ? 92 : 100;
+    const clusterHalfH = ((Math.max(1, topicWords.length) - 1) * rowGap) / 2 + (compact ? 30 : 32);
+    const clusterX = side > 0 ? (W - badgeHalfW - 14) : (badgeHalfW + 14);
+    const clusterMinY = clusterHalfH + 12, clusterMaxY = Math.max(clusterMinY, H - clusterHalfH - 12);
+    const clusterY = clamp(routePin.y, clusterMinY, clusterMaxY);
     // Topic badges describe the whole stage, not one word per level.
     const themeIcons = showTopicBadges ? mapTopicCluster(topicWords, clusterX, clusterY, false, routePin.x, routePin.y, accent, compact, side) : '';
-    if (showTopicBadges && topicWords.length) {   // 字塊實際佔用範圍(badges 都在 clusterX 的 side 側,見 mapTopicCluster):給故事節點避讓用
-      const items = Math.min(topicWords.length, 6), rows = Math.ceil(items / 2);
-      const colGap = compact ? 186 : 208, rowGap = compact ? 56 : 58, badgeW = 190;
-      const nearOffset = items > 4 ? (compact ? 160 : 172) : (compact ? 92 : 106);
-      chipBoxes.push({ x: clusterX + side * (nearOffset + colGap / 2), y: clusterY, hw: (colGap + badgeW) / 2 + 26, hh: (rows * rowGap) / 2 + 42 });
+    if (showTopicBadges && topicWords.length) {   // 字塊佔用範圍(單欄)→ 給故事節點避讓用
+      chipBoxes.push({ x: clusterX, y: clusterY, hw: badgeHalfW + 12, hh: clusterHalfH });
     }
     stageBackdrops += `<g opacity="${opacity}">
       <path d="M${contourX} ${Math.round(y1 + 34)} C${contourX + 96} ${Math.round(y1 + 10)} ${contourX + 206} ${Math.round(y1 + 34)} ${contourX + 318} ${Math.round(y1 + 2)}" fill="none" stroke="${accent}" stroke-width="2.2" opacity=".2"/>
