@@ -14,8 +14,9 @@
   .match-grid .opts { flex:1; gap:clamp(8px,1.4vh,12px); }
   .match-grid .opt { min-height:clamp(56px,9vh,82px); padding:clamp(12px,1.8vh,16px) 16px; display:flex; align-items:center; justify-content:center; font-size:20px; }
   .lesson-answer.category-answer { justify-content:safe center; overflow-y:auto; }   /* 置中;內容真的太高時 safe 退回頂端開捲,不切頭 */
+  .category-head { font-size:clamp(28px,4.4vh,42px); font-weight:900; color:#f1f6fa; line-height:1.14; text-align:center; margin:0; }   /* 分類題的真題目 → 放選項正上方,大而醒目 */
+  .category-note { text-align:center; margin:2px 0 clamp(14px,3vh,26px); color:#9fb4c8; }
   .category-title { font-size:clamp(24px,3.6vh,36px); font-weight:900; color:#f1f6fa; line-height:1.12; text-align:center; }
-  .category-note { text-align:center; margin-top:-4px; }
   /* 2026-07-08 版面重排:單字選項不需要半版寬的大格子 → 改「置中自動寬度膠囊」,6~8 個選項也只佔兩三行,不再壓到底部列 */
   .category-answer .category-options { display:flex; flex-wrap:wrap; justify-content:center; align-content:center; gap:clamp(10px,1.6vh,14px) 12px; width:100%; max-width:720px; margin:0 auto; }
   .category-answer .category-options .opt { position:relative; flex:0 0 auto; width:auto; min-width:104px; min-height:clamp(46px,6vh,56px); display:flex; align-items:center; justify-content:center; padding:10px 20px; font-size:clamp(20px,2.4vh,24px); border-radius:999px; }

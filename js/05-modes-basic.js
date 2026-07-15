@@ -90,10 +90,11 @@ function askMatch(w) {
 function askCategoryPick(w) {
   const q = categoryQuestionForWord(w);
   if (!q) return askReadPick(w);
-  shell(q.category.prompt, `
-    <div class="sub2 category-note">把符合這個分類的英文都選起來(可多選)。</div>
+  // 分類題的「題目」就是那句分類(選出所有…) → 從最上面搬到選項正上方,跟選項一起在中間:視線落在中間就直接看到要選什麼(治「先看到選項沒看到分類」)
+  shell('分類題 · 可多選', `
+    <div class="category-head">${q.category.prompt}</div>
+    <div class="sub2 category-note">把符合的英文都選起來,再按確認。</div>
     <div class="opts category-options" id="catopts"></div>`);
-  // 拿掉原本的 .category-title(「可以說我的…的東西」)—— 跟上面題目「選出所有可以說成 my ___ 的東西」根本重複,省一行高度
   $('body').classList.add('choice-answer', 'category-answer');
   const box = $('catopts'), selected = new Set();
   q.options.forEach(o => {
