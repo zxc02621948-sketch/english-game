@@ -41,7 +41,7 @@ let BANK = [
   { id:"word_not",        en:"not",        zh:"不",     pos:"function", flags:[], syl:["not"], why:"not 放在 am/is/are 後面,句子就變「不」:I am not hungry. 我不餓。" },
   { id:"word_you",        en:"you",        zh:"你",     pos:"function", flags:[], syl:["you"], why:"you 是「你」,跟 I(我)相對。" },
   { id:"word_are",        en:"are",        zh:"是",     pos:"function", flags:[], syl:["are"], why:"are 跟 you 搭配:You are happy. 它跟 I am 的 am 是同一家人,換人就換形。" },
-  { id:"word_do",         en:"do",         zh:"(發問用)", pos:"function", flags:[], syl:["do"], why:"do 放在問句開頭,自己沒有意思,它是「發問的引擎」:Do you eat rice? 你吃飯嗎?加 not 就變否定:I do not eat bread." },
+  { id:"word_do",         en:"do",         zh:"(問句/否定)", pos:"function", flags:[], syl:["do"], why:"do 自己沒有意思,是問句和否定的引擎:Do you eat rice?(問句)/ I do not eat bread.(否定)。" },
   { id:"word_where",      en:"where",      zh:"哪裡",   pos:"function", flags:[], syl:["where"], why:"where 問「哪裡」:Where is my cat? 我的貓在哪裡?" },
   // 批7「上街」的新實詞:want(逛街的靈魂動詞)
   { id:"word_want",       en:"want",       zh:"想要",   pos:"verb", flags:[], syl:["want"], why:"want 是想要、想拿到:I want a book. 買東西、點餐都靠它。" },

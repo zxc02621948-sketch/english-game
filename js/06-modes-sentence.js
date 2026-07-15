@@ -163,7 +163,8 @@ function canSentenceMeaning(w) {
 }
 function literalConcatZh(sentence) {
   const toks = sentence.text.replace(/[.?!,]/g, '').split(/\s+/).filter(Boolean);
-  return toks.map(t => { const m = BANK.find(x => x.en.toLowerCase() === t.toLowerCase()); return m ? m.zh : ''; }).join('');
+  // 逐字直翻誘答:跳過「沒有乾淨中文意思」的文法助詞(zh 是括號註解,如 do 的「(問句/否定)」)→ 不然串出「我(發問用)不喝水」這種亂碼選項
+  return toks.map(t => { const m = BANK.find(x => x.en.toLowerCase() === t.toLowerCase()); return m && !/^[（(]/.test(m.zh) ? m.zh : ''; }).join('');
 }
 function sentenceMeaningKey(text) {
   return String(text || '')
