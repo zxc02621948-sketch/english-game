@@ -1866,3 +1866,15 @@ listen(→ music/to)、hear、say(→ hello/yes/no)、go/come(→ 地點 + home 
 - FORMATS 拿掉 flashtype。askFlashType 函式留著沒掛(要復活加回一行)。
 - 「寫」還剩 5 種:音節填空/音節克漏字/聽寫/看圖寫/句子克漏字,不缺。
 - 驗:FORMATS 無 flashtype、寫題型 5 種。
+
+
+## 2026-07-08(32 / Claude Opus 4.8)— 補「看中文,默寫英文」(zhtype)
+
+### 使用者
+拿掉 flashtype 後注意到:寫題只有聽寫(聲音)、看圖寫(圖),沒有「看中文默寫英文」。
+
+### 修(js/05 + js/08 + js/01)
+- 新題型 askZhType:看中文(bigzh)→ 默寫英文,auto 念一次當提示、主線索是意思。從「意思」產出英文拼法 = 主動單字核心,比 flashtype 的純抄記憶有意思;也補上「沒有圖的字」(good/bad/want/make)只能純聽寫的洞。
+- 掛 FORMATS(zhtype, lv4, write, 排除功能詞);列入 isHardDictationFormatId(算真默寫、推 wrote/wrote2)。
+- 寫題現 6 種:音節填空/音節克漏字/聽寫/看圖寫/看中文默寫/句子克漏字。
+- 驗:渲染正常(中文→輸入框+聽鈕)、算真默寫。

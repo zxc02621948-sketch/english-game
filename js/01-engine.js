@@ -140,7 +140,7 @@ function microBatchReady(w) {
   if ((rec(w).mastery || 0) < MICRO_READY_MASTERY) return false;
   return clozeReadyForDictation(w);
 }
-const isHardDictationFormatId = id => ['type', 'pictype', 'flashtype'].includes(id);
+const isHardDictationFormatId = id => ['type', 'pictype', 'zhtype', 'flashtype'].includes(id);   // 整字產出題(聽寫/看圖寫/看中文默寫)= 真的會寫的證明(推 wrote/wrote2);flashtype 已下架但留著不影響
 // ★ 隔關再驗(2026-07-08):默寫成功一次不算「真的會寫」(失敗N次後硬過一次只是短期記憶)。
 //   第一次寫對 → 記 wroteClock;下一關以後(clock 有前進)再寫對一次 → wrote2 = 真的會寫章。階段門檻認 wrote2。
 //   needsWriteProof = 這個字現在還欠一次「算數的」默寫:沒寫過,或寫過但複驗時機到了還沒過。

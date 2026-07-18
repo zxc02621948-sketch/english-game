@@ -367,6 +367,26 @@ function askPicType(w) {
   inp.onkeydown = e => { if (e.key === 'Enter') go(); };
 }
 
+// 看中文 → 默寫英文(寫階:從「意思」產出英文拼法 —— 主動單字的核心。auto 念一次當提示,主要線索是中文)
+function askZhType(w) {
+  shell('看中文,默寫英文', `<div class="bigzh">${w.zh}</div><div class="speakrow"><button class="replay" id="hear">${ICON.play}聽</button><button class="replay" id="slow">慢念</button></div><input class="inp" id="inp" autocomplete="off" autocapitalize="off" placeholder="打出這個字…"><button class="btn act" id="submit">送出</button><div class="letters" id="letters"></div>`);
+  speakSyllables(w, 0.9);
+  $('hear').onclick = () => speakSyllables(w, 0.9);
+  $('slow').onclick = () => speakSyllables(w, 0.55);
+  const inp = $('inp'); inp.focus();
+  const go = () => {
+    if (inp.disabled) return;
+    const typed = inp.value.trim();
+    const res = spellCheck(typed, w.en, wordKey(w));
+    const right = res !== false;
+    if (res !== 'exact') markLetters(w.en, typed);
+    inp.disabled = true; $('submit').disabled = true;
+    finish(right, w, null, res === 'typo' ? `差一點!正確拼法是 ${w.en}` : '');
+  };
+  $('submit').onclick = go;
+  inp.onkeydown = e => { if (e.key === 'Enter') go(); };
+}
+
 // 找「w 能當 slot 填進去」且固定詞都教過的句型
 function patternsForWord(w) {
   return PATTERNS.filter(p => patternRequirementsMet(p) && Object.values(p.slots).some(slot => wordMatchesSlot(w, slot)));
