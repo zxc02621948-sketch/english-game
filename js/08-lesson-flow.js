@@ -16,7 +16,7 @@ const FORMATS = [
   { id:'syltype',      lv:4, skill:'write',  ok: w => sylOf(w).length >= 3,          run: askSylType },          // 音節克漏字(打字版)— 同上,只長字才分段
   { id:'type',         lv:4, skill:'write',  ok: w => w.en.length > 1,               run: askType },             // 聽寫(單字母不練寫)
   { id:'pictype',      lv:4, skill:'write',  ok: w => !!visualOf(w),                 run: askPicType },          // 看圖寫
-  { id:'flashtype',    lv:5, skill:'write',  ok: w => w.en.length > 1,               run: askFlashType },        // 默寫(單字母不練寫)
+  // flashtype(看2秒→默寫)2026-07-08 拿掉:純死背字母序、跟聽寫/看圖寫重疊、最不「讓英文有道理」。askFlashType 留著但沒掛(要復活再加回這行)。
   { id:'sentence_cloze', lv:6, skill:'write', tier:3, ok: w => (meta.stage || 1) >= 3 && canSentenceCloze(w), run: askSentenceCloze }, // 二王後:句子克漏字打字(先練缺字,不整句默寫)
   { id:'sentence_build', lv:1, skill:'read', tier:1, ok: () => hasFreshBuildSentence(currentSentenceSourceWords()), run: w => askBuildSentence(currentSentenceSourceWords(), () => { onCorrect(w); updateBar(); nextQuestion(); }, null, () => { onWrong(w); nextQuestion(); }) },  // 排詞造句(句型軌;只在有「新句子」時出 → 不狂重播同一句)
   { id:'sentence_respond', lv:3, skill:'read', tier:2, ok: () => canRespond(currentSentenceSourceWords()), run: w => askRespond(currentSentenceSourceWords(), () => { onCorrect(w); updateBar(); nextQuestion(); }, () => { onWrong(w); nextQuestion(); }) },  // ★「你呢?」複合回應題:朋友說一句複合自述→你排你的版本(複合句、串現有題型;stage3+ 感受+喝/吃 教過才出)
