@@ -67,10 +67,10 @@
 | 2 | 🪪 我的東西 | friend, home | my, what, it | This is my friend. / What is this? It is a house. |
 | 3 | 📏 大小好壞 | **big, small, good, bad** | — | This is big. / This is a big cat.(基礎形容詞,只需 This is ___,提前!) |
 | 4 | 🙂 我的心情 | happy, sad, tired | I, am, not, you, are | I am happy. / I am not sad. / Are you tired? |
-| 5 | 🍚 肚子餓 | eat, rice, bread, hungry | do | I eat rice. / I am hungry. / Do you eat bread? |
+| 5 | 🍚 日常動作 | eat, rice, bread, hungry, **go** | do | I eat rice. / I am hungry. / I go home. / Do you eat bread? |
 | 6 | 🥛 口渴 | drink, water, milk, thirsty | — | I drink water. / I am thirsty. |
 | 7 | ☕ 咖啡店 | tea, coffee, sugar | or, with, please | Coffee or tea? / Coffee with sugar. / Tea, please.(茶咖啡都會了才點單) |
-| 8 | 🚶 出門 | **go**, see, buy, look | where, at | I go home. / I see a cat. / Where is my house? |
+| 8 | 🚶 出門 | see, buy, look | where, at | I see a cat. / I buy a book. / Where is my house? |
 | 9 | 🛒 想要·做 | want, get, make, read, beautiful | — | I want a book. / I make tea. / I read a book. |
 | 10 | 👋 開口說 | speak, hello, say, English, Chinese | — | I speak English. / I say hello. |
 | 11 | 👂 用耳朵 | listen, hear, music | to | I listen to music. / I hear a cat. |

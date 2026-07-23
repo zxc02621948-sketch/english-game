@@ -2,16 +2,16 @@
    單字庫
    ============================================================================ */
 let BANK = [
-  { id:"word_cat",        en:"cat",        zh:"貓",     pos:"noun", flags:["countable","ownable","presentable","visible","buyable","audible"], syl:["cat"], why:"短字先暖身:cat 就是貓。" },
+  { id:"word_cat",        en:"cat",        zh:"貓", classifier:"隻", pos:"noun", flags:["countable","ownable","presentable","visible","buyable","audible"], syl:["cat"], why:"短字先暖身:cat 就是貓。" },
   { id:"word_happy",      en:"happy",      zh:"開心",   pos:"adj",  flags:["emotion"], syl:["hap","py"], why:"happy 是心情好、覺得開心。" },
   { id:"word_water",      en:"water",      zh:"水",     pos:"noun", flags:["drinkable"], syl:["wa","ter"], why:"water 當名詞是水;也能當動詞,表示澆水。" },
   { id:"word_coffee",     en:"coffee",     zh:"咖啡",   pos:"noun", flags:["drinkable","sweetenable","makeable"], syl:["cof","fee"], why:"coffee 是咖啡,日常點飲料很常用。" },
   { id:"word_sugar",      en:"sugar",      zh:"糖",     pos:"noun", flags:["sweetener"], syl:["su","gar"], why:"sugar 是糖,常用在飲料或甜食裡。" },
-  { id:"word_friend",     en:"friend",     zh:"朋友",   pos:"noun", flags:["countable","ownable","presentable","visible"], syl:["friend"], why:"friend 是你認識、信任、會來往的人。" },
-  { id:"word_book",       en:"book",       zh:"書",     pos:"noun", flags:["countable","ownable","readable","presentable","visible","buyable"], syl:["book"], why:"book 是書;生活裡也能當動詞,表示預訂。" },
+  { id:"word_friend",     en:"friend",     zh:"朋友", classifier:"位", pos:"noun", flags:["countable","ownable","presentable","visible"], syl:["friend"], why:"friend 是你認識、信任、會來往的人。" },
+  { id:"word_book",       en:"book",       zh:"書", classifier:"本", pos:"noun", flags:["countable","ownable","readable","presentable","visible","buyable"], syl:["book"], why:"book 是書;生活裡也能當動詞,表示預訂。" },
   { id:"word_beautiful",  en:"beautiful",  zh:"美麗的", pos:"adj",  flags:["descriptive"], syl:["beau","ti","ful"], why:"beauty 是美;-ful 有『充滿』的味道,beautiful 就是充滿美。" },
   { id:"word_home",       en:"home",       zh:"家",     pos:"noun", flags:["ownable"], syl:["home"], why:"home 重點是『歸屬感』:你回去的地方。" },
-  { id:"word_house",      en:"house",      zh:"房子",   pos:"noun", flags:["countable","ownable","presentable","visible","buyable"], syl:["house"], why:"house 重點是建築物:一棟可以住人的房子。" },
+  { id:"word_house",      en:"house",       zh:"房子", classifier:"棟", pos:"noun", flags:["countable","ownable","presentable","visible","buyable"], syl:["house"], why:"house 重點是建築物:一棟可以住人的房子。" },
   { id:"word_big",        en:"big",        zh:"大的",   pos:"adj",  flags:["descriptive"], syl:["big"], why:"big 表示尺寸、程度或影響很大。" },
   { id:"word_small",      en:"small",      zh:"小的",   pos:"adj",  flags:["descriptive"], syl:["small"], why:"small 表示尺寸、數量或程度小。" },
   { id:"word_good",       en:"good",       zh:"好的",   pos:"adj",  flags:["descriptive"], syl:["good"], why:"good 是最常用的『好』,可以說品質好、狀態好。" },
@@ -71,9 +71,9 @@ let PATTERNS = [
   {
     id: "pat_this_is_a_noun",
     text: "This is a {x}.",
-    zh: "這是一個{x}。",
+    zh: "這是{#x}。",
     q: "Is this a {x}?",
-    qzh: "這是一個{x}嗎?",
+    qzh: "這是{#x}嗎?",
     requires: ["word_this", "word_is", "word_a"],
     slots: { x: { pos: "noun", flags: ["countable", "presentable"] } }
   },
@@ -117,14 +117,14 @@ let PATTERNS = [
   {
     id: "pat_i_see_a_noun",
     text: "I see a {x}.",
-    zh: "我看見一個{x}。",
+    zh: "我看見{#x}。",
     requires: ["word_i", "word_see"],
     slots: { x: { pos: "noun", flags: ["visible"] } }
   },
   {
     id: "pat_i_buy_a_noun",
     text: "I buy a {x}.",
-    zh: "我買一個{x}。",
+    zh: "我買{#x}。",
     requires: ["word_i", "word_buy"],
     slots: { x: { pos: "noun", flags: ["buyable"] } }
   },
@@ -163,7 +163,7 @@ let PATTERNS = [
   {
     id: "pat_i_look_at_noun",
     text: "I look at a {x}.",
-    zh: "我看著一個{x}。",
+    zh: "我看著{#x}。",
     requires: ["word_i", "word_look", "word_at"],
     slots: { x: { pos: "noun", flags: ["visible"] } }
   },
@@ -177,7 +177,7 @@ let PATTERNS = [
   {
     id: "pat_i_get_noun",
     text: "I get a {x}.",
-    zh: "我拿到一個{x}。",
+    zh: "我拿到{#x}。",
     requires: ["word_i", "word_get"],
     slots: { x: { pos: "noun", flags: ["buyable"] } }
   },
@@ -229,9 +229,9 @@ let PATTERNS = [
   {
     id: "pat_it_is_a_noun",
     text: "It is a {x}.",
-    zh: "它是一個{x}。",
+    zh: "它是{#x}。",
     q: "Is it a {x}?",
-    qzh: "它是一個{x}嗎?",
+    qzh: "它是{#x}嗎?",
     requires: ["word_it", "word_is", "word_a"],
     slots: { x: { pos: "noun", flags: ["countable", "presentable"] } }
   },
@@ -300,7 +300,7 @@ let PATTERNS = [
   {
     id: "pat_i_want_a_noun",
     text: "I want a {x}.",
-    zh: "我想要一個{x}。",
+    zh: "我想要{#x}。",
     requires: ["word_i", "word_want", "word_a"],
     slots: { x: { pos: "noun", flags: ["buyable"] } }
   },

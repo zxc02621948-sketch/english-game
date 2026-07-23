@@ -39,6 +39,7 @@ function mountArrange({ promptText, zh, introHTML = '', cards, targetTokens, cas
     <div class="chunks sentence-bank" id="bank"></div>
     <div class="buildactions" id="bactions" style="grid-template-columns:1fr"><button class="btn act" id="check">確定</button></div>`);
   $('body').classList.add('build-answer');
+  if (cards.length >= 6) $('body').classList.add('long-arrange');   // 複合回答 6+ 字:改用寬版緊湊格,避免答案區出現內層捲軸
   const _intro = $('body').querySelector('.transform-intro, .respond-scenario');   // 轉換題原句卡 / 回應題情境卡:從作答帶搬到題目帶(stage)→ 作答帶只剩「格子+字塊」,不用上下捲(治情境卡把字卡擠到要往下拉)
   if (_intro) document.querySelector('.lesson-stage').appendChild(_intro);
   let slots = Array(cards.length).fill(null);
@@ -161,19 +162,14 @@ function sentenceMeaningSentence(w) {
 function canSentenceMeaning(w) {
   return !!sentenceMeaningSentence(w);
 }
-function literalConcatZh(sentence) {
-  const toks = sentence.text.replace(/[.?!,]/g, '').split(/\s+/).filter(Boolean);
-  // 逐字直翻誘答:跳過「沒有乾淨中文意思」的文法助詞(zh 是括號註解,如 do 的「(問句/否定)」)→ 不然串出「我(發問用)不喝水」這種亂碼選項
-  return toks.map(t => { const m = BANK.find(x => x.en.toLowerCase() === t.toLowerCase()); return m && !/^[（(]/.test(m.zh) ? m.zh : ''; }).join('');
-}
 function sentenceMeaningKey(text) {
   return String(text || '')
     .normalize('NFKC')
     .replace(/[\s,，.。!！?？、;；:："'“”‘’`~～()（）[\]【】{}《》<>-]/g, '')
     .toLowerCase();
 }
-function askSentenceMeaning(w) {
-  const sentence = sentenceMeaningSentence(w);
+function askSentenceMeaning(w, forced = null, hideText = false) {
+  const sentence = forced || sentenceMeaningSentence(w);
   if (!sentence) return askReadPick(w);
   rememberSentence(sentence.text);
   const correct = sentence.zh;
@@ -185,16 +181,16 @@ function askSentenceMeaning(w) {
     seen.add(key);
     distractors.push(zh);
   };
-  const lit = literalConcatZh(sentence);
-  pushDistractor(lit);                                                       // 逐字直翻(最毒誘答;跟正解相同就不放)
   sentenceCandidates(buildSentencePatterns(), currentSentenceSourceWords())
     .map(s => s.zh)
     .forEach(zh => { if (distractors.length < 3) pushDistractor(zh); });
   if (!distractors.length) return askReadPick(w);                           // 湊不到誘答 → 退回看中選英
   const opts = shuffle([correct, ...distractors.slice(0, 3)]);
-  // 句子放「題目帶」(stage),作答帶只留選項 → 不會把選項擠到被底部操作列切掉
-  shell(`這句話在說什麼?<div class="sentence-cloze-line" style="color:#9bd2ff;font-weight:600;margin-top:12px">${sentence.text}</div><div style="margin-top:8px"><button class="replay" id="hear">${ICON.play} 聽</button></div>`, `
-    <div class="opts" id="opts"></div>`);
+  // 句子放「題目帶」(stage),作答帶只留選項 → 不會把選項擠到被底部操作列切掉。hideText:只聽聲音、不給英文 → 練純聽力理解
+  const stagePrompt = hideText
+    ? `🔊 聽這句,選出意思<div style="margin-top:14px"><button class="replay" id="hear" style="transform:scale(1.3)">${ICON.play} 再聽</button></div>`
+    : `這句話在說什麼?<div class="sentence-cloze-line" style="color:#9bd2ff;font-weight:600;margin-top:12px">${sentence.text}</div><div style="margin-top:8px"><button class="replay" id="hear">${ICON.play} 聽</button></div>`;
+  shell(stagePrompt, `<div class="opts" id="opts"></div>`);
   $('body').classList.add('choice-answer');
   speakSentence(sentence);
   $('hear').onclick = () => speakSentence(sentence);
@@ -351,6 +347,80 @@ function askRespond(sourceWords = sentenceSourceWords(), done = showDone, onMiss
   } else {
     arrange();
   }
+}
+
+// 看中文 → 自己說出英文句子(口說產出,比跟讀難一階:不給英文,先自己講再翻正解自我核對)。整句語音辨識不準 → 自評式,不硬判、不扣分。
+function askSentenceSay(sourceWords = sentenceSourceWords(), done = showDone) {
+  const sentence = pickBuildSentence(sourceWords);
+  if (!sentence) {
+    shell('說說看', `<div class="sub2">這批字還組不出句子,先繼續練。</div><button class="btn act" id="cont">繼續 →</button>`);
+    $('cont').onclick = done;
+    return;
+  }
+  rememberSentence(sentence.text);
+  shell('看中文,自己用英文說出來 🎤', `
+    <div class="sentence-speak-card"><div class="sentence-speak-zh" style="font-size:26px;font-weight:800">${sentence.zh}</div></div>
+    <div class="sub2" style="text-align:center;color:#9fb4c8;margin-top:8px">先自己用英文說一次,再看正解對答案(自己核對,不會扣分)</div>
+    <button class="btn act" id="reveal" style="margin-top:14px">說完了,看正解 →</button>
+    <div class="skipline"><button class="btn sideact" id="skipsay">跳過</button></div>`);
+  $('reveal').onclick = () => {
+    speakSentence(sentence);
+    const why = $('why'); why.className = 'why'; why.hidden = false;
+    why.innerHTML = `<div class="result-head"><div class="result-mark">🎤</div>
+      <div class="result-main"><div class="result-word">${sentence.text}</div><div class="result-copy">${sentence.zh} —— 你剛剛說對了嗎?</div></div>
+      <button class="replay" id="sayit">${ICON.play}聽正解</button></div>
+      <div class="buildactions"><button class="btn" id="sayok" style="background:#0e2a1f;border-color:#1f5c3f">✅ 我說對了</button><button class="btn" id="sayretry" style="background:#1d2c3a;border-color:#2c3e52">🎤 再說一次</button></div>`;
+    $('sayit').onclick = () => speakSentence(sentence);
+    $('sayok').onclick = () => { sfx.correct(); creditSentence(sentence); done(); };   // 自評過:算對(不扣分,語音辨識不可靠)
+    $('sayretry').onclick = () => askSentenceSay(sourceWords, done);
+  };
+  $('skipsay').onclick = () => done();   // 跳過:不算對不扣分,直接下一題(沒麥克風/不想說的人)
+}
+
+// 初階一問一答:看懂 Are you ...?，把人稱換回 I am ...，排出完整回答。
+function askBasicAnswer(w, sourceWords = sentenceSourceWords(), done = showDone, onMiss = null) {
+  const exchange = pickBasicAnswerExchange(w, sourceWords);
+  if (!exchange) return askBuildSentence(sourceWords, done, null, onMiss);
+  const { question, answer } = exchange;
+  rememberSentence(question.text);
+  rememberSentence(answer.text);
+  const target = answer.text.replace(/[.?!,]/g, '').split(/\s+/).filter(Boolean);
+  const intro = `<div class="respond-scenario basic-answer-scenario">
+    <div style="font-size:19px;font-weight:750">${question.text}</div>
+    <div style="font-size:14px;color:#9fb4c8;margin-top:2px">${question.zh}</div>
+    <button class="replay" id="hearquestion">${ICON.play}聽問題</button>
+  </div>`;
+  mountArrange({
+    promptText:'看問題，排出完整回答',
+    zh:`請回答：${answer.zh}`,
+    introHTML:intro,
+    cards:target.map((text, i) => ({ id:`qa${i}`, text })),
+    targetTokens:target,
+    endMark:'.',
+    onCheck:(right, { retry }) => {
+      const why = $('why');
+      speakSentence(answer);
+      if (right) {
+        sfx.correct(); bumpPat(answer.patternId, 25); creditSentence(answer);
+        why.className = 'why';
+        why.innerHTML = `<div class="result-head"><div class="result-mark">✓</div><div class="result-main"><div class="result-word">${answer.text}</div><div class="result-copy"><b>Are you ...?</b> 是問「你」；回答自己要換成 <b>I am ...</b>。</div></div><button class="replay" id="sayit">${ICON.play}聽回答</button></div><button class="btn act" id="cont">繼續 →</button>`;
+        why.hidden = false;
+        $('sayit').onclick = () => speakSentence(answer);
+        $('cont').onclick = done;
+      } else {
+        sfx.wrong(); bumpPat(answer.patternId, -20);
+        why.className = 'why bad';
+        why.innerHTML = `<div class="result-head"><div class="result-mark">!</div><div class="result-main"><div class="result-word">正解：${answer.text}</div><div class="result-copy">問題用 <b>you are</b>；換成問句是 <b>Are you ...?</b>。回答自己則用 <b>I am ...</b>。</div></div><button class="replay" id="sayit">${ICON.play}聽正解</button></div><button class="btn act" id="${onMiss ? 'cont' : 'retry'}">${onMiss ? '繼續 →' : '重排一次'}</button>`;
+        why.hidden = false;
+        $('sayit').onclick = () => speakSentence(answer);
+        if (onMiss) $('cont').onclick = onMiss; else $('retry').onclick = retry;
+      }
+    }
+  });
+  $('body').classList.add('basic-answer-arrange');
+  document.querySelector('.lesson-stage').classList.add('basic-answer-stage');
+  $('hearquestion').onclick = () => speakSentence(question);
+  setTimeout(() => speakSentence(question), 120);
 }
 
 // 整句跟讀:Web Speech 對整句仍可能飄,所以這題是低壓練習。兩次抓不到就自評通過,不作為硬考核。
@@ -570,22 +640,33 @@ function sentenceClozeForWord(w) {
     (asList(p.requires).includes(w.id) || Object.values(p.slots).some(slot => wordMatchesSlot(w, slot)))
   ).sort((a, b) => patMastery(b.id) - patMastery(a.id));
   if (!pats.length) return null;
-  const pat = shuffle(pats)[0];
-  const slotName = Object.keys(pat.slots).find(n => wordMatchesSlot(w, pat.slots[n]));
-  const built = buildSentenceFromPattern(pat, sentenceSourceWords(), slotName ? w : null);
-  if (!built) return null;
-  const full = built.text;
-  const tokens = full.replace(/[.?!,]/g, '').split(/\s+/).filter(Boolean);
-  const targetIdx = tokens.findIndex(t => t.toLowerCase() === w.en.toLowerCase());
-  if (targetIdx < 0) return null;
-  const requires = new Set(asList(pat.requires).map(id => (wordById(id) || {}).en).filter(Boolean).map(en => en.toLowerCase()));
-  const support = tokens.map((t, i) => ({ t, i })).filter(x => x.i !== targetIdx && requires.has(x.t.toLowerCase()));
-  const blankIdxs = [targetIdx, ...(support.length ? [shuffle(support)[0].i] : [])].sort((a, b) => a - b);
-  const blankKeys = blankIdxs.map(i => i === targetIdx ? `${pat.id}:${w.id}` : `${pat.id}:${tokens[i].toLowerCase()}`);
-  const shown = tokens.map((t, i) => blankIdxs.includes(i)
-    ? `<input class="clozeinp" data-i="${i}" size="${Math.max(2, t.length)}" style="--chars:${Math.max(3, t.length)}" autocomplete="off" autocapitalize="off" placeholder="＿">`
-    : `<span>${t}</span>`).join(' ') + (/[.?!]$/.test(full) ? full.match(/[.?!]$/)[0] : '');
-  return { patternId: pat.id, answers: blankIdxs.map(i => tokens[i]), blankKeys, zh: built.zh, shown, full };
+  const source = sentenceSourceWords();
+  const candidates = [];
+  for (const pat of shuffle(pats)) {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const slotName = Object.keys(pat.slots).find(n => wordMatchesSlot(w, pat.slots[n]));
+      const built = buildSentenceFromPattern(pat, source, slotName ? w : null);
+      if (!built) continue;
+      const full = built.text;
+      const tokens = full.replace(/[.?!,]/g, '').split(/\s+/).filter(Boolean);
+      const targetIdx = tokens.findIndex(t => t.toLowerCase() === w.en.toLowerCase());
+      if (targetIdx < 0) continue;
+      const requires = new Set(asList(pat.requires).map(id => (wordById(id) || {}).en).filter(Boolean).map(en => en.toLowerCase()));
+      const support = tokens.map((t, i) => ({ t, i })).filter(x => x.i !== targetIdx && requires.has(x.t.toLowerCase()));
+      const blankIdxs = [targetIdx, ...(support.length ? [shuffle(support)[0].i] : [])].sort((a, b) => a - b);
+      const blankKeys = blankIdxs.map(i => i === targetIdx ? `${pat.id}:${w.id}` : `${pat.id}:${tokens[i].toLowerCase()}`);
+      const shown = tokens.map((t, i) => blankIdxs.includes(i)
+        ? `<input class="clozeinp" data-i="${i}" size="${Math.max(2, t.length)}" style="--chars:${Math.max(3, t.length)}" autocomplete="off" autocapitalize="off" placeholder="＿">`
+        : `<span>${t}</span>`).join(' ') + (/[.?!]$/.test(full) ? full.match(/[.?!]$/)[0] : '');
+      const signature = `${full}|${blankIdxs.join(',')}`;
+      if (!candidates.some(q => q.signature === signature))
+        candidates.push({ patternId:pat.id, answers:blankIdxs.map(i => tokens[i]), blankKeys, zh:built.zh, shown, full, signature });
+    }
+  }
+  return candidates.find(q => !recentSentences.includes(q.full))
+    || candidates.find(q => q.full !== recentSentences[0])
+    || candidates[0]
+    || null;
 }
 
 function canSentenceCloze(w) {
@@ -595,15 +676,17 @@ function canSentenceCloze(w) {
 function askSentenceCloze(w) {
   const q = sentenceClozeForWord(w);
   if (!q) return askType(w);
+  rememberSentence(q.full);
   shell('看句子,補完整英文', `
     <div class="buildzh">${q.zh}</div>
-    <div class="speakrow"><button class="replay" id="hearfull">${ICON.play}聽整句</button><button class="replay" id="slowfull">慢聽</button></div>
+    <div class="speakrow"><button class="replay" id="hearfull">${ICON.play}聽整句</button><button class="replay" id="slowfull">慢聽</button><button class="replay" id="heartarget">單獨聽本課字</button></div>
     <div class="sentence-cloze-line">${q.shown}</div>
     <button class="btn act" id="submit">送出</button>
     <div class="letters" id="letters"></div>`);
   speakSentence({ text: q.full }, 0.9);
   $('hearfull').onclick = () => speakSentence({ text: q.full }, 0.9);
   $('slowfull').onclick = () => speakSentence({ text: q.full }, 0.65);
+  $('heartarget').onclick = () => speakWordText(w.en, 0.75);
   const inputs = [...document.querySelectorAll('.clozeinp')];
   if (inputs[0]) inputs[0].focus();
   const go = () => {

@@ -25,6 +25,22 @@
   @keyframes tpin { from { transform:translateY(6px); opacity:0; } to { transform:translateY(0); opacity:1; } }
   .teach-why { grid-area:why; align-self:end; width:100%; min-height:clamp(92px,14vh,132px); display:flex; align-items:center; background:#0e2a1f; border:1px solid #1f5c3f; border-radius:14px; padding:22px 24px; font-size:clamp(17px,2vh,20px); line-height:1.6; color:#d9f7e5; }
   .lesson-answer.build-answer { justify-content:safe center; overflow-y:auto; }   /* 垂直置中(治「上面一小條、下面全空」);safe=太高退回頂端;overflow auto=保險,寧可內部捲也不被動作列切掉 */
+  .lesson-answer.build-answer.long-arrange { max-width:1040px; justify-content:flex-start; gap:6px; padding-top:0; overflow-y:auto; }
+  .long-arrange .buildzh { margin-bottom:4px; }
+  .long-arrange .sentence-slots { gap:8px; padding:7px 6px; margin-bottom:6px; }
+  .long-arrange .sentence-slot { width:clamp(68px,8.2vw,108px); min-height:50px; }
+  .long-arrange .sentence-bank { min-height:50px; margin-bottom:2px; }
+  .long-arrange .sentence-card { min-height:48px; padding:10px 13px; }
+  .basic-answer-stage { gap:5px; }
+  .basic-answer-stage .prompt { font-size:clamp(36px,5.2vh,48px); line-height:1.08; }
+  .basic-answer-scenario { width:min(520px,100%); margin:0 auto; padding:7px 14px 8px; border-radius:12px; border:1px solid #26384a; background:#14202e; text-align:center; }
+  .basic-answer-scenario #hearquestion { margin:5px auto 0; padding:8px 14px; min-height:42px; font-size:16px; }
+  .lesson-answer.build-answer.basic-answer-arrange { justify-content:flex-start; gap:4px; overflow-y:auto; }
+  .basic-answer-arrange .buildzh { margin:0 0 3px; font-size:clamp(20px,2.8vh,24px); }
+  .basic-answer-arrange .sentence-slots { gap:8px; padding:6px; margin-bottom:4px; }
+  .basic-answer-arrange .sentence-slot { width:clamp(76px,10vw,112px); min-height:48px; }
+  .basic-answer-arrange .sentence-bank { min-height:46px; margin-bottom:0; }
+  .basic-answer-arrange .sentence-card { min-height:46px; padding:9px 13px; }
   .buildzh { text-align:center; font-size:clamp(22px,3.3vh,28px); font-weight:700; margin:2px 0 10px; line-height:1.2; }
   /* 轉換題:上面顯示已會的直述句,下面重排成問句 */
   .transform-intro { text-align:center; margin:0 auto; }   /* 不放卡片 box:原句直接寫在題目帶,不用一整塊框佔高度(治轉換題還要捲) */

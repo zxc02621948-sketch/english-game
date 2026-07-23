@@ -93,7 +93,7 @@ function askCategoryPick(w) {
   // 分類題的「題目」就是那句分類(選出所有…) → 從最上面搬到選項正上方,跟選項一起在中間:視線落在中間就直接看到要選什麼(治「先看到選項沒看到分類」)
   shell('分類題 · 可多選', `
     <div class="category-head">${q.category.prompt}</div>
-    <div class="sub2 category-note">把符合的英文都選起來,再按確認。</div>
+    <div class="sub2 category-note">${q.category.note || '把符合的英文都選起來,再按確認。'}</div>
     <div class="opts category-options" id="catopts"></div>`);
   $('body').classList.add('choice-answer', 'category-answer');
   const box = $('catopts'), selected = new Set();
@@ -148,12 +148,16 @@ function finishCategoryPick(right, w, q, selected) {
     const correct = new Set(q.correctIds);
     const missing = q.correct.filter(x => !selected.has(x.id)).map(x => x.en);
     const extra = q.options.filter(x => selected.has(x.id) && !correct.has(x.id)).map(x => x.en);
+    const broadStatePicked = q.category.id === 'emotion' && extra.some(en => ['good', 'bad'].includes(en.toLowerCase()));
+    const categoryNote = broadStatePicked
+      ? `<div style="margin-top:8px"><b>I’m good.</b> 可以表示「我很好」；但 good／bad 本身是廣泛評價，這題只選直接說出心情或身體感受的字。</div>`
+      : '';
     why.className = 'why bad';
     why.innerHTML = `<div class="result-head compact">
       <div class="result-mark">!</div>
       <div class="result-main">
         <div class="result-word">正解: ${correctWords}</div>
-        <div class="result-copy">${missing.length ? `漏選: ${missing.join(', ')}。` : ''}${extra.length ? ` 多選: ${extra.join(', ')}。` : ''}</div>
+        <div class="result-copy">${missing.length ? `漏選: ${missing.join(', ')}。` : ''}${extra.length ? ` 多選: ${extra.join(', ')}。` : ''}${categoryNote}</div>
       </div>
     </div>
     <button class="btn act" id="cont">繼續 →</button>`;
@@ -401,7 +405,11 @@ function askClozePick(w) {
   const candidates = shuffle(pats).map(pat => ({ pat, sentence: buildSentenceFromPattern(pat, sourceWords, w) }))
     .filter(x => x.sentence && Object.values(x.sentence.words).some(word => word && word.id === w.id));
   if (!candidates.length) return askReadPick(w);
-  const { pat, sentence } = candidates[0];
+  const picked = candidates.find(x => !recentSentences.includes(x.sentence.text))
+    || candidates.find(x => x.sentence.text !== recentSentences[0])
+    || candidates[0];
+  const { pat, sentence } = picked;
+  rememberSentence(sentence.text);
   const slotName = Object.keys(sentence.words).find(n => sentence.words[n] && sentence.words[n].id === w.id);
   const blanked = s => s.replace(/\{(\w+)\}/g, (_, name) => name === slotName ? '＿＿' : (sentence.words[name] ? sentence.words[name].en : ''));
   const slotOptions = () => {

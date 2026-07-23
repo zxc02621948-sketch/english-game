@@ -22,6 +22,11 @@ function wordZhForSlot(word, slot) {
   return asList(slot && slot.flags).includes("descriptive") ? zh.replace(/的$/, "") : zh;
 }
 
+function classifiedWordZh(word) {
+  if (!word) return "";
+  return `一${word.classifier || "個"}${word.zh}`;
+}
+
 function buildSentenceFromPattern(pattern, sourceWords = BANK, mustInclude = null) {
   if (!patternRequirementsMet(pattern)) return null;
   const sourceIds = new Set(sourceWords.map(w => w && w.id).filter(Boolean));
@@ -39,7 +44,9 @@ function buildSentenceFromPattern(pattern, sourceWords = BANK, mustInclude = nul
     }
   }
   const fill = s => s.replace(/\{(\w+)\}/g, (_, name) => picks[name] ? picks[name].en : "");
-  const fillZh = s => s.replace(/\{(\w+)\}/g, (_, name) => picks[name] ? wordZhForSlot(picks[name], pattern.slots[name]) : "");
+  const fillZh = s => s
+    .replace(/\{#(\w+)\}/g, (_, name) => classifiedWordZh(picks[name]))
+    .replace(/\{(\w+)\}/g, (_, name) => picks[name] ? wordZhForSlot(picks[name], pattern.slots[name]) : "");
   return {
     patternId: pattern.id, text: fill(pattern.text), zh: fillZh(pattern.zh), words: picks,
     question: pattern.q ? fill(pattern.q) : null,           // 問句形(同一批選字重排;沒 q 的句型 = null)→ 轉換題用
@@ -179,3 +186,27 @@ function pickRespondSentence(sourceWords = sentenceSourceWords(), avoidText) {
   return pickSentenceByPattern(respondPatterns(), sourceWords, avoidText ? (s => s.text !== avoidText) : undefined);
 }
 const canRespond = (sourceWords = sentenceSourceWords()) => !!pickRespondSentence(sourceWords);
+
+// ── 初階直接問答:Are you hungry? → I am hungry.
+// 問句用 you/are，回答換回自己 I/am；只在指定感受字與兩邊功能詞都已教過時出。
+function basicAnswerExchangeForWord(w, sourceWords = sentenceSourceWords()) {
+  if (!w || !asList(w.flags).includes('emotion')) return null;
+  const questionPattern = PATTERNS.find(p => p.id === 'pat_you_are_adj');
+  const answerPattern = PATTERNS.find(p => p.id === 'pat_i_am_adj');
+  if (!questionPattern || !answerPattern) return null;
+  const questionBuilt = buildSentenceFromPattern(questionPattern, sourceWords, w);
+  const answer = buildSentenceFromPattern(answerPattern, sourceWords, w);
+  if (!questionBuilt || !questionBuilt.question || !answer) return null;
+  return {
+    question: { text:questionBuilt.question, zh:questionBuilt.questionZh },
+    answer,
+    word:w
+  };
+}
+function pickBasicAnswerExchange(w, sourceWords = sentenceSourceWords()) {
+  const exchange = basicAnswerExchangeForWord(w, sourceWords);
+  if (!exchange) return null;
+  if (recentSentences.includes(exchange.question.text) || recentSentences.includes(exchange.answer.text)) return null;
+  return exchange;
+}
+const canBasicAnswer = (w, sourceWords = sentenceSourceWords()) => !!pickBasicAnswerExchange(w, sourceWords);

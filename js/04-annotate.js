@@ -26,9 +26,11 @@ const PHONICS = [
   { id:'ee',   re:/ee/i,    label:'ee → 長音「i」',    note:'兩個 e 疊在一起念長音 i(像「衣」)。see / coffee / tree / meet。' },
   // ea 拆兩條:bread 那群念短音,別讓它掛「長音 i」的標籤教錯音(使用者實玩把 bread 拼成 bared 引出來的)
   { id:'ea_short', re:/ea/i, only:['bread','head','dead','ready','heavy','weather','breakfast','sweater'],
-    label:'ea → 這裡念短音「e」', note:'這個字的 ea 念短音 e(跟 bed 一樣),不是 tea 的長音 i。bread / head / dead 都是這掛的。', say:'eh' },
-  { id:'ea',   re:/ea/i,    exclude:['bread','head','dead','ready','heavy','weather','breakfast','sweater'],
-    label:'ea → 多念長音「i」', note:'ea 常念長音 i:eat / read / tea / speak;少數念短音 e:bread / head。' },
+    label:'ea 是一塊 → 這裡念短音「e」', note:'先把 ea 當成一個記憶區塊。這一族念短音 e(跟 bed 一樣):bread / head / dead。', say:'eh' },
+  { id:'ea_a', re:/ea/i, only:['great','break','steak'],
+    label:'ea 是一塊 → 這裡念字母 A', note:'ea 還有一個小家族念字母 A 的音:great / break / steak。整組一起記。', say:'ay' },
+  { id:'ea',   re:/ea/i,    exclude:['bread','head','dead','ready','heavy','weather','breakfast','sweater','great','break','steak'],
+    label:'ea 是一塊 → 多念長音「i」', note:'先把 ea 當成一個記憶區塊。最常見的一族念長音 i(像「衣」):tea / eat / speak。' },
   { id:'oo',   re:/oo/i,    label:'oo → 兩種音',       note:'oo 有兩種音:短音(book / good / look)、長音(moon / food)。' },
   // 字尾 -y(子音後)念 i;用 lookbehind 只標那個 y,避開 my / buy / say(母音+y)
   { id:'y_i',  re:/(?<=[bcdfghjklmnpqrstvwxz])y$/i, label:'字尾 -y → 念「i」音', note:'子音後面的字尾 y 念 i:happy / hungry / thirsty / baby。(不是 my / buy 那種母音+y)' },
@@ -208,6 +210,9 @@ function annotationErrorHTML(word, typed) {
   // 2026-07-08 拆掉「只有已學會的字才跳」門檻:答題區故意純文字(顯示範圍規則),學習中的字答錯當下畫面上什麼標記都沒有,
   // 「標記已經在畫面上」的理由不成立 —— 答錯就是最好的教學時機,只要錯的那點有註解就跳(annotMode off 仍尊重全關)。
   if (!word || (typeof annotMode === 'function' && annotMode() === 'off')) return '';
+  if (wordKey(word) === 'word_rice' && /^j/i.test(String(typed || '').trim())) {
+    return `<div class="annot-error-note"><b>連讀聽感</b><span><b>rice</b> 一定是 r 開頭。<b>eat rice</b> 連著念時，前面的 t 接 r 可能帶一點像「ch／j」的摩擦聲；拼字仍是 rice，不是 jice。</span></div>`;
+  }
   const marks = marksForError(word, typed);
   if (!marks.length) return '';
   const m = marks[0];

@@ -24,7 +24,13 @@ const CATEGORY_SETS = [
   //   - 同日拆「可以加糖的飲料」(water 被判錯,但糖水明明存在)。
   { id:'drinkable', flag:'drinkable', label:'飲料', prompt:'選出所有可以喝的東西' },
   { id:'eatable', flag:'eatable', label:'食物', prompt:'選出所有可以吃的東西' },
-  { id:'emotion', flag:'emotion', label:'感受', prompt:'選出所有感受或心情' },
+  {
+    id:'emotion',
+    flag:'emotion',
+    label:'明確的心情／身體感受',
+    prompt:'選出明確表示心情或身體感受的字',
+    note:'這裡選直接說出感受的字，例如 happy、hungry；good／bad 是較廣泛的評價。'
+  },
 ];
 const hasFlag = (w, flag) => asList(w && w.flags).includes(flag);
 function categorySourceWords(baseWords = levelWords) {

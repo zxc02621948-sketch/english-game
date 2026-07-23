@@ -65,6 +65,12 @@ function updateBar() {
     const c = $('count'); if (c) c.textContent = `${pct}%`;
     return;
   }
+  if (inBlueprint) {
+    const pct = blueprintTotal ? Math.round(blueprintDone / blueprintTotal * 100) : 0;
+    const bar = $('bar'); if (bar) bar.style.width = pct + '%';
+    const c = $('count'); if (c) c.textContent = `${pct}%`;
+    return;
+  }
   // 上方進度條 = 這關「已答對題數 / 總共要答的題數」,每答對一題就前進一格;答完整關 = 100%(不再等整個字練完才跳一大格)
   const need = levelWords.reduce((s, w) => s + (quota[wordKey(w)] || 0), 0);
   const got  = levelWords.reduce((s, w) => s + Math.min(lgot[wordKey(w)] || 0, quota[wordKey(w)] || 0), 0);

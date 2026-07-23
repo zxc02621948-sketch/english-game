@@ -20,9 +20,12 @@ const FORMATS = [
   // flashtype(看2秒→默寫)2026-07-08 拿掉:純死背字母序、跟聽寫/看圖寫重疊、最不「讓英文有道理」。askFlashType 留著但沒掛(要復活再加回這行)。
   { id:'sentence_cloze', lv:6, skill:'write', tier:3, ok: w => (meta.stage || 1) >= 3 && canSentenceCloze(w), run: askSentenceCloze }, // 二王後:句子克漏字打字(先練缺字,不整句默寫)
   { id:'sentence_build', lv:1, skill:'read', tier:1, ok: () => hasFreshBuildSentence(currentSentenceSourceWords()), run: w => askBuildSentence(currentSentenceSourceWords(), () => { onCorrect(w); updateBar(); nextQuestion(); }, null, () => { onWrong(w); nextQuestion(); }) },  // 排詞造句(句型軌;只在有「新句子」時出 → 不狂重播同一句)
+  { id:'sentence_answer', lv:5, skill:'read', tier:2, ok: w => canBasicAnswer(w, currentSentenceSourceWords()), run: w => askBasicAnswer(w, currentSentenceSourceWords(), () => { onCorrect(w); updateBar(); nextQuestion(); }, () => { onWrong(w); nextQuestion(); }) }, // 初階問答:Are you hungry? → I am hungry.
   { id:'sentence_respond', lv:3, skill:'read', tier:2, ok: () => canRespond(currentSentenceSourceWords()), run: w => askRespond(currentSentenceSourceWords(), () => { onCorrect(w); updateBar(); nextQuestion(); }, () => { onWrong(w); nextQuestion(); }) },  // ★「你呢?」複合回應題:朋友說一句複合自述→你排你的版本(複合句、串現有題型;stage3+ 感受+喝/吃 教過才出)
   { id:'sentence_transform', lv:3, skill:'read', tier:3, ok: () => canTransform(), run: w => askTransform(w) },  // ★ 轉換題:把練過的直述句重排成問句(this is ↔ is this);直述句練過(patMastery>0)才出
-  { id:'sentence_meaning', lv:2, skill:'read', tier:1, ok: canSentenceMeaning, run: w => askSentenceMeaning(w) },  // 整段英文→選意思(理解/辨識;誘答含逐字直翻);非排句家族 → 兼補前期變化
+  { id:'sentence_meaning', lv:2, skill:'read', tier:1, ok: canSentenceMeaning, run: w => askSentenceMeaning(w) },  // 整段英文→選自然中文意思;非排句家族 → 兼補前期變化
+  { id:'sentence_hear', lv:3, skill:'listen', tier:2, ok: canSentenceMeaning, run: w => askSentenceMeaning(w, null, true) },  // 只聽聲音(不給英文)→ 選中文意思:練純聽力理解
+  { id:'sentence_say', lv:3, skill:'speak', tier:2, ok: () => hasFreshBuildSentence(currentSentenceSourceWords()), run: w => askSentenceSay(currentSentenceSourceWords(), () => { onCorrect(w); updateBar(); nextQuestion(); }) },  // 看中文→自己說出英文句(口說產出,自評式)
 ];
 const READPICK = FORMATS[0];
 // 這一題出第幾階:沒教→教;學會的字回鍋→隨機產出階複習;否則攻「當前最低未過階」,封頂關卡 topRung。
@@ -44,8 +47,9 @@ const trackSkillOn = s => skillOn(s) && !(TRACKS[currentTrack] && TRACKS[current
 const wroteOk = w => !!rec(w).wrote2 || !trackSkillOn('write');    // ★ 隔關再驗:階段門檻認 wrote2(隔關寫對第二次的章),不是一次性的 wrote。不練默寫的軌:視同已「會寫」
 function passRung(w) { onCorrect(w); updateBar(); nextQuestion(); } // 該技能關了 → 該階自動帶過
 let lastAsked = {}, lastAskedSkill = {}, lastAskedFormatId = {}, lastFormat = null, currentSkill = null, currentFormatId = null;   // 每字上次題型 + 技能 + 全域上一題格式 → 避免連續同題型(破單調)
+let recentFormatIds = [];                                         // 全域最近題型:避免 A→B→A 交替後看起來仍在重複
 let transformsThisLevel = 0;                                        // 轉換題(位置互換)每關至多 1 次 → 當稀有「aha」不當常客(治前期一直重排同批字很沒誠意)
-const ARRANGE_FAMILY = new Set(['sentence_build', 'sentence_speak', 'sentence_respond']);   // 排句/整句跟讀/複合回應視為同家族、不連續出(破單調)。★ 轉換題不放進來:它已被「每關上限 1」擋掉連發,再被家族壓抑就變成 12 關都遇不到(治「is this 消失」)
+const ARRANGE_FAMILY = new Set(['sentence_build', 'sentence_speak', 'sentence_answer', 'sentence_respond', 'sentence_say']);   // sentence_say(看中文說英文)也是句子口說 → 跟排句家族共用冷卻   // 排句/整句跟讀/問答回應視為同家族、不連續出(破單調)。★ 轉換題不放進來:它已被「每關上限 1」擋掉連發,再被家族壓抑就變成 12 關都遇不到(治「is this 消失」)
 const formatFamilyOf = id => ARRANGE_FAMILY.has(id) ? 'arrange' : id;
 function ask(w) {
   if (isFresh(w)) { currentRung = 0; currentSkill = null; currentFormatId = 'teach'; lastFormat = teach; return teach(w); }       // 新字一律先教(認識)
@@ -58,6 +62,11 @@ function ask(w) {
   if (!clozeReadyForDictation(w)) pool = pool.filter(f => !isHardDictationFormatId(f.id));   // 長字/第三階段字:先通過句子克漏字門檻,再出整字聽寫/默寫/看圖寫
   if (transformsThisLevel >= 1 && pool.some(f => f.id !== 'sentence_transform')) pool = pool.filter(f => f.id !== 'sentence_transform');   // 這關已出過轉換題 → 不再出(稀有化)
   if (!pool.length) pool = [READPICK];                                            // 保險:至少出看中選英
+  if (pool.length > 1) {
+    const recent = new Set(recentFormatIds.slice(0, 2));
+    const newer = pool.filter(f => !recent.has(f.id));
+    if (newer.length) pool = newer;                                               // 最近兩種先冷卻；池太小時自動放寬
+  }
   const k = wordKey(w);
   if (pool.length > 1) {                                                          // 避免連續同形式 / 同字同題型
     const lastFam = formatFamilyOf(currentFormatId);                             // 上一題的家族(排句/轉換/跟讀都算 'arrange')
@@ -84,6 +93,9 @@ function ask(w) {
     let base;
     if (f.id === 'sentence_build') base = !stageHasRealWords(meta.stage || 1) ? 60 : (target >= 2 ? 16 : 7);   // 純句型階段主打(但 60 不 90);有實詞的階段:說階排句是主軸之一但別霸屏(40→16,騰空間給辨識/聽/看圖/轉換)
     else if (f.id === 'sentence_speak') base = ((meta.stage || 1) >= 1 && target >= 2) ? 12 : 3;   // 整句跟讀是練口感;要麥克風 → 別過重
+    else if (f.id === 'sentence_say') base = ((meta.stage || 1) >= 1 && target >= 2) ? 12 : 3;   // 看中文說英文:口說產出,說階才主打(要麥克風,別過重)
+    else if (f.id === 'sentence_hear') base = target >= 1 ? 6 : 3;   // 聽英文選中文:聽力理解,穩定出現
+    else if (f.id === 'sentence_answer') base = target >= 2 ? 14 : 4;   // 一問一答是理解人稱轉換的主力，但跟其他排句共用冷卻
     else if (f.id === 'sentence_transform') base = ((meta.stage || 1) >= 2 && target >= 2) ? 18 : 4;   // 轉換題:每關上限 1 次已防霸屏 → 權重 18,可靠地每關出現一次
     else if (f.id === 'sentence_cloze') base = ((meta.stage || 1) >= 3 && target >= 3) ? 8 : 0;   // 句子默寫(打字補字)= 寫階才出;18→8,別讓學會的字整階都句子默寫+排句
     else if (f.id === 'category') base = target >= 2 ? 8 : 3;   // 分類題偏驗收概念,認階少量出、說階後較常混入
@@ -100,6 +112,7 @@ function ask(w) {
   }
   currentSkill = f.skill; currentFormatId = f.id;
   lastAsked[k] = f.run; lastAskedSkill[k] = f.skill; lastAskedFormatId[k] = f.id; lastFormat = f.run;
+  recentFormatIds = [f.id, ...recentFormatIds.filter(id => id !== f.id)].slice(0, 4);
   if (f.id === 'sentence_transform') transformsThisLevel++;                       // 記這關已出過轉換題 → 不再出
   f.run(w);
 }
@@ -185,12 +198,15 @@ function showStart() {
   screen.classList.add('start-screen');
   const stage = stageOfLevel(level);
   const recipe = completionRecipe(stagePendingWords(stage)) || lessonRecipeForLevel(level);
+  const blueprint = !(remedialWords && remedialWords.length) && typeof lessonBlueprintFor === 'function'
+    ? lessonBlueprintFor(currentTrack, level)
+    : null;
   const idx = lessonIndexInStage(level);
   const total = stageMinLevels(stage);
   // 預覽拿掉(浮動關卡 + 越來越多字後沒意義,原描述也是舊模型)→ 直接一個極簡開場
   screen.innerHTML = `<main class="start-panel"><div style="text-align:center;font-size:40px">📚</div>
     <h2 style="text-align:center">第 ${level} 關</h2>
-    <div class="sub" style="text-align:center">本階第 ${idx}/${total} 關 · ${recipe.label} · 最多約 ${recipe.questions} 題</div>
+    <div class="sub" style="text-align:center">本階第 ${idx}/${total} 關 · ${blueprint ? '固定基礎練習' : recipe.label} · ${blueprint ? `${blueprint.length} 題` : `最多約 ${recipe.questions} 題`}</div>
     <button class="btn" id="go" style="margin-top:16px">開始 →</button>
     <button class="btn" id="backmap" style="margin-top:10px;background:#1d2c3a;border-color:#2c3e52">← 回地圖</button></main>`;
   $('go').onclick = startLevel;

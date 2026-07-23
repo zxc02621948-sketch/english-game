@@ -305,7 +305,7 @@ function showHome() {
     if (confirm('清掉所有學習進度(日常 + 工作),從第 1 關重新開始?')) {
       for (const k in store) delete store[k]; localStorage.removeItem('eng_progress_v2');
       localStorage.removeItem('work_progress_v1'); localStorage.removeItem('work_clock_v1');   // 順手清掉舊工作引擎殘留
-      meta.coins = 0; meta.skills = {}; meta.tracks = {};                                       // 清所有軌進度
+      meta.coins = 0; meta.skills = {}; meta.tracks = {}; meta.reviewHistoryByTrack = {};         // 清所有軌進度 + 舊題冷卻紀錄
       currentTrack = 'daily'; applyTrackContent('daily');                                       // 回日常軌內容
       meta.maxLevel = 1; meta.stage = 1; meta.stageStartLevel = 1; meta.clock = 0; meta.bossReady = false; meta.bossCleared = false; meta.challengeCleared = {};
       saveMeta(); level = 1; showHome();
