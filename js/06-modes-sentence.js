@@ -349,6 +349,46 @@ function askRespond(sourceWords = sentenceSourceWords(), done = showDone, onMiss
   }
 }
 
+// 聽英文 → 排出英文詞塊(聽力產出:聽懂了能自己拼回來)。只有聲音、不給文字 → 補「聽→選」之外的「聽→產出」。比對順序即可批改。
+function askListenArrange(sourceWords = sentenceSourceWords(), done = showDone, onMiss = null) {
+  const sentence = pickBuildSentence(sourceWords);
+  if (!sentence) {
+    shell('聽,排出英文', `<div class="sub2">這批字還組不出句子,先繼續練。</div><button class="btn act" id="cont">繼續 →</button>`);
+    $('cont').onclick = done;
+    return;
+  }
+  rememberSentence(sentence.text);
+  const target = sentence.text.replace(/[.?!,]/g, '').split(/\s+/).filter(Boolean);
+  const endMark = (sentence.text.match(/[.?!]$/) || [''])[0];
+  const say = (r = 0.9) => speakSentence(sentence, r);
+  mountArrange({
+    promptText: '🔊 聽,把英文排出來',
+    zh: '把你聽到的英文照順序排好',
+    introHTML: `<div class="respond-scenario listen-arrange-audio" style="background:none;border:none;padding:0;margin:0 0 4px;text-align:center"><button class="replay" id="larhear">${ICON.play} 再聽</button> <button class="replay" id="larslow">慢速</button></div>`,
+    cards: target.map((t, i) => ({ id: `la${i}`, text: t })),
+    targetTokens: target,
+    endMark,
+    onCheck: (right, { retry }) => {
+      const why = $('why'); say();
+      if (right) {
+        sfx.correct(); bumpPat(sentence.patternId, 22); creditSentence(sentence);
+        why.className = 'why';
+        why.innerHTML = `<div class="result-head"><div class="result-mark">✓</div><div class="result-main"><div class="result-word">${sentence.text}</div><div class="result-copy">${sentence.zh}</div></div><button class="replay" id="sayit">${ICON.play}再聽</button></div><button class="btn act" id="cont">繼續 →</button>`;
+        why.hidden = false; $('sayit').onclick = say; $('cont').onclick = done;
+      } else {
+        sfx.wrong(); bumpPat(sentence.patternId, -18);
+        why.className = 'why bad';
+        why.innerHTML = `<div class="result-head"><div class="result-mark">!</div><div class="result-main"><div class="result-word">正解: ${sentence.text}</div><div class="result-copy">${sentence.zh}</div></div><button class="replay" id="sayit">${ICON.play}聽正解</button></div><button class="btn act" id="cont">繼續 →</button>`;
+        why.hidden = false; $('sayit').onclick = say;
+        $('cont').onclick = () => { if (onMiss) onMiss(); else { onWrong(current); nextQuestion(); } };
+      }
+    }
+  });
+  say();
+  $('larhear').onclick = () => say();
+  $('larslow').onclick = () => say(0.55);
+}
+
 // 看中文 → 自己說出英文句子(口說產出,比跟讀難一階:不給英文,先自己講再翻正解自我核對)。整句語音辨識不準 → 自評式,不硬判、不扣分。
 function askSentenceSay(sourceWords = sentenceSourceWords(), done = showDone) {
   const sentence = pickBuildSentence(sourceWords);

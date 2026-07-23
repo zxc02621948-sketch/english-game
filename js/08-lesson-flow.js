@@ -25,6 +25,7 @@ const FORMATS = [
   { id:'sentence_transform', lv:3, skill:'read', tier:3, ok: () => canTransform(), run: w => askTransform(w) },  // ★ 轉換題:把練過的直述句重排成問句(this is ↔ is this);直述句練過(patMastery>0)才出
   { id:'sentence_meaning', lv:2, skill:'read', tier:1, ok: canSentenceMeaning, run: w => askSentenceMeaning(w) },  // 整段英文→選自然中文意思;非排句家族 → 兼補前期變化
   { id:'sentence_hear', lv:3, skill:'listen', tier:2, ok: canSentenceMeaning, run: w => askSentenceMeaning(w, null, true) },  // 只聽聲音(不給英文)→ 選中文意思:練純聽力理解
+  { id:'sentence_listen', lv:3, skill:'listen', tier:2, ok: () => hasFreshBuildSentence(currentSentenceSourceWords()), run: w => askListenArrange(currentSentenceSourceWords(), () => { onCorrect(w); updateBar(); nextQuestion(); }, () => { onWrong(w); nextQuestion(); }) },  // 聽英文→排出英文詞塊(聽力產出)
   { id:'sentence_say', lv:3, skill:'speak', tier:2, ok: () => hasFreshBuildSentence(currentSentenceSourceWords()), run: w => askSentenceSay(currentSentenceSourceWords(), () => { onCorrect(w); updateBar(); nextQuestion(); }) },  // 看中文→自己說出英文句(口說產出,自評式)
 ];
 const READPICK = FORMATS[0];
@@ -49,7 +50,7 @@ function passRung(w) { onCorrect(w); updateBar(); nextQuestion(); } // 該技能
 let lastAsked = {}, lastAskedSkill = {}, lastAskedFormatId = {}, lastFormat = null, currentSkill = null, currentFormatId = null;   // 每字上次題型 + 技能 + 全域上一題格式 → 避免連續同題型(破單調)
 let recentFormatIds = [];                                         // 全域最近題型:避免 A→B→A 交替後看起來仍在重複
 let transformsThisLevel = 0;                                        // 轉換題(位置互換)每關至多 1 次 → 當稀有「aha」不當常客(治前期一直重排同批字很沒誠意)
-const ARRANGE_FAMILY = new Set(['sentence_build', 'sentence_speak', 'sentence_answer', 'sentence_respond', 'sentence_say']);   // sentence_say(看中文說英文)也是句子口說 → 跟排句家族共用冷卻   // 排句/整句跟讀/問答回應視為同家族、不連續出(破單調)。★ 轉換題不放進來:它已被「每關上限 1」擋掉連發,再被家族壓抑就變成 12 關都遇不到(治「is this 消失」)
+const ARRANGE_FAMILY = new Set(['sentence_build', 'sentence_speak', 'sentence_answer', 'sentence_respond', 'sentence_say', 'sentence_listen']);   // 排句/跟讀/問答/回應/說英文/聽力排詞都是「排/講整句」→ 共用冷卻,不連續出   // 排句/整句跟讀/問答回應視為同家族、不連續出(破單調)。★ 轉換題不放進來:它已被「每關上限 1」擋掉連發,再被家族壓抑就變成 12 關都遇不到(治「is this 消失」)
 const formatFamilyOf = id => ARRANGE_FAMILY.has(id) ? 'arrange' : id;
 function ask(w) {
   if (isFresh(w)) { currentRung = 0; currentSkill = null; currentFormatId = 'teach'; lastFormat = teach; return teach(w); }       // 新字一律先教(認識)
@@ -95,6 +96,7 @@ function ask(w) {
     else if (f.id === 'sentence_speak') base = ((meta.stage || 1) >= 1 && target >= 2) ? 12 : 3;   // 整句跟讀是練口感;要麥克風 → 別過重
     else if (f.id === 'sentence_say') base = ((meta.stage || 1) >= 1 && target >= 2) ? 12 : 3;   // 看中文說英文:口說產出,說階才主打(要麥克風,別過重)
     else if (f.id === 'sentence_hear') base = target >= 1 ? 6 : 3;   // 聽英文選中文:聽力理解,穩定出現
+    else if (f.id === 'sentence_listen') base = target >= 2 ? 10 : 4;   // 聽英文排詞:聽力產出,說階後主打之一
     else if (f.id === 'sentence_answer') base = target >= 2 ? 14 : 4;   // 一問一答是理解人稱轉換的主力，但跟其他排句共用冷卻
     else if (f.id === 'sentence_transform') base = ((meta.stage || 1) >= 2 && target >= 2) ? 18 : 4;   // 轉換題:每關上限 1 次已防霸屏 → 權重 18,可靠地每關出現一次
     else if (f.id === 'sentence_cloze') base = ((meta.stage || 1) >= 3 && target >= 3) ? 8 : 0;   // 句子默寫(打字補字)= 寫階才出;18→8,別讓學會的字整階都句子默寫+排句

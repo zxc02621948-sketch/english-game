@@ -1944,3 +1944,14 @@ listen(→ music/to)、hear、say(→ hello/yes/no)、go/come(→ 地點 + home 
 - **sentence_hear 聽英文→選中文**(skill listen, tier2):askSentenceMeaning 加 hideText 參數,只播聲音不給英文 → 選中文意思。練純聽力理解(比看著英文選中文難)。「寫中文」不可靠批改故用「選」。
 - wt 給兩者命名權重(say 12/hear 6)。
 - 驗:兩者都在 FORMATS、渲染正常(hear 不露英文、say 看正解才露+自評)。
+
+
+## 2026-07-08(34 / Claude Opus 4.8)— 新題型 1/3:聽力排詞(聽英文→排出英文詞塊)
+
+### 使用者要的三個新題型,一個一個做
+聽一句英文(只有聲音、不給文字)→ 把英文字塊排回去。補上「聽→選」之外的「聽→產出」:聽懂了能自己拼回來。
+
+### 加(js/06 askListenArrange + js/08)
+- 複用 mountArrange(比對順序批改);intro 放「再聽/慢速」鈕、buildzh 只給中文提示不露英文句;endMark 跟句尾標點。
+- 掛 FORMATS(sentence_listen, lv3, listen, tier2)、進 ARRANGE_FAMILY 冷卻、wt 命名權重(說階 10)。
+- 驗:只聽不露英文、5字塊、排對計分(done)、排錯走補考(onMiss)、露正解。
