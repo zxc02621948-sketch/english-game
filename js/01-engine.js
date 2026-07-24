@@ -341,6 +341,11 @@ function skipBlueprintWordDrills(w) {
 }
 function buildLessonQuota(words, recipe) {
   const q = {}, caps = {}, clock = meta.clock || 0;
+  // 🔧 快測模式(dev.fast):每字只出必要題數(新字教+考 2、其餘 1)→ 一整輪縮到極短,照順序玩完整條曲線但不磨。開發自用,玩家碰不到。
+  if (typeof localStorage !== 'undefined' && localStorage.getItem('__fastTest')) {
+    words.forEach(w => { q[wordKey(w)] = (rungOf(w) === 0 && w.pos !== 'function') ? 2 : 1; });
+    return q;
+  }
   // ★ 關卡長度(2026-07-08 治「前面 18 題狂重複、越後面越短」):
   //   ① 上限跟字數掛鉤(字數×3+2):4 個字別磨 18 題(L1 18→14,單字平均 ~3 次);
   //   ② 階段加成:越後面複習池越大 → 每關 +(stage-1) 題、封頂 +4、總長封頂 16(後期關卡不再比前期短)。

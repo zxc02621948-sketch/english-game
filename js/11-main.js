@@ -20,6 +20,11 @@ window.dev = {
     saveMeta(); save(); showHome();
     return '全部字 + 句型解鎖';
   },
+  // ★ 快測模式:每關只出必要題數 → 照順序玩完整條曲線但不磨,測「曲線/手感/新題型有沒有照樣出現」用。dev.fast() 開 / dev.fast(false) 關(存 localStorage,刷新後仍在)
+  fast(on = true) {
+    if (on) localStorage.setItem('__fastTest', '1'); else localStorage.removeItem('__fastTest');
+    return on ? '快測模式:開(每關只出必要題數,一輪變超短;要測真實題數就關掉)' : '快測模式:關(回正常題數)';
+  },
 };
 
 showHome();
