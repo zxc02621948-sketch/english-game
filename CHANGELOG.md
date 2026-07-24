@@ -1955,3 +1955,18 @@ listen(→ music/to)、hear、say(→ hello/yes/no)、go/come(→ 地點 + home 
 - 複用 mountArrange(比對順序批改);intro 放「再聽/慢速」鈕、buildzh 只給中文提示不露英文句;endMark 跟句尾標點。
 - 掛 FORMATS(sentence_listen, lv3, listen, tier2)、進 ARRANGE_FAMILY 冷卻、wt 命名權重(說階 10)。
 - 驗:只聽不露英文、5字塊、排對計分(done)、排錯走補考(onMiss)、露正解。
+
+
+## 2026-07-08(35 / Claude Opus 4.8)— 開發跳關工具(治「微調要重玩30次、卡在25關」)
+
+### 使用者痛點
+身為開發者要反覆微調,每次改字庫就重玩,玩到很膩、都止步第25關左右、沒深入後段。
+
+### 加(js/11-main window.dev)
+- dev.jump(30):跳到第 N 關,之前各階的字全標學會(句子組得出),當前階留給正常玩。
+- dev.unlockAll():全字+句型解鎖,一次看遍所有題型/後期內容。
+- 玩家不會開 console 打這個 → 對分享版無害。
+- 驗:jump(30) 前面17字全學會、首頁正常;unlockAll 全字學會。
+
+### 備註
+- 新題型(sentence_say/hear/listen)不需重玩,Ctrl+F5 即在現有進度出現。由簡到難的字庫重排應是最後一次需要重來的大改。
